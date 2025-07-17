@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
-import { useAssessmentForm } from '../create/page';
+import { useAssessmentForm } from '../create/context';
 
 const activityTypes = [
   { value: "case-study", label: "Case Study Assessment" },
@@ -14,10 +14,25 @@ const initialActivity = {
   displayInstructions: "",
 };
 
+interface CaseStudy {
+  id: string;
+  name: string;
+}
+
+interface InboxActivity {
+  id: string;
+  name: string;
+}
+
 const AUTH_TOKEN = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODZkNjkzMjMxMjYzYjNjMmQ4OTJiYTEiLCJpYXQiOjE3NTIwODM4OTksImV4cCI6MTc1MjY4ODY5OX0.tTGDyJJ-rjo_tKQ89qKHhxcxd3G4YVn4M_qrfdqwg_0';
 
 const SelectContentStep: React.FC = () => {
-  const { formData, updateFormData } = useAssessmentForm();
+  const context = useAssessmentForm();
+  if (!context) {
+    throw new Error('SelectContentStep must be used within AssessmentFormContext');
+  }
+  const { updateFormData } = context;
+  
   const [activities, setActivities] = useState([
     { ...initialActivity },
   ]);
@@ -54,12 +69,12 @@ const SelectContentStep: React.FC = () => {
         const data = await res.json();
         let options: { value: string; label: string }[] = [];
         if (type === "case-study" && data?.data?.caseStudies) {
-          options = data.data.caseStudies.map((cs: any) => ({ value: cs.id, label: cs.name }));
+          options = data.data.caseStudies.map((cs: CaseStudy) => ({ value: cs.id, label: cs.name }));
         } else if (type === "inbox-activity" && data?.data?.inboxActivities) {
-          options = data.data.inboxActivities.map((ia: any) => ({ value: ia.id, label: ia.name }));
+          options = data.data.inboxActivities.map((ia: InboxActivity) => ({ value: ia.id, label: ia.name }));
         }
         setContentOptions((prev) => ({ ...prev, [type]: options }));
-      } catch (err: any) {
+      } catch {
         setError("Failed to fetch content options");
       } finally {
         setLoading(false);
@@ -185,14 +200,4 @@ const SelectContentStep: React.FC = () => {
   );
 };
 
-export default SelectContentStep; 
-
-
-
-
-
-
-
-
-
-
+export default SelectContentStep;

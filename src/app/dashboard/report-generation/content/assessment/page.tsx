@@ -4,20 +4,34 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AssessmentCard from './components/AssessmentCard';
 import CreateAssessmentModal from './components/CreateAssessmentModal';
-import { sampleAssessments, sampleInboxActivities } from './data/assessments';
-import { AssessmentType } from './types/assessment';
+import { sampleInboxActivities } from './data/assessments';
+import { AssessmentType, CaseStudy } from './types/assessment';
 import { fetchCaseStudies, updateCaseStudy, deleteCaseStudy } from '@/lib/caseStudyApi';
+
+interface Scenario {
+  id: string;
+  title: string;
+  readTime: number;
+  exerciseTime: number;
+}
+
+interface Task {
+  id: string;
+  title: string;
+  readTime: number;
+  exerciseTime: number;
+}
 
 export default function AssessmentPage() {
   const [activeTab, setActiveTab] = useState<AssessmentType>('case-study');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const router = useRouter();
-  const [caseStudies, setCaseStudies] = useState<any[]>([]);
+  const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [previewCaseStudy, setPreviewCaseStudy] = useState<any | null>(null);
+  const [previewCaseStudy, setPreviewCaseStudy] = useState<CaseStudy | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [editData, setEditData] = useState<any>({});
+  const [editData, setEditData] = useState<CaseStudy | null>(null);
 
   useEffect(() => {
     if (activeTab === 'case-study') {
@@ -27,7 +41,13 @@ export default function AssessmentPage() {
           setCaseStudies(res.data.caseStudies || []);
           setError(null);
         })
-        .catch(err => setError(err.message || 'Failed to fetch case studies'))
+        .catch((err: unknown) => {
+          if (err instanceof Error) {
+            setError(err.message);
+          } else {
+            setError('Failed to fetch case studies');
+          }
+        })
         .finally(() => setLoading(false));
     }
   }, [activeTab]);
@@ -60,8 +80,12 @@ export default function AssessmentPage() {
         // Refresh list
         const res = await fetchCaseStudies();
         setCaseStudies(res.data.caseStudies || []);
-      } catch (err: any) {
-        setError(err.message || 'Failed to update case study');
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Failed to update case study');
+        }
       } finally {
         setLoading(false);
       }
@@ -76,8 +100,12 @@ export default function AssessmentPage() {
         // Refresh list
         const res = await fetchCaseStudies();
         setCaseStudies(res.data.caseStudies || []);
-      } catch (err: any) {
-        setError(err.message || 'Failed to delete case study');
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Failed to delete case study');
+        }
       } finally {
         setLoading(false);
       }
@@ -85,15 +113,50 @@ export default function AssessmentPage() {
   };
 
   const handlePreview = (id: string) => {
-    const found = caseStudies.find((c) => c.id === id);
-    setPreviewCaseStudy(found || null);
+    const found = caseStudies.find((c) => c.id === id) || null;
+    if (found) {
+      setPreviewCaseStudy({
+        id: String(found.id ?? ''),
+        name: String(found.name ?? found.title ?? ''),
+        description: String(found.description ?? ''),
+        instructions: String(found.instructions ?? ''),
+        videoUrl: String(found.videoUrl ?? ''),
+        createdAt: String(found.createdAt ?? found.createdOn ?? ''),
+        scenarios: found.scenarios ?? [],
+        tasks: found.tasks ?? [],
+        title: found.title ?? '',
+        createdOn: found.createdOn ?? '',
+        allottedTo: found.allottedTo ?? 0,
+        attemptedBy: found.attemptedBy ?? 0,
+      });
+    } else {
+      setPreviewCaseStudy(null);
+    }
     setEditMode(false);
-    setEditData(found || {});
+    if (found) {
+      setEditData({
+        id: String(found.id ?? ''),
+        name: String(found.name ?? found.title ?? ''),
+        description: String(found.description ?? ''),
+        instructions: String(found.instructions ?? ''),
+        videoUrl: String(found.videoUrl ?? ''),
+        createdAt: String(found.createdAt ?? found.createdOn ?? ''),
+        scenarios: found.scenarios ?? [],
+        tasks: found.tasks ?? [],
+        title: found.title ?? '',
+        createdOn: found.createdOn ?? '',
+        allottedTo: found.allottedTo ?? 0,
+        attemptedBy: found.attemptedBy ?? 0,
+      });
+    } else {
+      setEditData(null);
+    }
   };
 
   const handleEditSave = async () => {
     setLoading(true);
     try {
+      if (!editData) return;
       await updateCaseStudy(editData.id, {
         name: editData.name,
         description: editData.description,
@@ -104,8 +167,12 @@ export default function AssessmentPage() {
       setCaseStudies(res.data.caseStudies || []);
       setPreviewCaseStudy(null);
       setEditMode(false);
-    } catch (err: any) {
-      setError(err.message || 'Failed to update case study');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to update case study');
+      }
     } finally {
       setLoading(false);
     }
@@ -153,7 +220,7 @@ export default function AssessmentPage() {
         {error && <div className="mb-4 p-3 bg-red-100 text-red-800 rounded">{error}</div>}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {activeTab === 'case-study' ? (
-            caseStudies.map((assessment) => (
+            caseStudies.map((assessment: CaseStudy) => (
               <AssessmentCard
                 key={assessment.id}
                 assessment={{
@@ -171,7 +238,7 @@ export default function AssessmentPage() {
             ))
           ) : (
             // fallback to static for inbox-activity
-            sampleInboxActivities.map((assessment) => (
+            (sampleInboxActivities as unknown as CaseStudy[]).map((assessment: CaseStudy) => (
               <AssessmentCard
                 key={assessment.id}
                 assessment={assessment}
@@ -205,26 +272,26 @@ export default function AssessmentPage() {
                   <h2 className="text-xl font-semibold mb-4">Edit Case Study</h2>
                   <input
                     className="w-full mb-2 px-3 py-2 border rounded"
-                    value={editData.name || ''}
-                    onChange={e => setEditData({ ...editData, name: e.target.value })}
+                    value={editData?.name ?? ''}
+                    onChange={e => setEditData(editData ? { ...editData, name: e.target.value } : null)}
                     placeholder="Name"
                   />
                   <textarea
                     className="w-full mb-2 px-3 py-2 border rounded"
-                    value={editData.description || ''}
-                    onChange={e => setEditData({ ...editData, description: e.target.value })}
+                    value={editData?.description ?? ''}
+                    onChange={e => setEditData(editData ? { ...editData, description: e.target.value } : null)}
                     placeholder="Description"
                   />
                   <textarea
                     className="w-full mb-2 px-3 py-2 border rounded"
-                    value={editData.instructions || ''}
-                    onChange={e => setEditData({ ...editData, instructions: e.target.value })}
+                    value={editData?.instructions ?? ''}
+                    onChange={e => setEditData(editData ? { ...editData, instructions: e.target.value } : null)}
                     placeholder="Instructions"
                   />
                   <input
                     className="w-full mb-2 px-3 py-2 border rounded"
-                    value={editData.videoUrl || ''}
-                    onChange={e => setEditData({ ...editData, videoUrl: e.target.value })}
+                    value={editData?.videoUrl ?? ''}
+                    onChange={e => setEditData(editData ? { ...editData, videoUrl: e.target.value } : null)}
                     placeholder="Video URL"
                   />
                   <div className="flex gap-2 mt-4">
@@ -257,7 +324,7 @@ export default function AssessmentPage() {
                   <div className="mb-2">
                     <strong>Scenarios:</strong>
                     <ul className="list-disc ml-6">
-                      {(previewCaseStudy.scenarios || []).map((s: any) => (
+                      {(previewCaseStudy.scenarios || []).map((s: Scenario) => (
                         <li key={s.id}>{s.title || <span className='italic text-gray-400'>No Title</span>} (Read: {s.readTime || '-'} min, Exercise: {s.exerciseTime || '-'} min)</li>
                       ))}
                     </ul>
@@ -265,7 +332,7 @@ export default function AssessmentPage() {
                   <div className="mb-2">
                     <strong>Tasks:</strong>
                     <ul className="list-disc ml-6">
-                      {(previewCaseStudy.tasks || []).map((t: any) => (
+                      {(previewCaseStudy.tasks || []).map((t: Task) => (
                         <li key={t.id}>{t.title || <span className='italic text-gray-400'>No Title</span>} (Read: {t.readTime || '-'} min, Exercise: {t.exerciseTime || '-'} min)</li>
                       ))}
                     </ul>

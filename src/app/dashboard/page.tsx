@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import { useAuth } from '@/context/AuthContext'
 import { useEffect } from 'react'
+import Image from 'next/image'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -52,9 +53,11 @@ export default function Dashboard() {
             <div className="text-center">
               {/* AI Trainers Image */}
               <div className="mb-6 flex justify-center">
-                <img
+                <Image
                   src="/ai-trainer.png"
                   alt="AI Trainers"
+                  width={192}
+                  height={128}
                   className="w-48 h-32 object-contain rounded-lg bg-gray-100"
                 />
               </div>
@@ -77,9 +80,11 @@ export default function Dashboard() {
             <div className="text-center">
               {/* Report Generation Image */}
               <div className="mb-6 flex justify-center">
-                <img
+                <Image
                   src="/report-generator.png"
                   alt="Report Generation"
+                  width={192}
+                  height={128}
                   className="w-48 h-32 object-contain rounded-lg bg-gray-100"
                 />
               </div>

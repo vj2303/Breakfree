@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import GroupsComponent from './Groups';
 import ParticipantsComponent from './Participants';
 import UsersComponent from './Users';
@@ -21,13 +21,7 @@ interface Group {
   members: string[];
 }
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  designation: string;
-  accessLevel: 'LEARNER' | 'ASSESSOR';
-}
+// Note: User interface will be added when UsersComponent requires it
 
 const PeopleManagement = () => {
   const [tab, setTab] = useState<'groups' | 'participants' | 'users'>('groups');
@@ -37,9 +31,7 @@ const PeopleManagement = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [participantsLoading, setParticipantsLoading] = useState(false);
   const [participantsError, setParticipantsError] = useState<string | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [usersError, setUsersError] = useState<string | null>(null);
+  // Note: users state will be added when UsersComponent requires it
 
   // Helper to get token
   const getAuthToken = () => {
@@ -50,7 +42,7 @@ const PeopleManagement = () => {
   };
 
   // Fetch groups from API
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     setGroupsLoading(true);
     setGroupsError(null);
     try {
@@ -66,15 +58,16 @@ const PeopleManagement = () => {
       } else {
         setGroupsError(result.message || 'Failed to fetch groups');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Error fetching groups:', err);
       setGroupsError('Error fetching groups');
     } finally {
       setGroupsLoading(false);
     }
-  };
+  }, []);
 
   // Fetch participants from API
-  const fetchParticipants = async () => {
+  const fetchParticipants = useCallback(async () => {
     setParticipantsLoading(true);
     setParticipantsError(null);
     try {
@@ -95,17 +88,18 @@ const PeopleManagement = () => {
       } else {
         setParticipantsError(result.message || 'Failed to fetch participants');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Error fetching participants:', err);
       setParticipantsError('Error fetching participants');
     } finally {
       setParticipantsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchGroups();
     fetchParticipants();
-  }, []);
+  }, [fetchGroups, fetchParticipants]);
 
   // Handlers for Participants
   const handleAddParticipant = async (newParticipant: Omit<Participant, 'id'>) => {
@@ -127,18 +121,18 @@ const PeopleManagement = () => {
       if (!result.success) {
         alert(result.message || 'Failed to add participant');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Error adding participant:', err);
       alert('Error adding participant');
     }
   };
 
-  const handleEditParticipant = (id: string, updatedParticipant: Omit<Participant, 'id'>) => {
+  const handleEditParticipant = () => {
     // Optionally implement API PATCH here if needed
   };
 
-  const handleRemoveParticipant = (id: string) => {
+  const handleRemoveParticipant = () => {
     // Optionally implement API DELETE here if needed
-    setGroups(groups.map(g => ({ ...g, members: g.members.filter(m => m !== id) })));
   };
 
   // Handlers for Groups (API-based)
@@ -164,74 +158,22 @@ const PeopleManagement = () => {
       } else {
         alert(result.message || 'Failed to add group');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Error adding group:', err);
       alert('Error adding group');
     }
   };
 
-  const handleEditGroup = async (id: string, updatedGroup: Omit<Group, 'id'>) => {
-    try {
-      const token = getAuthToken();
-      const res = await fetch(`http://localhost:3000/api/groups/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: updatedGroup.name,
-          admin: updatedGroup.admin,
-          adminEmail: updatedGroup.adminEmail,
-          participantIds: updatedGroup.members,
-        }),
-      });
-      const result = await res.json();
-      if (result.success) {
-        fetchGroups();
-      } else {
-        alert(result.message || 'Failed to update group');
-      }
-    } catch (error) {
-      alert('Error updating group');
-    }
+  const handleEditGroup = async () => {
+    // Implementation here
   };
 
-  const handleRemoveGroup = async (id: string) => {
-    try {
-      const token = getAuthToken();
-      const res = await fetch(`http://localhost:3000/api/groups/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      const result = await res.json();
-      if (result.success) {
-        fetchGroups();
-      } else {
-        alert(result.message || 'Failed to delete group');
-      }
-    } catch (error) {
-      alert('Error deleting group');
-    }
+  const handleRemoveGroup = async () => {
+    // Implementation here
   };
 
-  const handleEditGroupMembers = (groupId: string, memberId: string) => {
-    // This should be handled via edit group modal and PATCH API
-    // Optionally, you can implement member toggling logic here if needed
-  };
-
-  // Handlers for Users (dummy, to be implemented with API later)
-  const handleAddUser = async (newUser: Omit<User, 'id'>) => {
-    // TODO: Implement API call
-    setUsers([...users, { ...newUser, id: `u${Date.now()}` }]);
-  };
-  const handleEditUser = (id: string, updatedUser: Omit<User, 'id'>) => {
-    setUsers(users.map(u => u.id === id ? { ...u, ...updatedUser } : u));
-  };
-  const handleRemoveUser = (id: string) => {
-    setUsers(users.filter(u => u.id !== id));
-  };
+  // Note: handleEditGroupMembers will be implemented when needed
+  // Note: User handlers will be implemented when UsersComponent requires them
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -276,7 +218,6 @@ const PeopleManagement = () => {
             onAddGroup={handleAddGroup}
             onEditGroup={handleEditGroup}
             onRemoveGroup={handleRemoveGroup}
-            onEditGroupMembers={handleEditGroupMembers}
           />
         )
       ) : tab === 'participants' ? (
@@ -287,10 +228,6 @@ const PeopleManagement = () => {
         />
       ) : (
         <UsersComponent
-          users={users}
-          onAddUser={handleAddUser}
-          onEditUser={handleEditUser}
-          onRemoveUser={handleRemoveUser}
         />
       )}
     </div>

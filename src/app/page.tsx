@@ -35,7 +35,7 @@ export default function JoinUs() {
     }
   ]
   
-  const handleAccountSelection = (accountType) => {
+  const handleAccountSelection = (accountType: string) => {
     // Navigate to different register pages based on account type
     switch (accountType) {
       case 'admin':
@@ -77,7 +77,7 @@ export default function JoinUs() {
                     
           {/* Subtitle */}
           <p className="text-gray-500 text-lg max-w-md mx-auto">
-            To begin this journey, tell us what type of account you'd be opening.
+            To begin this journey, tell us what type of account you&apos;d be opening.
           </p>
         </div>
 

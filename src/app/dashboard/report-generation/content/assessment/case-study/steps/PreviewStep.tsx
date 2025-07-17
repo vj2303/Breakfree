@@ -47,7 +47,7 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ formData, scenarios, tasks })
           <div className="flex-1">
             <h4 className="font-medium mb-2 text-black">All Tasks ({tasks.length})</h4>
             <div className="space-y-2">
-              {tasks.map((task, index) => (
+              {tasks.map((task) => (
                 <div 
                   key={task.id}
                   className="p-3 bg-blue-50 border-l-4 border-blue-500 rounded"
@@ -91,7 +91,7 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ formData, scenarios, tasks })
           <div className="flex-1">
             <h4 className="font-medium mb-2 text-black">All Scenarios ({scenarios.length})</h4>
             <div className="space-y-2">
-              {scenarios.map((scenario, index) => (
+              {scenarios.map((scenario) => (
                 <div 
                   key={scenario.id}
                   className="p-3 bg-blue-50 border-l-4 border-blue-500 rounded"

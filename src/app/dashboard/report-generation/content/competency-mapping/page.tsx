@@ -14,7 +14,7 @@ interface Competency {
   subCompetencies: SubCompetency[];
 }
 
-interface CompetencyLibrary {
+interface CompetencyLibraryType {
   id: string;
   name: string;
   createdOn: string;
@@ -25,13 +25,13 @@ interface CompetencyMap {
   id: string;
   name: string;
   designation: string;
-  selectedLibrary: CompetencyLibrary | null;
+  selectedLibrary: CompetencyLibraryType | null;
   selectedCompetencies: Competency[];
   createdOn: string;
 }
 
 // Sample data
-const initialLibraries: CompetencyLibrary[] = [
+const initialLibraries: CompetencyLibraryType[] = [
   {
     id: '1',
     name: 'Competency Library Name',
@@ -81,43 +81,8 @@ const initialMaps: CompetencyMap[] = [
 
 export default function CompetencyMappingPage() {
   const [activeTab, setActiveTab] = useState<'maps' | 'library'>('maps');
-  const [libraries, setLibraries] = useState<CompetencyLibrary[]>(initialLibraries);
+  const [libraries] = useState<CompetencyLibraryType[]>(initialLibraries);
   const [maps, setMaps] = useState<CompetencyMap[]>(initialMaps);
-
-  // Library handlers
-  const handleAddLibrary = (newLibrary: Omit<CompetencyLibrary, 'id'>) => {
-    setLibraries([
-      ...libraries,
-      { id: `lib${Date.now()}`, ...newLibrary }
-    ]);
-  };
-
-  const handleEditLibrary = (id: string, updatedLibrary: Omit<CompetencyLibrary, 'id'>) => {
-    setLibraries(libraries.map(lib => 
-      lib.id === id ? { ...lib, ...updatedLibrary } : lib
-    ));
-  };
-
-  const handleDeleteLibrary = (id: string) => {
-    setLibraries(libraries.filter(lib => lib.id !== id));
-    // Also remove this library from any maps that use it
-    setMaps(maps.map(map => 
-      map.selectedLibrary?.id === id 
-        ? { ...map, selectedLibrary: null, selectedCompetencies: [] }
-        : map
-    ));
-  };
-
-  const handleAddCompetency = (libraryId: string, newCompetency: Omit<Competency, 'id'>) => {
-    setLibraries(libraries.map(lib => 
-      lib.id === libraryId 
-        ? { 
-            ...lib, 
-            competencies: [...lib.competencies, { id: `comp${Date.now()}`, ...newCompetency }]
-          }
-        : lib
-    ));
-  };
 
   // Map handlers
   const handleAddMap = (newMap: Omit<CompetencyMap, 'id'>) => {
@@ -175,13 +140,7 @@ export default function CompetencyMappingPage() {
           onDeleteMap={handleDeleteMap}
         />
       ) : (
-        <CompetencyLibrary
-          libraries={libraries}
-          onAddLibrary={handleAddLibrary}
-          onEditLibrary={handleEditLibrary}
-          onDeleteLibrary={handleDeleteLibrary}
-          onAddCompetency={handleAddCompetency}
-        />
+        <CompetencyLibrary />
       )}
     </div>
   );

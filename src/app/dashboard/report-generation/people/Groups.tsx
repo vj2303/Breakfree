@@ -24,7 +24,6 @@ interface GroupsComponentProps {
   onAddGroup: (group: Omit<Group, 'id'>) => void;
   onEditGroup: (id: string, group: Omit<Group, 'id'>) => void;
   onRemoveGroup: (id: string) => void;
-  onEditGroupMembers: (groupId: string, memberId: string) => void;
 }
 
 const GroupsComponent: React.FC<GroupsComponentProps> = ({
@@ -33,7 +32,6 @@ const GroupsComponent: React.FC<GroupsComponentProps> = ({
   onAddGroup,
   onEditGroup,
   onRemoveGroup,
-  onEditGroupMembers,
 }) => {
   const [showAddGroup, setShowAddGroup] = useState(false);
   const [showEditGroup, setShowEditGroup] = useState(false);

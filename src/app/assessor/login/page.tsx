@@ -48,7 +48,7 @@ export default function AssessorLogin() {
       } else {
         setError(result.message || 'Login failed. Please check your credentials.')
       }
-    } catch (error) {
+    } catch {
       setError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)
@@ -169,7 +169,7 @@ export default function AssessorLogin() {
               )}
             </button>
             <div className="text-center pt-4">
-              <span className="text-gray-600">Don't have an account? </span>
+              <span className="text-gray-600">Don&apos;t have an account? </span>
               <button
                 type="button"
                 onClick={handleRegisterRedirect}
@@ -187,4 +187,4 @@ export default function AssessorLogin() {
       </div>
     </div>
   )
-} 
+}

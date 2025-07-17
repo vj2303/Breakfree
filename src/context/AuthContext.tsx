@@ -21,11 +21,42 @@ interface User {
   updatedAt?: string;
 }
 
+interface RegisterData {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  phoneNumber?: string;
+  batchNumber?: string;
+  designation?: string;
+  managerName?: string;
+  location?: string;
+  department?: string;
+  division?: string;
+}
+
+interface LoginData {
+  email: string;
+  password: string;
+}
+
+interface AuthResult {
+  success: boolean;
+  message?: string;
+  data?: {
+    user?: User;
+    token?: string;
+    refreshToken?: string;
+    expiresIn?: number;
+  };
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  register: (data: any) => Promise<any>;
-  login: (data: any) => Promise<any>;
+  register: (data: RegisterData) => Promise<AuthResult>;
+  login: (data: LoginData) => Promise<AuthResult>;
   logout: () => void;
 }
 
@@ -46,7 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(false);
   }, []);
 
-  const register = async (data: any) => {
+  const register = async (data: RegisterData): Promise<AuthResult> => {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -70,7 +101,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const login = async (data: any) => {
+  const login = async (data: LoginData): Promise<AuthResult> => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',

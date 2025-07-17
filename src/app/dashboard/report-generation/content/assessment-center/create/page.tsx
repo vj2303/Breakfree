@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, createContext, useContext } from "react";
+import React, { useState } from "react";
 import AssessmentCenterLayout from "../AssessmentCenterLayout";
 import SelectContentStep from "../steps/SelectContentStep";
 import SelectCompetenciesStep from "../steps/SelectCompetenciesStep";
@@ -8,35 +8,41 @@ import AddFrameworkStep from "../steps/AddFrameworkStep";
 import AddDocumentStep from "../steps/AddDocumentStep";
 import ReportConfigurationStep from "../steps/ReportConfigurationStep";
 import ParticipantAssessorManagementStep from "../steps/ParticipantAssessorManagementStep";
+import { AssessmentFormContext, useAssessmentForm } from "./context";
+import type { FormData } from "./context";
 
-// Context for form data
-export const AssessmentFormContext = createContext<any>(null);
-export const useAssessmentForm = () => useContext(AssessmentFormContext);
-
-const CreateAssessmentCenter = () => {
-  const [currentStep, setCurrentStep] = useState(0);
-  // State for all form fields
-  const [formData, setFormData] = useState({
+const AssessmentFormProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
     displayName: '',
     displayInstructions: '',
     competencyIds: [],
-    selectedCompetenciesData: [], // [{id, name}]
+    selectedCompetenciesData: [],
     reportTemplateName: '',
     reportTemplateType: '',
     activities: [],
     assignments: [],
     document: null,
   });
+
+  const updateFormData = (field: string, value: unknown) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <AssessmentFormContext.Provider value={{ formData, updateFormData }}>
+      {children}
+    </AssessmentFormContext.Provider>
+  );
+};
+
+const CreateAssessmentCenterContent = () => {
+  const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-
-  // Handler to update form data from steps
-  const updateFormData = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  const { formData } = useAssessmentForm();
 
   // Handler for final submit
   const handleSubmit = async () => {
@@ -68,8 +74,12 @@ const CreateAssessmentCenter = () => {
       if (!res.ok) throw new Error('Failed to create assessment center');
       setSuccess(true);
       // Optionally redirect or reset form
-    } catch (err: any) {
-      setError(err.message || 'Failed to create assessment center');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to create assessment center');
+      }
     } finally {
       setLoading(false);
     }
@@ -95,20 +105,27 @@ const CreateAssessmentCenter = () => {
   };
 
   return (
-    <AssessmentFormContext.Provider value={{ formData, updateFormData }}>
-      <AssessmentCenterLayout
-        currentStep={currentStep}
-        onStepChange={setCurrentStep}
-        onSave={handleSave}
-        showSaveButton={currentStep < stepComponents.length - 1 || !loading}
-        saveButtonText={currentStep === stepComponents.length - 2 ? "Finish" : "Save and Next"}
-      >
-        {error && <div className="mb-4 p-3 bg-red-100 text-red-800 rounded">{error}</div>}
-        {success && <div className="mb-4 p-3 bg-green-100 text-green-800 rounded">Assessment Center created successfully!</div>}
-        {stepComponents[currentStep]}
-      </AssessmentCenterLayout>
-    </AssessmentFormContext.Provider>
+    <AssessmentCenterLayout
+      currentStep={currentStep}
+      onStepChange={setCurrentStep}
+      onSave={handleSave}
+      showSaveButton={currentStep < stepComponents.length - 1 || !loading}
+      saveButtonText={currentStep === stepComponents.length - 2 ? "Finish" : "Save and Next"}
+    >
+      {error && <div className="mb-4 p-3 bg-red-100 text-red-800 rounded">{error}</div>}
+      {success && <div className="mb-4 p-3 bg-green-100 text-green-800 rounded">Assessment Center created successfully!</div>}
+      {stepComponents[currentStep]}
+    </AssessmentCenterLayout>
   );
 };
 
-export default CreateAssessmentCenter; 
+const CreateAssessmentCenter = () => {
+  return (
+    <AssessmentFormProvider>
+      <CreateAssessmentCenterContent />
+    </AssessmentFormProvider>
+  );
+};
+
+// Only export the default component
+export default CreateAssessmentCenter;

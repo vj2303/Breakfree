@@ -3,7 +3,15 @@
 import React from 'react';
 import { Edit2, Trash2 } from 'lucide-react';
 import Editor from '@/components/Editor';
-import { Scenario } from '../CaseStudyAssessment';
+
+type Scenario = {
+  id: string;
+  title: string;
+  description: string;
+  content: string;
+  exerciseTime: number;
+  readingTime: number;
+};
 
 interface ScenarioStepProps {
   scenarios: Scenario[];
@@ -62,6 +70,17 @@ const ScenarioStep: React.FC<ScenarioStepProps> = ({
             onChange={(e) => updateCurrentScenario('title', e.target.value)}
             placeholder="Inventory"
             className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2 text-black">Description</label>
+          <textarea
+            value={currentScenario.description}
+            onChange={(e) => updateCurrentScenario('description', e.target.value)}
+            placeholder="Enter scenario description"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+            rows={2}
           />
         </div>
 

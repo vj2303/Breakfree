@@ -5,12 +5,24 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, LogOut, Settings, User } from 'lucide-react'
 
-export default function Navbar({ userData }) {
+// Define the type for user data
+interface UserData {
+  name: string
+  email: string
+  avatar?: string
+}
+
+// Define the props interface
+interface NavbarProps {
+  userData?: UserData
+}
+
+export default function Navbar({ userData }: NavbarProps) {
   const router = useRouter()
-  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState<boolean>(false)
 
   // Default user data if not provided
-  const defaultUserData = {
+  const defaultUserData: UserData = {
     name: 'User',
     email: 'user@example.com',
     avatar: ''

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface Participant {
   id: string;
@@ -67,7 +67,7 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
   };
 
   // API Functions
-  const fetchParticipants = async (page: number = 1, search: string = '') => {
+  const fetchParticipants = useCallback(async (page: number = 1, search: string = '') => {
     try {
       setLoading(true);
       setError(null);
@@ -142,7 +142,7 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [limit]);
 
   const createParticipant = async (participantData: Omit<Participant, 'id'>) => {
     try {
@@ -185,11 +185,8 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
         console.error('❌ Create operation failed:', data);
         throw new Error(data.message || 'Failed to create participant');
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred while creating participant';
-      console.error('💥 Complete error in createParticipant:', err);
-      setError(errorMessage);
-      throw err;
+    } catch {
+      // Error is already handled in createParticipant
     } finally {
       setIsSubmitting(false);
     }
@@ -222,10 +219,8 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
       } else {
         throw new Error(data.message || 'Failed to update participant');
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred while updating participant';
-      setError(errorMessage);
-      throw err;
+    } catch {
+      // Error is already handled in updateParticipant
     } finally {
       setIsSubmitting(false);
     }
@@ -255,10 +250,8 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
       } else {
         throw new Error(data.message || 'Failed to delete participant');
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred while deleting participant';
-      setError(errorMessage);
-      throw err;
+    } catch {
+      // Error is already handled in deleteParticipant
     }
   };
 
@@ -266,7 +259,7 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
   useEffect(() => {
     console.log('🔄 useEffect triggered - currentPage:', currentPage);
     fetchParticipants(currentPage, searchTerm);
-  }, [currentPage]); // Removed searchTerm dependency to avoid double calls
+  }, [currentPage, fetchParticipants, searchTerm]);
 
   // Handle search with debounce
   useEffect(() => {
@@ -284,7 +277,7 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
       console.log('🧹 Cleaning up search timeout');
       clearTimeout(timeoutId);
     };
-  }, [searchTerm]);
+  }, [searchTerm, fetchParticipants, currentPage]);
 
   const handleAddParticipant = async () => {
     if (!newParticipant.name || !newParticipant.email || !newParticipant.designation || !newParticipant.managerName) {
@@ -301,7 +294,7 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
       if (props.onAddParticipant) {
         props.onAddParticipant(newParticipant);
       }
-    } catch (err) {
+    } catch {
       // Error is already handled in createParticipant
     }
   };
@@ -322,7 +315,7 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
       if (props.onEditParticipant) {
         props.onEditParticipant(editingParticipant.id, newParticipant);
       }
-    } catch (err) {
+    } catch {
       // Error is already handled in updateParticipant
     }
   };
@@ -336,7 +329,7 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
         if (props.onRemoveParticipant) {
           props.onRemoveParticipant(id);
         }
-      } catch (err) {
+      } catch {
         // Error is already handled in deleteParticipant
       }
     }
@@ -397,8 +390,8 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
       }
       setEmailStatus({ success: 'Emails sent successfully!' });
       setSelectedParticipantIds([]);
-    } catch (err) {
-      setEmailStatus({ error: err instanceof Error ? err.message : 'Failed to send emails' });
+    } catch {
+      setEmailStatus({ error: 'Failed to send emails' });
     } finally {
       setIsSendingEmail(false);
     }

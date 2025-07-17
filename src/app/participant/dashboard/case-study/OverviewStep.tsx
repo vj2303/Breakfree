@@ -21,7 +21,7 @@ const OverviewStep = () => (
         In case you face any issues during the exercise, please inform the Program Coordinator as soon as possible.
       </p>
       <p>
-        Please click on "Start" to proceed to the next page.
+        Please click on &quot;Start&quot; to proceed to the next page.
       </p>
     </div>
   </div>

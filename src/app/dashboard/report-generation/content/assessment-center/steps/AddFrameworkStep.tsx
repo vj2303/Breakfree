@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useAssessmentForm } from '../create/page';
+import { useAssessmentForm } from '../create/context';
 
 interface Competency {
   id: string;
@@ -18,10 +18,23 @@ interface ScoreState {
   };
 }
 
+// Add type for items in competencyLibraryList
+type CompetencyLibraryItem = {
+  id: string;
+  subCompetencyNames?: string[];
+  // Add other properties if needed
+};
+
 const CompetencyFramework = () => {
-  const { formData } = useAssessmentForm();
+  const context = useAssessmentForm();
+  if (!context) {
+    throw new Error('CompetencyFramework must be used within AssessmentFormContext');
+  }
+  const { formData } = context;
+  // competencyLibraryList is dynamically added to formData in SelectCompetenciesStep
   const competencies: Competency[] = (formData.selectedCompetenciesData || []).map((comp: {id: string, name: string}) => {
-    const full = (formData.competencyLibraryList || []).find((c: any) => c.id === comp.id);
+    const competencyLibraryList = (formData as { competencyLibraryList?: CompetencyLibraryItem[] }).competencyLibraryList || [];
+    const full = competencyLibraryList.find((c: CompetencyLibraryItem) => c.id === comp.id);
     return {
       id: comp.id,
       name: comp.name,

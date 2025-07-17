@@ -48,7 +48,8 @@ export default function ParticipantLogin() {
       } else {
         setError(result.message || 'Login failed. Please check your credentials.')
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Login error:', err)
       setError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)
@@ -169,7 +170,7 @@ export default function ParticipantLogin() {
               )}
             </button>
             <div className="text-center pt-4">
-              <span className="text-gray-600">Don't have an account? </span>
+              <span className="text-gray-600">Don&apos;t have an account? </span>
               <button
                 type="button"
                 onClick={handleRegisterRedirect}
@@ -187,4 +188,4 @@ export default function ParticipantLogin() {
       </div>
     </div>
   )
-} 
+}

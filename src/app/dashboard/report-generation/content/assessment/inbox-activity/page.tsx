@@ -96,8 +96,12 @@ const Page = () => {
       });
       if (!res.ok) throw new Error('Failed to create inbox activity');
       router.push('/dashboard/report-generation/content/assessment');
-    } catch (err: any) {
-      setError(err.message || 'Error');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Error');
+      }
     } finally {
       setLoading(false);
     }
@@ -148,14 +152,3 @@ const Page = () => {
 };
 
 export default Page;
-
-
-
-
-
-
-
-
-
-
-

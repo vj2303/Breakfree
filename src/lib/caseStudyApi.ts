@@ -7,7 +7,7 @@ function getAuthToken() {
   return `Bearer ${token}`;
 }
 
-export async function createCaseStudy(data: any) {
+export async function createCaseStudy<T = unknown>(data: T) {
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: {
@@ -32,7 +32,7 @@ export async function fetchCaseStudies(page = 1, limit = 10) {
   return res.json();
 }
 
-export async function updateCaseStudy(id: string, data: any) {
+export async function updateCaseStudy<T = unknown>(id: string, data: T) {
   const res = await fetch(`${API_URL}/${id}`, {
     method: 'PUT',
     headers: {

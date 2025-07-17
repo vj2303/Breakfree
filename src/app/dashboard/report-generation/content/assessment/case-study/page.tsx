@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 export interface Scenario {
   id: string;
   title: string;
+  description: string;
   content: string;
   exerciseTime: number;
   readingTime: number;
@@ -43,6 +44,7 @@ const CaseStudyAssessment = () => {
   const [currentScenario, setCurrentScenario] = useState<Scenario>({
     id: '',
     title: '',
+    description: '',
     content: '',
     exerciseTime: 30,
     readingTime: 30
@@ -90,7 +92,8 @@ const CaseStudyAssessment = () => {
       if (currentScenario.title && currentScenario.content) {
         const scenarioToSave = {
           ...currentScenario,
-          id: currentScenario.id || Date.now().toString()
+          id: currentScenario.id || Date.now().toString(),
+          description: currentScenario.description || '',
         };
         
         if (currentScenario.id) {
@@ -102,6 +105,7 @@ const CaseStudyAssessment = () => {
         setCurrentScenario({
           id: '',
           title: '',
+          description: '',
           content: '',
           exerciseTime: 30,
           readingTime: 30
@@ -161,8 +165,12 @@ const CaseStudyAssessment = () => {
         };
         await createCaseStudy(payload);
         router.push('/dashboard/report-generation/content/assessment');
-      } catch (err: any) {
-        setError(err.message || 'Failed to save case study');
+      } catch (err: unknown) {
+        if (err && typeof err === 'object' && 'message' in err && typeof (err as Error).message === 'string') {
+          setError((err as Error).message);
+        } else {
+          setError('Failed to save case study');
+        }
       } finally {
         setLoading(false);
       }
@@ -192,6 +200,7 @@ const CaseStudyAssessment = () => {
     setCurrentScenario({
       id: '',
       title: '',
+      description: '',
       content: '',
       exerciseTime: 30,
       readingTime: 30

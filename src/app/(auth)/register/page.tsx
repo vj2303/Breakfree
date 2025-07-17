@@ -6,13 +6,30 @@ import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 
+// 1. Define a type for formData
+type FormDataType = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  agreeToTerms: boolean;
+  phoneNumber: string;
+  batchNo: string;
+  designation: string;
+  role: string;
+  managerName: string;
+  location: string;
+  department: string;
+  division: string;
+};
+
 export default function MultiStepRegister() {
   const router = useRouter()
   const { register } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
   const [selectedCountryCode, setSelectedCountryCode] = useState('+91')
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataType>({
     // Step 1 data
     firstName: '',
     lastName: '',
@@ -31,7 +48,7 @@ export default function MultiStepRegister() {
     division: ''
   })
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: keyof FormDataType, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -57,9 +74,9 @@ export default function MultiStepRegister() {
       batchNumber: formData.batchNo,
     };
     // Remove fields not needed by API
-    delete (payload as any)?.agreeToTerms;
-    delete (payload as any)?.batchNo;
-    delete (payload as any)?.role;
+    delete (payload as Partial<FormDataType>)?.agreeToTerms;
+    delete (payload as Partial<FormDataType>)?.batchNo;
+    delete (payload as Partial<FormDataType>)?.role;
     // Call register API
     const result = await register(payload);
     if (result.success) {
@@ -105,7 +122,7 @@ export default function MultiStepRegister() {
                 Create New Account
               </h1>
               <p className="text-gray-600">
-                Let's get you all set up so you can access your personal account.
+                Let&apos;s get you all set up so you can access your personal account.
               </p>
             </div>
 
@@ -223,7 +240,7 @@ export default function MultiStepRegister() {
                 Complete Your Profile!
               </h1>
               <p className="text-gray-600">
-                Let's get you all set up so you can access your personal account.
+                Let&apos;s get you all set up so you can access your personal account.
               </p>
             </div>
 

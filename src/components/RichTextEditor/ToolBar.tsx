@@ -16,8 +16,14 @@ import {
   Upload,
 } from "lucide-react";
 import { ListOrdered } from "lucide-react";
+import { Editor } from "@tiptap/react";
 
-export default function ToolBar({ editor }) {
+// Define the props interface
+interface ToolBarProps {
+  editor: Editor | null;
+}
+
+export default function ToolBar({ editor }: ToolBarProps) {
   if (!editor) return null;
 
   // Function to add an image
@@ -28,9 +34,18 @@ export default function ToolBar({ editor }) {
     }
   };
 
-  // Function to handle text size changes
-  const handleTextSize = (size) => {
-    editor.chain().focus().setFontSize(size).run();
+  // Function to handle text size using inline styles
+  const handleTextSize = (size: string) => {
+    const selection = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(selection.from, selection.to);
+    
+    if (selectedText) {
+      // If text is selected, wrap it in a span with font size
+      editor.chain().focus().insertContent(`<span style="font-size: ${size}">${selectedText}</span>`).run();
+    } else {
+      // If no text selected, just insert a span that user can type into
+      editor.chain().focus().insertContent(`<span style="font-size: ${size}">Text</span>`).run();
+    }
   };
 
   // Function to handle document upload
@@ -39,7 +54,7 @@ export default function ToolBar({ editor }) {
     input.type = "file";
     input.accept = ".txt";
     input.onchange = (event) => {
-      const file = event.target.files[0];
+      const file = (event.target as HTMLInputElement).files?.[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = () => {
@@ -125,21 +140,21 @@ export default function ToolBar({ editor }) {
       onClick: () => addImage(),
       pressed: editor.isActive("image"),
     },
-    // Text Size Option
+    // Text Size Options - Using inline styles
     {
-      icon: <span style={{ fontSize: "16px" }}>S</span>,
-      onClick: () => handleTextSize("16px"),
-      pressed: false, // No state for this (you can extend it if necessary)
+      icon: <span style={{ fontSize: "14px" }}>S</span>,
+      onClick: () => handleTextSize("14px"),
+      pressed: false,
     },
     {
-      icon: <span style={{ fontSize: "20px" }}>M</span>,
-      onClick: () => handleTextSize("20px"),
-      pressed: false, // No state for this (you can extend it if necessary)
+      icon: <span style={{ fontSize: "18px" }}>M</span>,
+      onClick: () => handleTextSize("18px"),
+      pressed: false,
     },
     {
       icon: <span style={{ fontSize: "24px" }}>L</span>,
       onClick: () => handleTextSize("24px"),
-      pressed: false, // No state for this (you can extend it if necessary)
+      pressed: false,
     },
     // Document Upload Option
     {

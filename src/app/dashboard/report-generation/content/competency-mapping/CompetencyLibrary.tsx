@@ -25,6 +25,13 @@ interface Competency {
   subCompetencies: SubCompetency[];
 }
 
+interface LibraryData {
+  id: string;
+  competencyName: string;
+  createdAt: string;
+  subCompetencyNames?: string[];
+}
+
 const CompetencyLibrary: React.FC = () => {
   const [libraries, setLibraries] = useState<CompetencyLibrary[]>([]);
   const [showCreateCompetency, setShowCreateCompetency] = useState(false);
@@ -36,7 +43,6 @@ const CompetencyLibrary: React.FC = () => {
     subCompetencies: [{ id: '1', text: '' }] as SubCompetency[]
   });
   const [expandedLibraryId, setExpandedLibraryId] = useState<string | null>(null);
-  const [editingLibrary, setEditingLibrary] = useState<CompetencyLibrary | null>(null);
   const [editCompetency, setEditCompetency] = useState({
     name: '',
     subCompetencies: [{ id: '1', text: '' }] as SubCompetency[]
@@ -49,7 +55,7 @@ const CompetencyLibrary: React.FC = () => {
     try {
       const data = await fetchCompetencyLibraries(search);
       const libs = Array.isArray(data?.data?.competencyLibraries)
-        ? data.data.competencyLibraries.map((lib: any) => ({
+        ? data.data.competencyLibraries.map((lib: LibraryData) => ({
             id: lib.id,
             name: lib.competencyName,
             createdOn: new Date(lib.createdAt).toLocaleDateString('en-US', {
@@ -70,7 +76,7 @@ const CompetencyLibrary: React.FC = () => {
           }))
         : [];
       setLibraries(libs);
-    } catch (e) {
+    } catch {
       // handle error
       setLibraries([]);
     } finally {
@@ -91,7 +97,7 @@ const CompetencyLibrary: React.FC = () => {
       setShowCreateCompetency(false);
       setNewCompetency({ name: '', subCompetencies: [{ id: '1', text: '' }] });
       loadLibraries();
-    } catch (e) {
+    } catch {
       // handle error
     }
   };
@@ -101,7 +107,7 @@ const CompetencyLibrary: React.FC = () => {
       await deleteCompetencyLibrary(id);
       setDropdownOpen(null);
       loadLibraries();
-    } catch (e) {
+    } catch {
       // handle error
     }
   };
@@ -145,7 +151,7 @@ const CompetencyLibrary: React.FC = () => {
       setEditLibraryId(null);
       setEditCompetency({ name: '', subCompetencies: [{ id: '1', text: '' }] });
       loadLibraries();
-    } catch (e) {
+    } catch {
       // handle error
     }
   };

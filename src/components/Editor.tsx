@@ -29,7 +29,7 @@ const Editor: React.FC<EditorProps> = ({ content, onChange }) => {
     console.log("Content:", content);
     
     form.setValue("post", content);
-  }, [content, form.setValue]);
+  }, [content, form]);
 
   return (
     <div className="max-w-full mx-auto py-5">
@@ -38,14 +38,12 @@ const Editor: React.FC<EditorProps> = ({ content, onChange }) => {
           <FormField
             control={form.control}
             name="post"
-            
             render={({ field }) => (
               <FormItem>
                 <FormControl>
                   <RichTextEditor
                     content={field.value}
-                    
-                    onChange={(value) => {
+                    onChange={(value: string) => {
                       field.onChange(value);
                       onChange(value); // Update parent state
                     }}

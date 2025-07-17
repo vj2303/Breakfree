@@ -54,7 +54,7 @@ const UsersComponent: React.FC = () => {
   };
 
   // Fetch assessors from API
-  const fetchAssessors = async (page = 1, search = '') => {
+  const fetchAssessors = React.useCallback(async (page = 1, search = '') => {
     setLoading(true);
     setError(null);
     try {
@@ -85,7 +85,7 @@ const UsersComponent: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.itemsPerPage]);
 
   // Add or update assessor via API
   const createOrUpdateAssessor = async () => {
@@ -188,15 +188,14 @@ const UsersComponent: React.FC = () => {
 
   React.useEffect(() => {
     fetchAssessors(1, '');
-    // eslint-disable-next-line
-  }, []);
+  }, [fetchAssessors]);
 
   React.useEffect(() => {
     const timeoutId = setTimeout(() => {
       fetchAssessors(1, searchTerm);
     }, 500);
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, [searchTerm, fetchAssessors]);
 
   // Open modal for add
   const openAddModal = () => {

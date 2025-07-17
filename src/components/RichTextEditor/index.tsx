@@ -10,7 +10,13 @@ import BulletList from "@tiptap/extension-bullet-list";
 import OrderedList from "@tiptap/extension-ordered-list";
 import { useEffect } from "react";
 
-export default function RichTextEditor({ content, onChange }) {
+// Define the props interface
+interface RichTextEditorProps {
+  content: string;
+  onChange: (html: string) => void;
+}
+
+export default function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure(),

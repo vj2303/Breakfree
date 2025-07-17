@@ -1,8 +1,16 @@
 import React, { useRef, useState } from "react";
 import { Trash2, UploadCloud, FileText } from "lucide-react";
 
+// Define a type for uploaded files
+type UploadedFile = {
+  name: string;
+  size: number;
+  url: string;
+  file: File;
+};
+
 const AddDocumentStep = () => {
-  const [files, setFiles] = useState<any[]>([]);
+  const [files, setFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
