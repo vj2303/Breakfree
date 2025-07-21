@@ -67,23 +67,41 @@ export default function MultiStepRegister() {
 
   const handleStep2Submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    
+    // Validate required fields for step 2
+    if (!formData.phoneNumber || !formData.batchNo || !formData.designation || 
+        !formData.managerName || !formData.location || !formData.department || !formData.division) {
+      alert('Please fill in all required fields')
+      return
+    }
+
     // Prepare data for API (merge country code with phone number, map batchNo to batchNumber)
     const payload = {
-      ...formData,
+      email: formData.email,
+      password: formData.password,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
       phoneNumber: selectedCountryCode + '-' + formData.phoneNumber,
       batchNumber: formData.batchNo,
+      designation: formData.designation,
+      managerName: formData.managerName,
+      location: formData.location,
+      department: formData.department,
+      division: formData.division
     };
-    // Remove fields not needed by API
-    delete (payload as Partial<FormDataType>)?.agreeToTerms;
-    delete (payload as Partial<FormDataType>)?.batchNo;
-    delete (payload as Partial<FormDataType>)?.role;
-    // Call register API
-    const result = await register(payload);
-    if (result.success) {
-      alert('Registration completed successfully!');
-      router.push('/login');
-    } else {
-      alert(result.message || 'Registration failed');
+
+    try {
+      // Call register API
+      const result = await register(payload);
+      if (result.success) {
+        alert('Registration completed successfully!');
+        router.push('/login');
+      } else {
+        alert(result.message || 'Registration failed');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      alert('Registration failed. Please try again.');
     }
   }
 

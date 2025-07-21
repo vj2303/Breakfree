@@ -117,11 +117,12 @@ const Page = () => {
       onAddNew={handleAddNewScenario}
     />,
     <AddCharactersStep key="characters" characters={characters} addCharacter={addCharacter} />,
-    <AddContentStep key="content" />,
+    <AddContentStep key="content" characters={characters} />,
     <PreviewStep key="preview"
       loading={loading}
       error={error}
       onSubmit={handleSubmit}
+      onPrevious={() => setCurrentStep(currentStep - 1)}
     />,
   ];
 
@@ -138,13 +139,14 @@ const Page = () => {
     }
   };
 
+  const isLastStep = currentStep === stepContents.length - 1;
   return (
     <InboxActivityLayout
       currentStep={currentStep}
       onStepChange={setCurrentStep}
-      onSave={handleSave}
-      showSaveButton={currentStep < stepContents.length - 1}
-      saveButtonText={getSaveButtonText()}
+      onSave={isLastStep ? handleSubmit : handleSave}
+      showSaveButton={true}
+      saveButtonText={isLastStep ? (loading ? 'Submitting...' : 'Save') : getSaveButtonText()}
     >
       {stepContents[currentStep]}
     </InboxActivityLayout>

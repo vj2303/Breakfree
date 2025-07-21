@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api/case-studies';
+const API_URL = 'https://api.breakfreeacademy.in/api/case-studies';
 
 function getAuthToken() {
   if (typeof window === 'undefined') throw new Error('No window object');
@@ -56,4 +56,15 @@ export async function deleteCaseStudy(id: string) {
     throw new Error('Failed to delete case study');
   }
   return res.json();
+}
+
+export async function fetchCaseStudyById(id: string) {
+  const res = await fetch(`${API_URL}/${id}`, {
+    headers: { 'Authorization': getAuthToken() }
+  });
+  if (!res.ok) {
+    throw new Error('Failed to fetch case study');
+  }
+  const result = await res.json();
+  return result.data || result;
 } 

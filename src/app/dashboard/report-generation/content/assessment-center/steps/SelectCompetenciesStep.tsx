@@ -33,7 +33,8 @@ const SelectCompetenciesStep: React.FC = () => {
       setLoading(true);
       setError('');
       try {
-        const res = await fetch('http://localhost:3000/api/competency-libraries?page=1&limit=10&search=', {
+        const baseUrl = process.env.NEXT_PUBLIC_SERVER_HOSTNAME;
+        const res = await fetch(`${baseUrl}/api/competency-libraries?page=1&limit=10&search=`, {
           headers: {
             Authorization: AUTH_TOKEN,
           },

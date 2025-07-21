@@ -6,7 +6,7 @@ import { Assessment } from '../types/assessment';
 
 interface AssessmentCardProps {
   assessment: Assessment;
-  onEdit?: (id: string) => void;
+  onEdit?: (assessment: Assessment) => void;
   onPreview?: (id: string) => void;
   onRemove?: (id: string) => void;
 }
@@ -20,7 +20,7 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
 
   const handleEdit = () => {
-    onEdit?.(assessment.id);
+    onEdit?.(assessment);
     setShowDropdown(false);
   };
 
@@ -97,10 +97,12 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({
       </div>
       
       <div className="mt-4 text-sm text-gray-600">
-        This case study is designed for new managers participating in Batch No. 3 of the LEAP 2005 June Cohort. As a newly appointed Customer Experience
+          {assessment.description}
       </div>
     </div>
   );
 };
 
 export default AssessmentCard;
+
+

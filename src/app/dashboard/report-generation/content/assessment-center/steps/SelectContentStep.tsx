@@ -53,9 +53,9 @@ const SelectContentStep: React.FC = () => {
       try {
         let url = "";
         if (type === "case-study") {
-          url = "http://localhost:3000/api/case-studies?page=1&limit=10";
+          url = "https://api.breakfreeacademy.in/api/case-studies?page=1&limit=10";
         } else if (type === "inbox-activity") {
-          url = "http://localhost:3000/api/inbox-activities?page=1&limit=10";
+          url = "https://api.breakfreeacademy.in/api/inbox-activities?page=1&limit=10";
         } else {
           setContentOptions((prev) => ({ ...prev, [type]: [] }));
           setLoading(false);

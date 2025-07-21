@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useAssessmentForm } from '../create/context';
 import Select, { StylesConfig, GroupBase, MultiValue } from 'react-select';
 
-const GROUPS_API = 'http://localhost:3000/api/groups?page=1&limit=10&search=';
-const ASSESSORS_API = 'http://localhost:3000/api/assessors?page=1&limit=10&search=';
+const GROUPS_API = 'https://api.breakfreeacademy.in/api/groups?page=1&limit=10&search=';
+const ASSESSORS_API = 'https://api.breakfreeacademy.in/api/assessors?page=1&limit=10&search=';
 const AUTH_TOKEN = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODZkNjkzMjMxMjYzYjNjMmQ4OTJiYTEiLCJpYXQiOjE3NTIwODM4OTksImV4cCI6MTc1MjY4ODY5OX0.tTGDyJJ-rjo_tKQ89qKHhxcxd3G4YVn4M_qrfdqwg_0';
 
 // Define types

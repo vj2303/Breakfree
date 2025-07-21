@@ -7,6 +7,7 @@ import CreateAssessmentModal from './components/CreateAssessmentModal';
 import { sampleInboxActivities } from './data/assessments';
 import { AssessmentType, CaseStudy } from './types/assessment';
 import { fetchCaseStudies, updateCaseStudy, deleteCaseStudy } from '@/lib/caseStudyApi';
+import { fetchInboxActivities } from '@/lib/inboxActivityApi';
 
 interface Scenario {
   id: string;
@@ -27,6 +28,7 @@ export default function AssessmentPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const router = useRouter();
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
+  const [inboxActivities, setInboxActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewCaseStudy, setPreviewCaseStudy] = useState<CaseStudy | null>(null);
@@ -46,6 +48,21 @@ export default function AssessmentPage() {
             setError(err.message);
           } else {
             setError('Failed to fetch case studies');
+          }
+        })
+        .finally(() => setLoading(false));
+    } else if (activeTab === 'inbox-activity') {
+      setLoading(true);
+      fetchInboxActivities()
+        .then((res: { data: { inboxActivities: any[] } }) => {
+          setInboxActivities(res.data?.inboxActivities || []);
+          setError(null);
+        })
+        .catch((err: unknown) => {
+          if (err instanceof Error) {
+            setError(err.message);
+          } else {
+            setError('Failed to fetch inbox activities');
           }
         })
         .finally(() => setLoading(false));
@@ -70,25 +87,10 @@ export default function AssessmentPage() {
     }
   };
 
-  const handleEdit = async (id: string) => {
-    const newName = prompt('Enter new name:');
-    const newDescription = prompt('Enter new description:');
-    if (newName && newDescription) {
-      setLoading(true);
-      try {
-        await updateCaseStudy(id, { name: newName, description: newDescription });
-        // Refresh list
-        const res = await fetchCaseStudies();
-        setCaseStudies(res.data.caseStudies || []);
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError('Failed to update case study');
-        }
-      } finally {
-        setLoading(false);
-      }
+  const handleEdit = async (assessment: any) => {
+    // Navigate to the multi-step edit flow with the assessment id
+    if (assessment.id) {
+      router.push(`/dashboard/report-generation/content/assessment/case-study?id=${assessment.id}`);
     }
   };
 
@@ -224,9 +226,8 @@ export default function AssessmentPage() {
               <AssessmentCard
                 key={assessment.id}
                 assessment={{
-                  id: assessment.id,
+                  ...assessment,
                   title: assessment.name,
-                  description: assessment.description,
                   createdOn: new Date(assessment.createdAt).toLocaleDateString(),
                   allottedTo: assessment.scenarios?.length || 0,
                   attemptedBy: assessment.tasks?.length || 0,
@@ -237,11 +238,17 @@ export default function AssessmentPage() {
               />
             ))
           ) : (
-            // fallback to static for inbox-activity
-            (sampleInboxActivities as unknown as CaseStudy[]).map((assessment: CaseStudy) => (
+            inboxActivities.map((activity: any) => (
               <AssessmentCard
-                key={assessment.id}
-                assessment={assessment}
+                key={activity.id}
+                assessment={{
+                  id: activity.id,
+                  title: activity.name,
+                  description: activity.description,
+                  createdOn: new Date(activity.createdAt).toLocaleDateString(),
+                  allottedTo: activity.scenarios?.length || 0,
+                  attemptedBy: activity.contents?.length || 0,
+                }}
                 onEdit={handleEdit}
                 onPreview={handlePreview}
                 onRemove={handleRemove}

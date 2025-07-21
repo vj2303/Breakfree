@@ -20,7 +20,7 @@ export default function Dashboard() {
 
   const handleOptionClick = (option: string) => {
     if (option === 'ai-trainers') {
-      router.push('/dashboard/ai-trainers')
+      router.push('/dashboard/ai-trainer/create')
     } else if (option === 'report-generation') {
       router.push('/dashboard/report-generation')
     }

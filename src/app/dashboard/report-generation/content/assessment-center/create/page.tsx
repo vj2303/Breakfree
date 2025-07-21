@@ -64,7 +64,7 @@ const CreateAssessmentCenterContent = () => {
       if (formData.document) {
         form.append('document', formData.document);
       }
-      const res = await fetch('http://localhost:3000/api/assessment-centers', {
+      const res = await fetch('https://api.breakfreeacademy.in/api/assessment-centers', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer <YOUR_TOKEN_HERE>` // Replace with real token logic
@@ -129,3 +129,9 @@ const CreateAssessmentCenter = () => {
 
 // Only export the default component
 export default CreateAssessmentCenter;
+
+
+
+
+
+

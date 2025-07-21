@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api/competency-libraries';
+const API_URL = 'https://api.breakfreeacademy.in/api/competency-libraries';
 const AUTH_TOKEN = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODY2ZDc5NGU3OGJiM2VmZjc2Mzc1YWYiLCJpYXQiOjE3NTE1NzAzMjgsImV4cCI6MTc1MjE3NTEyOH0.4qIQk1NGkzsxaGUDmySQBb_Gj6c2qjSs4SNdgCKfpTs';
 
 export async function fetchCompetencyLibraries(search = '') {

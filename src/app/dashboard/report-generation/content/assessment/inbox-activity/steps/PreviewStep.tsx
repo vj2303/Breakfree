@@ -19,9 +19,10 @@ interface PreviewStepProps {
   loading?: boolean;
   error?: string;
   onSubmit?: () => void;
+  onPrevious?: () => void;
 }
 
-const PreviewStep: React.FC<PreviewStepProps> = ({ loading = false, error = '', onSubmit }) => {
+const PreviewStep: React.FC<PreviewStepProps> = ({ loading = false, error = '', onSubmit, onPrevious }) => {
   return (
     <div className="flex gap-8">
       {/* Main Table */}
@@ -54,18 +55,7 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ loading = false, error = '', 
             </tbody>
           </table>
         </div>
-        {/* Submit Button and Error/Loading */}
-        <div className="flex flex-col items-end mt-8">
-          {error && <div className="mb-2 text-red-600 text-sm">{error}</div>}
-          <button
-            className="px-8 py-2 rounded-full bg-black text-white font-semibold text-lg shadow hover:bg-gray-800 transition"
-            onClick={onSubmit}
-            disabled={loading}
-            style={{ minWidth: 140 }}
-          >
-            {loading ? 'Submitting...' : 'Submit'}
-          </button>
-        </div>
+    
       </div>
       {/* Right Sidebar */}
       <div className="flex flex-col gap-6 w-96">

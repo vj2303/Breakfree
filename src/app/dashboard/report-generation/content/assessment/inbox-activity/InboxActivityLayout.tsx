@@ -87,7 +87,7 @@ const InboxActivityLayout: React.FC<InboxActivityLayoutProps> = ({
                   Previous
                 </button>
               )}
-              {showSaveButton && (
+              {showSaveButton !== false && (
                 <button
                   onClick={onSave}
                   className="px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-transparent rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 flex items-center gap-2"

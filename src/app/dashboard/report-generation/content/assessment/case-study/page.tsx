@@ -6,8 +6,8 @@ import OverviewStep from './steps/OverviewStep';
 import ScenarioStep from './steps/ScenarioStep';
 import TaskStep from './steps/TaskStep';
 import PreviewStep from './steps/PreviewStep';
-import { createCaseStudy } from '@/lib/caseStudyApi';
-import { useRouter } from 'next/navigation';
+import { createCaseStudy, fetchCaseStudyById, updateCaseStudy } from '@/lib/caseStudyApi';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export interface Scenario {
   id: string;
@@ -61,12 +61,15 @@ const CaseStudyAssessment = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [prefilledId, setPrefilledId] = useState<string | null>(null);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
 
   useEffect(() => {
-    // Pre-fill from localStorage if available
-    if (typeof window !== 'undefined') {
+    // Pre-fill from localStorage if available (for new)
+    if (!id && typeof window !== 'undefined') {
       const draft = localStorage.getItem('caseStudyDraft');
       if (draft) {
         try {
@@ -80,7 +83,79 @@ const CaseStudyAssessment = () => {
         localStorage.removeItem('caseStudyDraft');
       }
     }
-  }, []);
+  }, [id]);
+
+  useEffect(() => {
+    // If editing, fetch and prefill
+    if (id && prefilledId !== id) {
+      setLoading(true);
+      fetchCaseStudyById(id)
+        .then((data) => {
+          setFormData({
+            overview: data.instructions || '',
+            exerciseTime: 30,
+            readingTime: 30,
+            name: data.name || '',
+            description: data.description || '',
+            videoUrl: data.videoUrl || '',
+          });
+          setScenarios(
+            (data.scenarios || []).map((s: any) => ({
+              id: s.id || '',
+              title: s.title || '',
+              description: s.description || '',
+              content: s.data || '',
+              exerciseTime: s.exerciseTime || 30,
+              readingTime: s.readTime || 30,
+            }))
+          );
+          // Prefill currentScenario with the first scenario if available
+          const loadedScenarios = (data.scenarios || []).map((s: any) => ({
+            id: s.id || '',
+            title: s.title || '',
+            description: s.description || '',
+            content: s.data || '',
+            exerciseTime: s.exerciseTime || 30,
+            readingTime: s.readTime || 30,
+          }));
+          setScenarios(loadedScenarios);
+          if (loadedScenarios.length > 0) {
+            setCurrentScenario(loadedScenarios[0]);
+          }
+
+          setTasks(
+            (data.tasks || []).map((t: any) => ({
+              id: t.id || '',
+              title: t.title || '',
+              content: t.data || '',
+              responseType: t.responseType || '',
+              isMandatory: t.isMandatory || false,
+              exerciseTime: t.exerciseTime || 30,
+              readingTime: t.readTime || 30,
+            }))
+          );
+          // Prefill currentTask with the first task if available
+          const loadedTasks = (data.tasks || []).map((t: any) => ({
+            id: t.id || '',
+            title: t.title || '',
+            content: t.data || '',
+            responseType: t.responseType || '',
+            isMandatory: t.isMandatory || false,
+            exerciseTime: t.exerciseTime || 30,
+            readingTime: t.readTime || 30,
+          }));
+          setTasks(loadedTasks);
+          if (loadedTasks.length > 0) {
+            setCurrentTask(loadedTasks[0]);
+          }
+          setPrefilledId(id);
+        })
+        .catch((err) => {
+          setError('Failed to load case study for editing');
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [id, prefilledId]);
 
   const handleStepChange = (step: number) => {
     setCurrentStep(step);
@@ -163,7 +238,11 @@ const CaseStudyAssessment = () => {
             data: t.content || ''
           }))
         };
-        await createCaseStudy(payload);
+        if (id) {
+          await updateCaseStudy(id, payload);
+        } else {
+          await createCaseStudy(payload);
+        }
         router.push('/dashboard/report-generation/content/assessment');
       } catch (err: unknown) {
         if (err && typeof err === 'object' && 'message' in err && typeof (err as Error).message === 'string') {
@@ -282,7 +361,7 @@ const CaseStudyAssessment = () => {
         onSave={handleSave}
         onCancel={handleCancel}
         showCancelButton={currentStep === 0}
-        saveButtonText={currentStep === 3 ? "Save Assessment" : "Save and Next"}
+        saveButtonText={currentStep === 3 ? (id ? "Update Assessment" : "Save Assessment") : "Save and Next"}
       >
         {renderStepContent()}
       </CaseStudyLayout>

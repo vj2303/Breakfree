@@ -179,3 +179,6 @@ export default function ToolBar({ editor }: ToolBarProps) {
     </div>
   );
 }
+
+
+

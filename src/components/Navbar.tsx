@@ -4,36 +4,42 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, LogOut, Settings, User } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 
-// Define the type for user data
-interface UserData {
-  name: string
-  email: string
-  avatar?: string
-}
-
-// Define the props interface
-interface NavbarProps {
-  userData?: UserData
-}
-
-export default function Navbar({ userData }: NavbarProps) {
+export default function Navbar() {
   const router = useRouter()
+  const { user, logout } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState<boolean>(false)
 
-  // Default user data if not provided
-  const defaultUserData: UserData = {
-    name: 'User',
-    email: 'user@example.com',
-    avatar: ''
+  // Get user display name from auth context
+  const getUserDisplayName = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`
+    } else if (user?.firstName) {
+      return user.firstName
+    } else if (user?.username) {
+      return user.username
+    } else if (user?.email) {
+      return user.email.split('@')[0] // Use email prefix as fallback
+    }
+    return 'User'
   }
 
-  const user = userData || defaultUserData
+  const getUserInitials = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase()
+    } else if (user?.firstName) {
+      return user.firstName.charAt(0).toUpperCase()
+    } else if (user?.username) {
+      return user.username.charAt(0).toUpperCase()
+    } else if (user?.email) {
+      return user.email.charAt(0).toUpperCase()
+    }
+    return 'U'
+  }
 
   const handleLogout = () => {
-    // Add your logout logic here
-    console.log('Logging out...')
-    // Clear authentication tokens, localStorage, etc.
+    logout()
     router.push('/login')
   }
 
@@ -85,28 +91,18 @@ export default function Navbar({ userData }: NavbarProps) {
               >
                 {/* User Avatar */}
                 <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center overflow-hidden">
-                  {user.avatar ? (
-                    <Image
-                      src={user.avatar}
-                      alt={user.name}
-                      width={32}
-                      height={32}
-                      className="rounded-full"
-                    />
-                  ) : (
-                    <span className="text-white text-sm font-medium">
-                      {user.name.charAt(0).toUpperCase()}
-                    </span>
-                  )}
+                  <span className="text-white text-sm font-medium">
+                    {getUserInitials()}
+                  </span>
                 </div>
 
                 {/* User Info */}
                 <div className="text-left hidden sm:block">
                   <p className="text-sm font-medium text-gray-900">
-                    {user.name}
+                    {getUserDisplayName()}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {user.email}
+                    {user?.email || 'user@example.com'}
                   </p>
                 </div>
 
