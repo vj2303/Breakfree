@@ -116,7 +116,7 @@ export default function MultiStepRegister() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50 bg-cover bg-center"
-      style={{ backgroundImage: 'url(/marble-bg.png)' }}
+      style={{ backgroundImage: '' }}
     >
       <div className="w-full max-w-md mx-auto">
         {/* Logo */}

@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import { useAuth } from '@/context/AuthContext'
+// import { useAuth } from '@/context/AuthContext'
 
 export default function AssessorLogin() {
   const router = useRouter()
-  const { login, user, loading } = useAuth()
+  // const { login, user, loading } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -39,15 +39,19 @@ export default function AssessorLogin() {
     }
     setIsLoading(true)
     try {
-      const result = await login({ 
-        email: formData.email, 
-        password: formData.password 
-      })
-      if (result.success) {
-        router.push('/dashboard')
-      } else {
-        setError(result.message || 'Login failed. Please check your credentials.')
-      }
+      // const result = await login({ 
+      //   email: formData.email, 
+      //   password: formData.password 
+      // })
+      // if (result.success) {
+      //   router.push('/dashboard')
+      // } else {
+      //   setError(result.message || 'Login failed. Please check your credentials.')
+      // }
+      // Simulate successful login for UI testing
+      setTimeout(() => {
+        router.push('/assessor/dashboard')
+      }, 1000)
     } catch {
       setError('An unexpected error occurred. Please try again.')
     } finally {
@@ -63,19 +67,19 @@ export default function AssessorLogin() {
     router.push('/forgot-password')
   }
 
-  useEffect(() => {
-    if (user && !loading) {
-      router.push('/dashboard')
-    }
-  }, [user, loading, router])
+  // useEffect(() => {
+  //   if (user && !loading) {
+  //     router.push('/dashboard')
+  //   }
+  // }, [user, loading, router])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    )
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+  //       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
