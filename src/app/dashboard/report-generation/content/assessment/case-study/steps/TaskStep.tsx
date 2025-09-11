@@ -3,7 +3,7 @@
 import React from 'react';
 import { Edit2, Trash2 } from 'lucide-react';
 import Editor from '@/components/Editor';
-import { Task } from '../page';
+import { Task } from '../CaseStudyAssessment';
 
 interface TaskStepProps {
   tasks: Task[];
@@ -11,6 +11,8 @@ interface TaskStepProps {
   setCurrentTask: (task: Task) => void;
   onTaskSelect: (task: Task) => void;
   onAddNew: () => void;
+  onDeleteTask: (id: string) => void;
+  onAddTask: (task: Task) => void;
 }
 
 const TaskStep: React.FC<TaskStepProps> = ({
@@ -18,7 +20,9 @@ const TaskStep: React.FC<TaskStepProps> = ({
   currentTask,
   setCurrentTask,
   onTaskSelect,
-  onAddNew
+  onAddNew,
+  onDeleteTask,
+  onAddTask
 }) => {
   const updateCurrentTask = (field: keyof Task, value: string | boolean | number) => {
     setCurrentTask({
@@ -100,10 +104,16 @@ const TaskStep: React.FC<TaskStepProps> = ({
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium text-black">All Tasks</h3>
             <button 
-              onClick={onAddNew}
-              className="text-blue-600 text-sm hover:underline"
+              onClick={() => {
+                onAddTask(currentTask);
+                onAddNew();
+              }}
+              className="flex items-center text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
-              + Add Task
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Add Task
             </button>
           </div>
           
@@ -150,7 +160,9 @@ const TaskStep: React.FC<TaskStepProps> = ({
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Handle delete
+                        if (confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+                          onDeleteTask(task.id);
+                        }
                       }}
                       className="p-1 hover:bg-gray-200 rounded"
                     >
@@ -160,18 +172,6 @@ const TaskStep: React.FC<TaskStepProps> = ({
                 </div>
               </div>
             ))}
-            
-            {tasks.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <p className="text-sm">No tasks created yet</p>
-                <button 
-                  onClick={onAddNew}
-                  className="text-blue-600 text-sm hover:underline mt-2"
-                >
-                  Create your first task
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>

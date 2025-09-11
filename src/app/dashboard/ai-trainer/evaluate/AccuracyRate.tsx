@@ -1,12 +1,12 @@
-import React, {useState} from "react";
-import Modal from "./Modal";
+import React from "react";
+// import Modal from "./Modal"; // Commented out since it's not being used
 
-const AccuracyRate = ({ currentDetails, setCurrentDetails }) => {
+type AccuracyRateProps = {
+  currentDetails: 'classification' | 'evaluation'; // Changed from string to specific union type
+  setCurrentDetails: (details: 'classification' | 'evaluation') => void; // Changed parameter type
+};
 
-
-
-  
-
+const AccuracyRate = ({ currentDetails, setCurrentDetails }: AccuracyRateProps) => {
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
       {/* Buttons for actions */}
@@ -32,7 +32,3 @@ const AccuracyRate = ({ currentDetails, setCurrentDetails }) => {
 };
 
 export default AccuracyRate;
-
-
-
-

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AssessmentCard from './components/AssessmentCard';
 import CreateAssessmentModal from './components/CreateAssessmentModal';
-import { sampleInboxActivities } from './data/assessments';
 import { AssessmentType, CaseStudy } from './types/assessment';
 import { fetchCaseStudies, updateCaseStudy, deleteCaseStudy } from '@/lib/caseStudyApi';
 import { fetchInboxActivities } from '@/lib/inboxActivityApi';
@@ -23,12 +22,27 @@ interface Task {
   exerciseTime: number;
 }
 
+interface InboxActivity {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  scenarios?: Scenario[];
+  contents?: unknown[];
+}
+
+interface InboxActivitiesResponse {
+  data: {
+    inboxActivities: InboxActivity[];
+  };
+}
+
 export default function AssessmentPage() {
   const [activeTab, setActiveTab] = useState<AssessmentType>('case-study');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const router = useRouter();
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
-  const [inboxActivities, setInboxActivities] = useState<any[]>([]);
+  const [inboxActivities, setInboxActivities] = useState<InboxActivity[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewCaseStudy, setPreviewCaseStudy] = useState<CaseStudy | null>(null);
@@ -54,7 +68,7 @@ export default function AssessmentPage() {
     } else if (activeTab === 'inbox-activity') {
       setLoading(true);
       fetchInboxActivities()
-        .then((res: { data: { inboxActivities: any[] } }) => {
+        .then((res: InboxActivitiesResponse) => {
           setInboxActivities(res.data?.inboxActivities || []);
           setError(null);
         })
@@ -87,10 +101,14 @@ export default function AssessmentPage() {
     }
   };
 
-  const handleEdit = async (assessment: any) => {
+  const handleEdit = (assessment: { id: string }) => {
     // Navigate to the multi-step edit flow with the assessment id
     if (assessment.id) {
-      router.push(`/dashboard/report-generation/content/assessment/case-study?id=${assessment.id}`);
+      if (activeTab === 'case-study') {
+        router.push(`/dashboard/report-generation/content/assessment/case-study?id=${assessment.id}`);
+      } else if (activeTab === 'inbox-activity') {
+        router.push(`/dashboard/report-generation/content/assessment/inbox-activity?id=${assessment.id}`);
+      }
     }
   };
 
@@ -238,7 +256,7 @@ export default function AssessmentPage() {
               />
             ))
           ) : (
-            inboxActivities.map((activity: any) => (
+            inboxActivities.map((activity: InboxActivity) => (
               <AssessmentCard
                 key={activity.id}
                 assessment={{

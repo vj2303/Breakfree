@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 
 export default function ParticipantLogin() {
   const router = useRouter()
-  const { login, user, loading } = useAuth()
+  const { login } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -22,34 +22,29 @@ export default function ParticipantLogin() {
       ...prev,
       [field]: value
     }))
+    // Clear error when user starts typing
     if (error) setError('')
   }
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError('')
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all fields')
-      return
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address')
-      return
-    }
     setIsLoading(true)
+    setError('')
+
     try {
-      const result = await login({ 
-        email: formData.email, 
-        password: formData.password 
+      const result = await login({
+        email: formData.email,
+        password: formData.password
       })
+
       if (result.success) {
+        // Redirect to participant dashboard on successful login
         router.push('/participant/dashboard')
       } else {
         setError(result.message || 'Login failed. Please check your credentials.')
       }
-    } catch (err) {
-      console.error('Login error:', err)
+    } catch (error) {
+      console.error('Login error:', error)
       setError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)
@@ -64,19 +59,9 @@ export default function ParticipantLogin() {
     router.push('/forgot-password')
   }
 
-  useEffect(() => {
-    if (user && !loading) {
-      router.push('/participant/dashboard')
-    }
-  }, [user, loading, router])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    )
-  }
+
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -103,8 +88,8 @@ export default function ParticipantLogin() {
           </div>
           <form onSubmit={handleLogin} className="space-y-6">
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{error}</p>
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                {error}
               </div>
             )}
             <div>
@@ -158,12 +143,15 @@ export default function ParticipantLogin() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gray-800 text-white py-3 rounded-full font-medium hover:bg-gray-900 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+              className="w-full bg-gray-800 text-white py-3 rounded-full font-medium hover:bg-gray-900 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging in...
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Logging In...
                 </>
               ) : (
                 'Log In'
@@ -175,7 +163,7 @@ export default function ParticipantLogin() {
                 type="button"
                 onClick={handleRegisterRedirect}
                 className="text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors"
-                disabled={isLoading}
+                
               >
                 Register
               </button>

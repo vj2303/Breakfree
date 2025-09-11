@@ -1,8 +1,16 @@
 'use client';
 
 import React from 'react';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2, FileText, File, FileSpreadsheet } from 'lucide-react';
 import Editor from '@/components/Editor';
+
+type Document = {
+  id: string;
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+};
 
 type Scenario = {
   id: string;
@@ -11,6 +19,7 @@ type Scenario = {
   content: string;
   exerciseTime: number;
   readingTime: number;
+  documents: Document[];
 };
 
 interface ScenarioStepProps {
@@ -19,6 +28,8 @@ interface ScenarioStepProps {
   setCurrentScenario: (scenario: Scenario) => void;
   onScenarioSelect: (scenario: Scenario) => void;
   onAddNew: () => void;
+  onDeleteScenario: (id: string) => void;
+  onAddScenario: (scenario: Scenario) => void;
 }
 
 const ScenarioStep: React.FC<ScenarioStepProps> = ({
@@ -26,13 +37,60 @@ const ScenarioStep: React.FC<ScenarioStepProps> = ({
   currentScenario,
   setCurrentScenario,
   onScenarioSelect,
-  onAddNew
+  onAddNew,
+  onDeleteScenario,
+  onAddScenario
 }) => {
-  const updateCurrentScenario = (field: keyof Scenario, value: string | number) => {
+  const updateCurrentScenario = <K extends keyof Scenario>(field: K, value: Scenario[K]) => {
     setCurrentScenario({
       ...currentScenario,
       [field]: value
     });
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newDocuments = Array.from(files).map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      url: URL.createObjectURL(file),
+      size: file.size,
+      type: file.type
+    }));
+
+    updateCurrentScenario('documents', [
+      ...(currentScenario.documents || []),
+      ...newDocuments
+    ]);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const syntheticEvent = {
+        target: { files }
+      } as React.ChangeEvent<HTMLInputElement>;
+      handleFileUpload(syntheticEvent);
+    }
+  };
+
+  const removeDocument = (id: string) => {
+    updateCurrentScenario('documents', 
+      (currentScenario.documents || []).filter(doc => doc.id !== id)
+    );
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
@@ -89,12 +147,66 @@ const ScenarioStep: React.FC<ScenarioStepProps> = ({
           onChange={(value) => updateCurrentScenario('content', value)}
         />
 
-        <div className="mt-6 p-6 border-2 border-dashed border-gray-300 rounded-lg text-center">
-          <div className="text-gray-500 mb-2">📁</div>
+        <div 
+          className="mt-6 p-6 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-colors"
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
+          onClick={() => document.getElementById('file-upload')?.click()}
+        >
+          <input
+            id="file-upload"
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleFileUpload}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+          />
+          <div className="text-gray-500 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </div>
           <p className="text-sm text-black">
-            Click to choose files or <button className="text-blue-600 hover:underline">browse</button>
+            Drag & drop files here or <span className="text-blue-600 hover:underline">browse</span>
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Supports PDF, Word, Excel, PowerPoint, Text (Max 10MB)
           </p>
         </div>
+
+        {/* Uploaded Documents List */}
+        {(currentScenario.documents?.length || 0) > 0 && (
+          <div className="mt-4 space-y-2">
+            <h4 className="text-sm font-medium text-gray-700">Uploaded Documents</h4>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {currentScenario.documents?.map((doc) => (
+                <div key={doc.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-1 bg-blue-100 rounded">
+                      <DocumentIcon type={doc.type} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate max-w-xs">{doc.name}</p>
+                      <p className="text-xs text-gray-500">{formatFileSize(doc.size)}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeDocument(doc.id);
+                    }}
+                    className="text-gray-400 hover:text-red-500"
+                    title="Remove document"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="w-80">
@@ -102,13 +214,19 @@ const ScenarioStep: React.FC<ScenarioStepProps> = ({
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium text-black">All Scenarios</h3>
             <button 
-              onClick={onAddNew}
-              className="text-blue-600 text-sm hover:underline"
+              onClick={() => {
+                onAddScenario(currentScenario);
+                onAddNew();
+              }}
+              className="flex items-center text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
-              + Add Scenario
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Add Scenario
             </button>
           </div>
-          
+
           <div className="space-y-2">
             {scenarios.map((scenario) => (
               <div 
@@ -133,40 +251,47 @@ const ScenarioStep: React.FC<ScenarioStepProps> = ({
                         e.stopPropagation();
                         onScenarioSelect(scenario);
                       }}
-                      className="p-1 hover:bg-gray-200 rounded"
+                      className={`p-1 rounded ${currentScenario.id === scenario.id ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-500'}`}
+                      title={currentScenario.id === scenario.id ? 'Editing this scenario' : 'Edit this scenario'}
                     >
-                      <Edit2 className="w-3 h-3 text-gray-500" />
+                      <Edit2 className="w-3 h-3" />
                     </button>
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Handle delete
+                        if (confirm('Are you sure you want to delete this scenario? This action cannot be undone.')) {
+                          onDeleteScenario(scenario.id);
+                        }
                       }}
-                      className="p-1 hover:bg-gray-200 rounded"
+                      className="p-1 hover:bg-red-50 hover:text-red-600 rounded text-gray-500"
+                      title="Delete scenario"
                     >
-                      <Trash2 className="w-3 h-3 text-gray-500" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
               </div>
             ))}
-            
-            {scenarios.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <p className="text-sm">No scenarios created yet</p>
-                <button 
-                  onClick={onAddNew}
-                  className="text-blue-600 text-sm hover:underline mt-2"
-                >
-                  Create your first scenario
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
     </div>
   );
+};
+
+// Component to display appropriate file icon based on file type
+const DocumentIcon = ({ type }: { type: string }) => {
+  if (type.includes('pdf')) {
+    return <FileText className="h-4 w-4 text-red-500" />;
+  } else if (type.includes('word') || type.includes('document')) {
+    return <FileText className="h-4 w-4 text-blue-500" />;
+  } else if (type.includes('spreadsheet') || type.includes('excel')) {
+    return <FileSpreadsheet className="h-4 w-4 text-green-500" />;
+  } else if (type.includes('presentation') || type.includes('powerpoint')) {
+    return <File className="h-4 w-4 text-orange-500" />;
+  } else {
+    return <File className="h-4 w-4 text-gray-500" />;
+  }
 };
 
 export default ScenarioStep;

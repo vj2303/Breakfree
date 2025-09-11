@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Scenario, Task } from '../page';
+import { Scenario, Task } from '../CaseStudyAssessment';
 
 interface PreviewStepProps {
   formData: {
@@ -16,7 +16,7 @@ interface PreviewStepProps {
 const PreviewStep: React.FC<PreviewStepProps> = ({ formData, scenarios, tasks }) => {
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      {/* <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-black">Preview</h2>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
@@ -28,13 +28,13 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ formData, scenarios, tasks })
             <span className="font-medium text-black">{formData.readingTime}</span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="space-y-6">
         {/* Overview Section */}
         {formData.overview && (
           <div className="p-4 bg-gray-50 rounded-md">
-            <h3 className="font-medium mb-2 text-black">Overview and Instructions</h3>
+            <h3 className="font-bold mb-2 text-[20px] text-black">Overview and Instructions</h3>
             <div 
               className="text-sm text-black" 
               dangerouslySetInnerHTML={{ __html: formData.overview }} 
@@ -45,7 +45,7 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ formData, scenarios, tasks })
         <div className="flex gap-4">
           {/* All Tasks Section */}
           <div className="flex-1">
-            <h4 className="font-medium mb-2 text-black">All Tasks ({tasks.length})</h4>
+            <h4 className="font-bold mb-2 text-[20px] text-black">All Tasks ({tasks.length})</h4>
             <div className="space-y-2">
               {tasks.map((task) => (
                 <div 
@@ -120,32 +120,7 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ formData, scenarios, tasks })
           </div>
         </div>
 
-        {/* Summary Statistics */}
-        <div className="mt-6 p-4 bg-gray-100 rounded-lg">
-          <h4 className="font-medium mb-3 text-black">Assessment Summary</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{scenarios.length}</div>
-              <div className="text-black">Scenarios</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{tasks.length}</div>
-              <div className="text-black">Tasks</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
-                {scenarios.reduce((sum, s) => sum + s.exerciseTime, 0)}
-              </div>
-              <div className="text-black">Total Exercise Time (min)</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                {scenarios.reduce((sum, s) => sum + s.readingTime, 0)}
-              </div>
-              <div className="text-black">Total Reading Time (min)</div>
-            </div>
-          </div>
-        </div>
+       
       </div>
     </div>
   );

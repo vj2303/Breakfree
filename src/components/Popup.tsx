@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { Download } from "lucide-react";
 import { jsPDF } from "jspdf";
 
@@ -23,7 +24,7 @@ const Popup: React.FC<PopupProps> = ({ isOpen, onClose, content }) => {
     let cursorY = margin; // Tracks the current height of the content
     const lines = doc.splitTextToSize(content, pageWidth - 2 * margin); // Wrap text to fit page width
 
-    lines.forEach((line) => {
+    lines.forEach((line: string) => {
       if (cursorY + lineHeight > pageHeight - margin) {
         doc.addPage(); // Add a new page if the content exceeds the current page
         cursorY = margin; // Reset cursor to the top of the new page
@@ -43,7 +44,12 @@ const Popup: React.FC<PopupProps> = ({ isOpen, onClose, content }) => {
         <h2 className="text-xl font-bold mb-4">Share this content</h2>
         <div className="flex justify-between">
           <div className="flex flex-col">
-            <img src={"./evaluate.png"} alt="img" />
+            <Image 
+              src="/evaluate.png" 
+              alt="Evaluate" 
+              width={50} 
+              height={50}
+            />
             <h2 className="text-black">Evaluate</h2>
           </div>
           <div className="flex flex-col">

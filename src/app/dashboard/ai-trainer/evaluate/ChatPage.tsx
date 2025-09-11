@@ -1,12 +1,36 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Chats from './Chats';
 import AccuracyRate from './AccuracyRate';
 import SuggetionsCard from './SuggetionsCard';
-import Modal from './Modal'; // Import Modal
 
-const ChatPage = ({ classification, evaluation }) => {
-    const [currentDetails, setCurrentDetails] = useState("classification")
+type Classification = {
+  "Training Proposal Score": number | string;
+  "E-learning Script Score": number | string;
+  "Predicted Category": string;
+  "Reasoning": string;
+  "Confidence": number | string;
+  "Compliance": number | string;
+};
+
+type Evaluation = {
+  scores: Record<string, number | string | boolean>;
+  Reasoning: Record<string, string>;
+  "Compliance Status": string;
+  "Total Score": number | string;
+  Feedback: string;
+  content?: string;
+  Suggestions: string[];
+};
+
+interface ChatPageProps {
+  classification: Classification;
+  evaluation: Evaluation;
+}
+
+const ChatPage: React.FC<ChatPageProps> = ({ classification, evaluation }) => {
+    // Changed from string to the specific union type
+    const [currentDetails, setCurrentDetails] = useState<'classification' | 'evaluation'>("classification")
     
 //   const [evaluationResult, setEvaluationResult] = useState(null); // Store Evaluation Response
 //   const [overallScore, setOverallScore] = useState(null); // Store Overall Score

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import Button from '@/components/UI/Button';
-import { ArrowDownToLine, Copy, Pencil, Share2, Expand } from 'lucide-react';
-import Loader from '@/components/UI/Loader';
+import React, { useState } from 'react';
+import Button from '@/components/ui/Button';
+// Removed unused icons
+import Loader from '@/components/ui/Loader';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
@@ -15,8 +15,20 @@ import EditablePopup from '@/components/EditablePopup';
 // import ChatBox from './ChatBox';
 // import MessengerInput from './MessengerInput';
 
-export default function ChatContainer({ Feedback }) {
-  const [chats, setChats] = useState([]); // Stores chat messages
+type ChatMessage = {
+  userName: string;
+  message: string;
+  img: string;
+  isPrompt: boolean;
+  isMarkdown: boolean;
+};
+
+interface ChatContainerProps {
+  Feedback?: string;
+}
+
+export default function ChatContainer({ Feedback }: ChatContainerProps) {
+  const [chats, setChats] = useState<ChatMessage[]>([]); // Stores chat messages
   const [loading, setLoading] = useState(false); // Loader for API response
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isFullScreenOpen, setIsFullScreenOpen] = useState(false);
@@ -26,10 +38,10 @@ export default function ChatContainer({ Feedback }) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   // Add new user message & AI response to chat
-  const handleAddPrompt = (message) => {
+  const handleAddPrompt = (message: string) => {
     if (!message.trim()) return;
 
-    const userMessage = {
+    const userMessage: ChatMessage = {
       userName: 'You',
       message,
       img: '/dummyAvatar.jpg',
@@ -42,7 +54,7 @@ export default function ChatContainer({ Feedback }) {
 
     // Simulate AI response
     setTimeout(() => {
-      const aiResponse = {
+      const aiResponse: ChatMessage = {
         userName: 'AI Evaluator',
         message: `Here's an analysis for: **${message}** \n\n- AI-generated insights will appear here.`,
         img: '/logo.png',
@@ -56,7 +68,7 @@ export default function ChatContainer({ Feedback }) {
   };
 
   // Handle response download
-  const handleDownloadResponse = async (response) => {
+  const handleDownloadResponse = async (response: string) => {
     try {
       const doc = new Document({
         sections: [
@@ -86,21 +98,21 @@ export default function ChatContainer({ Feedback }) {
   };
 
   // Handle copy response
-  const handleCopyToClipboard = (text) => {
+  const handleCopyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
       .then(() => console.log('Copied to clipboard successfully!'))
       .catch((error) => console.error('Failed to copy to clipboard:', error));
   };
 
   // Handle response editing
-  const handleEditClick = (content, index) => {
+  const handleEditClick = (content: string, index: number) => {
     setEditableContent(content);
     setEditingIndex(index);
     setIsEditablePopupOpen(true);
   };
 
   // Handle saving edited response
-  const handleSaveEdit = (updatedContent) => {
+  const handleSaveEdit = (updatedContent: string) => {
     if (editingIndex !== null) {
       const updatedChats = [...chats];
       updatedChats[editingIndex].message = updatedContent;
@@ -109,13 +121,13 @@ export default function ChatContainer({ Feedback }) {
   };
 
   // Handle sharing response
-  const handleShareClick = (content) => {
+  const handleShareClick = (content: string) => {
     setFullScreenContent(content);
     setIsPopupOpen(true);
   };
 
   // Handle expanding response
-  const handleExpandClick = (content) => {
+  const handleExpandClick = (content: string) => {
     setFullScreenContent(content);
     setIsFullScreenOpen(true);
   };
@@ -184,7 +196,22 @@ export default function ChatContainer({ Feedback }) {
 }
 
 
-const ChatBox = ({ userName, message, img, isPrompt, isMarkdown }) => {
+interface ChatBoxProps {
+  userName: string;
+  message: string;
+  img: string;
+  isPrompt: boolean;
+  isMarkdown: boolean;
+  showActions?: boolean;
+  onDownload?: (content: string) => void;
+  onCopy?: (content: string) => void;
+  onEdit?: (content: string, index: number) => void;
+  onShare?: (content: string) => void;
+  onExpand?: (content: string) => void;
+  index?: number;
+}
+
+const ChatBox = ({ userName, message, img, isPrompt, isMarkdown }: ChatBoxProps) => {
   return (
     <div className={`flex items-start gap-[10px] p-[10px] rounded-[20px] ${isPrompt ? 'bg-[#ffffff] w-[80%] self-end' : ''}`}>
       <Image width={50} height={50} src={img} alt="user" className={isPrompt ? 'order-2 rounded-full flex-shrink-0' : 'rounded-full flex-shrink-0'} />
@@ -204,7 +231,11 @@ const ChatBox = ({ userName, message, img, isPrompt, isMarkdown }) => {
 
 
 
-const MessengerInput = ({ handleAddPrompt }) => {
+interface MessengerInputProps {
+  handleAddPrompt: (message: string) => void;
+}
+
+const MessengerInput = ({ handleAddPrompt }: MessengerInputProps) => {
   const [message, setMessage] = useState('');
 
   const handleSendMessage = () => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
 import { useAssessmentForm } from '../create/context';
+import { useAuth } from '@/context/AuthContext';
 
 const activityTypes = [
   { value: "case-study", label: "Case Study Assessment" },
@@ -24,14 +25,14 @@ interface InboxActivity {
   name: string;
 }
 
-const AUTH_TOKEN = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODZkNjkzMjMxMjYzYjNjMmQ4OTJiYTEiLCJpYXQiOjE3NTIwODM4OTksImV4cCI6MTc1MjY4ODY5OX0.tTGDyJJ-rjo_tKQ89qKHhxcxd3G4YVn4M_qrfdqwg_0';
-
 const SelectContentStep: React.FC = () => {
   const context = useAssessmentForm();
   if (!context) {
     throw new Error('SelectContentStep must be used within AssessmentFormContext');
   }
   const { updateFormData } = context;
+  
+  const { token } = useAuth();
   
   const [activities, setActivities] = useState([
     { ...initialActivity },
@@ -42,7 +43,46 @@ const SelectContentStep: React.FC = () => {
 
   useEffect(() => {
     updateFormData('activities', activities);
+    try {
+      const mapped = activities.map((a, i) => ({
+        activityType: a.activityType,
+        activityId: a.activityContent,
+        competencyLibraryId: '', // This will be set from the competency selection step
+        displayOrder: i + 1,
+        displayName: a.displayName,
+        displayInstructions: a.displayInstructions,
+      }));
+      console.log('[Assessment Center][SelectContentStep] activities updated:', mapped);
+    } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activities]);
+
+  // Log when step is saved/next is clicked
+  useEffect(() => {
+    const handleStepSave = () => {
+      try {
+        const mapped = activities.map((a, i) => ({
+          activityType: a.activityType,
+          activityId: a.activityContent,
+          displayOrder: i + 1,
+          displayName: a.displayName,
+          displayInstructions: a.displayInstructions,
+        }));
+        console.log('=== SELECT CONTENT STEP SAVED ===');
+        console.log('Current activities:', mapped);
+        console.log('Step validation:', {
+          hasActivities: activities.length > 0,
+          allTypesSelected: activities.every(a => a.activityType),
+          allContentSelected: activities.every(a => a.activityContent),
+          allNamesFilled: activities.every(a => a.displayName),
+          allInstructionsFilled: activities.every(a => a.displayInstructions)
+        });
+      } catch {}
+    };
+
+    // Listen for step save events
+    window.addEventListener('step-save', handleStepSave);
+    return () => window.removeEventListener('step-save', handleStepSave);
   }, [activities]);
 
   // Fetch content options when activity type changes
@@ -63,7 +103,7 @@ const SelectContentStep: React.FC = () => {
         }
         const res = await fetch(url, {
           headers: {
-            Authorization: AUTH_TOKEN,
+            Authorization: token ? `Bearer ${token}` : '',
           },
         });
         const data = await res.json();

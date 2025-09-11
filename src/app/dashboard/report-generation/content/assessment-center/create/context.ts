@@ -9,12 +9,22 @@ export interface Activity {
   id: string;
   name: string;
   type: string;
+  activityType: string;
+  activityContent: string;
+  displayName: string;
+  displayInstructions: string;
 }
 
-export interface Assignment {
-  id: string;
+// Updated Assignment interface to match the required structure
+export interface AssignmentParticipant {
   participantId: string;
-  assessorId: string;
+  activityIds: string[];
+  assessorId: string; // Changed from assessorIds array to single assessorId
+}
+
+export interface GroupAssignment {
+  groupId: string;
+  participants: AssignmentParticipant[];
 }
 
 export interface FormData {
@@ -27,7 +37,7 @@ export interface FormData {
   reportTemplateName: string;
   reportTemplateType: string;
   activities: Activity[];
-  assignments: Assignment[];
+  assignments: GroupAssignment[]; // Updated to use GroupAssignment
   document: File | null;
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MoreVertical, Edit, Eye, Trash2 } from 'lucide-react';
+import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Assessment } from '../types/assessment';
 
 interface AssessmentCardProps {
@@ -14,18 +14,12 @@ interface AssessmentCardProps {
 const AssessmentCard: React.FC<AssessmentCardProps> = ({ 
   assessment, 
   onEdit, 
-  onPreview, 
   onRemove 
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const handleEdit = () => {
     onEdit?.(assessment);
-    setShowDropdown(false);
-  };
-
-  const handlePreview = () => {
-    onPreview?.(assessment.id);
     setShowDropdown(false);
   };
 
@@ -65,13 +59,7 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({
                   <Edit className="w-4 h-4" />
                   Edit
                 </button>
-                <button 
-                  onClick={handlePreview}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                >
-                  <Eye className="w-4 h-4" />
-                  Preview
-                </button>
+                
                 <button 
                   onClick={handleRemove}
                   className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"

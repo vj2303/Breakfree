@@ -1,152 +1,352 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
-interface SubCompetency {
-  id: string;
-  text: string;
-}
+// API Configuration
+const API_BASE_URL = 'https://api.breakfreeacademy.in/api';
 
-interface Competency {
-  id: string;
-  name: string;
-  subCompetencies: SubCompetency[];
-}
-
+// Interface definitions based on API response
 interface CompetencyLibrary {
   id: string;
-  name: string;
-  createdOn: string;
-  competencies: Competency[];
+  competencyName: string;
+  subCompetencyNames: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface CompetencyMap {
+interface CompetencyMapping {
   id: string;
-  name: string;
+  competencyMapName: string;
   designation: string;
-  selectedLibrary: CompetencyLibrary | null;
-  selectedCompetencies: Competency[];
-  createdOn: string;
+  selectedCompetencyIds: string[];
+  createdAt: string;
+  updatedAt: string;
+  competencyLibraries: CompetencyLibrary[];
 }
 
-interface CompetencyMappingProps {
-  libraries: CompetencyLibrary[];
-  maps: CompetencyMap[];
-  onAddMap: (map: Omit<CompetencyMap, 'id'>) => void;
-  onEditMap: (id: string, map: Omit<CompetencyMap, 'id'>) => void;
-  onDeleteMap: (id: string) => void;
+interface CompetencyMappingsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    competencyMappings: CompetencyMapping[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
 }
 
-const CompetencyMapping: React.FC<CompetencyMappingProps> = ({
-  libraries,
-  maps,
-  onAddMap,
-  onEditMap,
-  onDeleteMap,
-}) => {
+// Changed from empty interface to Record<string, never> to represent no props needed
+type CompetencyMappingProps = Record<string, never>;
+
+const CompetencyMapping: React.FC<CompetencyMappingProps> = () => {
+  const { token } = useAuth();
+  
+  // Wrap getHeaders in useCallback to prevent recreation on every render
+  const getHeaders = useCallback(() => ({
+    'Content-Type': 'application/json',
+    'Authorization': token ? `Bearer ${token}` : ''
+  }), [token]);
+
   const [showCreateMap, setShowCreateMap] = useState(false);
-  const [editingMap, setEditingMap] = useState<CompetencyMap | null>(null);
+  const [editingMap, setEditingMap] = useState<CompetencyMapping | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [designationFilter, setDesignationFilter] = useState('');
   const [librarySearchTerm, setLibrarySearchTerm] = useState('');
+  const [libraries, setLibraries] = useState<CompetencyLibrary[]>([]);
+  const [competencyMappings, setCompetencyMappings] = useState<CompetencyMapping[]>([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
+  const [loading, setLoading] = useState(false);
+  const [mappingsLoading, setMappingsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    mappingId: string | null;
+    mappingName: string;
+  }>({
+    isOpen: false,
+    mappingId: null,
+    mappingName: ''
+  });
   
   const [newMap, setNewMap] = useState({
     name: '',
     designation: '',
-    selectedLibrary: null as CompetencyLibrary | null,
-    selectedCompetencies: [] as Competency[]
+    selectedCompetencies: [] as string[]
   });
 
-  const handleCreateMap = () => {
-    if (!newMap.name.trim() || !newMap.designation.trim()) return;
-    
-    onAddMap({
-      name: newMap.name,
-      designation: newMap.designation,
-      selectedLibrary: newMap.selectedLibrary,
-      selectedCompetencies: newMap.selectedCompetencies,
-      createdOn: new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      })
-    });
-    
-    resetForm();
+  // Fetch competency mappings from API - now properly includes getHeaders dependency
+  const fetchCompetencyMappings = useCallback(async (page: number = 1, limit: number = 10, search: string = '', designation: string = '') => {
+    try {
+      setMappingsLoading(true);
+      setError(null);
+      
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        search: search,
+        designation: designation
+      });
+
+      const response = await fetch(
+        `${API_BASE_URL}/competency-mappings?${queryParams}`,
+        {
+          method: 'GET',
+          headers: getHeaders()
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result: CompetencyMappingsResponse = await response.json();
+      
+      if (result.success && result.data?.competencyMappings) {
+        setCompetencyMappings(result.data.competencyMappings);
+        setPagination(result.data.pagination);
+      } else {
+        throw new Error(result.message || 'Failed to fetch competency mappings');
+      }
+    } catch (err) {
+      console.error('Error fetching competency mappings:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      setCompetencyMappings([]);
+    } finally {
+      setMappingsLoading(false);
+    }
+  }, [getHeaders]);
+
+  // Fetch competency libraries from API - now properly includes getHeaders dependency
+  const fetchCompetencyLibraries = useCallback(async (search: string = '') => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch(
+        `${API_BASE_URL}/competency-libraries?search=${encodeURIComponent(search)}`,
+        {
+          method: 'GET',
+          headers: getHeaders()
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data?.competencyLibraries) {
+        setLibraries(result.data.competencyLibraries);
+      } else {
+        throw new Error(result.message || 'Failed to fetch competency libraries');
+      }
+    } catch (err) {
+      console.error('Error fetching competency libraries:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      setLibraries([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [getHeaders]);
+
+  // Create competency mapping via API
+  const createCompetencyMapping = async (mappingData: {
+    competencyMapName: string;
+    designation: string;
+    selectedCompetencyIds: string[];
+  }) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`${API_BASE_URL}/competency-mappings`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(mappingData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        return result.data;
+      } else {
+        throw new Error(result.message || 'Failed to create competency mapping');
+      }
+    } catch (err) {
+      console.error('Error creating competency mapping:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEditMap = () => {
-    if (!editingMap || !newMap.name.trim() || !newMap.designation.trim()) return;
+  // Load mappings and libraries once token is available
+  useEffect(() => {
+    if (!token) return;
+    fetchCompetencyMappings();
+    fetchCompetencyLibraries();
+  }, [token, fetchCompetencyMappings, fetchCompetencyLibraries]);
+
+  // Search mappings when search term or designation filter changes
+  useEffect(() => {
+    if (!token) return;
+    const delayedSearch = setTimeout(() => {
+      fetchCompetencyMappings(1, pagination.limit, searchTerm, designationFilter);
+    }, 300);
+    return () => clearTimeout(delayedSearch);
+  }, [searchTerm, designationFilter, token, fetchCompetencyMappings, pagination.limit]);
+
+  // Search libraries when library search term changes
+  useEffect(() => {
+    if (!token) return;
+    const delayedSearch = setTimeout(() => {
+      fetchCompetencyLibraries(librarySearchTerm);
+    }, 300);
+    return () => clearTimeout(delayedSearch);
+  }, [librarySearchTerm, token, fetchCompetencyLibraries]);
+
+  const handleCreateMap = async () => {
+    if (!newMap.name.trim() || !newMap.designation.trim() || newMap.selectedCompetencies.length === 0) {
+      setError('Please fill in all required fields and select at least one competency');
+      return;
+    }
     
-    onEditMap(editingMap.id, {
-      name: newMap.name,
-      designation: newMap.designation,
-      selectedLibrary: newMap.selectedLibrary,
-      selectedCompetencies: newMap.selectedCompetencies,
-      createdOn: editingMap.createdOn
-    });
-    
-    resetForm();
+    try {
+      const mappingData = {
+        competencyMapName: newMap.name,
+        designation: newMap.designation,
+        selectedCompetencyIds: newMap.selectedCompetencies
+      };
+
+      await createCompetencyMapping(mappingData);
+      
+      // Refresh the mappings list after successful creation
+      await fetchCompetencyMappings(pagination.page, pagination.limit, searchTerm, designationFilter);
+      
+      resetForm();
+      setError(null);
+    } catch {
+      // Error is already handled in createCompetencyMapping
+    }
   };
 
-  const openEditModal = (map: CompetencyMap) => {
-    setEditingMap(map);
+  const handleEditMap = async () => {
+    if (!editingMap || !newMap.name.trim() || !newMap.designation.trim() || newMap.selectedCompetencies.length === 0) {
+      setError('Please fill in all required fields and select at least one competency');
+      return;
+    }
+    
+    try {
+      // For edit, we would need an UPDATE API endpoint
+      // Since it's not provided, we'll just refresh the data for now
+      await fetchCompetencyMappings(pagination.page, pagination.limit, searchTerm, designationFilter);
+      
+      resetForm();
+      setError(null);
+    } catch {
+      setError('Failed to update competency mapping');
+    }
+  };
+
+  const openEditModal = (mapping: CompetencyMapping) => {
+    setEditingMap(mapping);
     setNewMap({
-      name: map.name,
-      designation: map.designation,
-      selectedLibrary: map.selectedLibrary,
-      selectedCompetencies: map.selectedCompetencies
+      name: mapping.competencyMapName,
+      designation: mapping.designation,
+      selectedCompetencies: mapping.selectedCompetencyIds
     });
     setShowCreateMap(true);
+    setError(null);
+  };
+
+  const openDeleteConfirmation = (mapping: CompetencyMapping) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      mappingId: mapping.id,
+      mappingName: mapping.competencyMapName
+    });
+    setDropdownOpen(null);
+  };
+
+  const handleDeleteMapping = async () => {
+    if (!deleteConfirmation.mappingId) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/competency-mappings/${deleteConfirmation.mappingId}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setDeleteConfirmation({ isOpen: false, mappingId: null, mappingName: '' });
+        await fetchCompetencyMappings(pagination.page, pagination.limit, searchTerm, designationFilter);
+      } else {
+        throw new Error(result.message || 'Failed to delete competency mapping');
+      }
+    } catch (err) {
+      console.error('Error deleting competency mapping:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete competency mapping');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetForm = () => {
     setNewMap({
       name: '',
       designation: '',
-      selectedLibrary: null,
       selectedCompetencies: []
     });
     setShowCreateMap(false);
     setEditingMap(null);
     setLibrarySearchTerm('');
+    setError(null);
   };
 
-  const handleLibrarySelect = (library: CompetencyLibrary) => {
-    setNewMap({
-      ...newMap,
-      selectedLibrary: library,
-      selectedCompetencies: [] // Reset selected competencies when library changes
-    });
-    setLibrarySearchTerm('');
-  };
-
-  const handleCompetencyToggle = (competency: Competency) => {
-    const isSelected = newMap.selectedCompetencies.some(c => c.id === competency.id);
+  const handleCompetencyToggle = (libraryId: string) => {
+    const isSelected = newMap.selectedCompetencies.includes(libraryId);
     
     if (isSelected) {
       setNewMap({
         ...newMap,
-        selectedCompetencies: newMap.selectedCompetencies.filter(c => c.id !== competency.id)
+        selectedCompetencies: newMap.selectedCompetencies.filter(id => id !== libraryId)
       });
     } else {
       setNewMap({
         ...newMap,
-        selectedCompetencies: [...newMap.selectedCompetencies, competency]
+        selectedCompetencies: [...newMap.selectedCompetencies, libraryId]
       });
     }
   };
 
-  const filteredMaps = maps.filter(map =>
-    map.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    map.designation.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMappings = competencyMappings; // No client-side filtering since API handles it
 
-  const filteredLibraries = libraries.filter(library =>
-    library.name.toLowerCase().includes(librarySearchTerm.toLowerCase())
-  );
-
-  const toggleDropdown = (mapId: string) => {
-    setDropdownOpen(dropdownOpen === mapId ? null : mapId);
+  const toggleDropdown = (mappingId: string) => {
+    setDropdownOpen(dropdownOpen === mappingId ? null : mappingId);
   };
 
   return (
@@ -156,10 +356,21 @@ const CompetencyMapping: React.FC<CompetencyMappingProps> = ({
         <div className="flex items-center gap-4">
           <div className="relative">
             <input
-              className="border border-gray-300 rounded-full px-4 py-2 pl-10 w-80 text-black"
-              placeholder="Search by competency map name"
+              className="border border-gray-300 rounded-full px-4 py-2 pl-10 w-60 text-black"
+              placeholder="Search by map name"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <svg className="w-4 h-4 absolute left-3 top-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <div className="relative">
+            <input
+              className="border border-gray-300 rounded-full px-4 py-2 pl-10 w-60 text-black"
+              placeholder="Filter by designation"
+              value={designationFilter}
+              onChange={(e) => setDesignationFilter(e.target.value)}
             />
             <svg className="w-4 h-4 absolute left-3 top-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -168,71 +379,142 @@ const CompetencyMapping: React.FC<CompetencyMappingProps> = ({
           <button
             onClick={() => setShowCreateMap(true)}
             className="bg-gray-800 text-white px-4 py-2 rounded-full"
+            disabled={loading}
           >
             + Create Competency Map
           </button>
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
+
+      {/* Loading State for Mappings */}
+      {mappingsLoading && (
+        <div className="text-center py-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <p className="mt-2 text-gray-600">Loading competency mappings...</p>
+        </div>
+      )}
+
       {/* Maps Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredMaps.map((map) => (
-          <div key={map.id} className="bg-white border border-gray-200 rounded-lg p-6 relative">
-            <div className="absolute top-4 right-4">
-              <button
-                onClick={() => toggleDropdown(map.id)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                </svg>
-              </button>
-              
-              {dropdownOpen === map.id && (
-                <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                  <button
-                    onClick={() => {
-                      // Handle view action
-                      setDropdownOpen(null);
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-gray-50"
-                  >
-                    View
-                  </button>
-                  <button
-                    onClick={() => {
-                      openEditModal(map);
-                      setDropdownOpen(null);
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-gray-50"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDeleteMap(map.id);
-                      setDropdownOpen(null);
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
-                  >
-                    Delete
-                  </button>
+      {!mappingsLoading && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMappings.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-gray-500">
+                No competency mappings found. {(searchTerm || designationFilter) && 'Try adjusting your search criteria.'}
+              </div>
+            ) : (
+              filteredMappings.map((mapping) => (
+                <div key={mapping.id} className="bg-white border border-gray-200 rounded-lg p-6 relative">
+                  <div className="absolute top-4 right-4">
+                    <button
+                      onClick={() => toggleDropdown(mapping.id)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
+                    
+                    {dropdownOpen === mapping.id && (
+                      <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                        <button
+                          onClick={() => {
+                            setDropdownOpen(null);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-gray-50"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => {
+                            openEditModal(mapping);
+                            setDropdownOpen(null);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-gray-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => openDeleteConfirmation(mapping)}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <h3 className="text-lg font-semibold text-black mb-2 pr-8">{mapping.competencyMapName}</h3>
+                  <p className="text-sm text-gray-600 mb-1">Designation: {mapping.designation}</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Created on {new Date(mapping.createdAt).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                  
+                  {/* Display competency libraries */}
+                  {mapping.competencyLibraries.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-sm text-blue-600 font-medium mb-1">
+                        {mapping.competencyLibraries.length} Competency Libraries:
+                      </p>
+                      <div className="space-y-2">
+                        {mapping.competencyLibraries.slice(0, 2).map((library) => (
+                          <div key={library.id} className="text-sm">
+                            <p className="text-black font-medium">{library.competencyName}</p>
+                            <p className="text-gray-500 text-xs">
+                              {library.subCompetencyNames.length} sub-competencies
+                            </p>
+                          </div>
+                        ))}
+                        {mapping.competencyLibraries.length > 2 && (
+                          <p className="text-xs text-gray-500">
+                            +{mapping.competencyLibraries.length - 2} more libraries
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            
-            <h3 className="text-lg font-semibold text-black mb-2 pr-8">{map.name}</h3>
-            <p className="text-sm text-gray-600 mb-1">Designation: {map.designation}</p>
-            <p className="text-sm text-gray-600 mb-2">Created on {map.createdOn}</p>
-            {map.selectedLibrary && (
-              <p className="text-sm text-blue-600">Library: {map.selectedLibrary.name}</p>
-            )}
-            {map.selectedCompetencies.length > 0 && (
-              <p className="text-sm text-green-600">{map.selectedCompetencies.length} competencies mapped</p>
+              ))
             )}
           </div>
-        ))}
-      </div>
+
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div className="flex justify-center items-center mt-8 gap-2">
+              <button
+                onClick={() => fetchCompetencyMappings(pagination.page - 1, pagination.limit, searchTerm, designationFilter)}
+                disabled={pagination.page === 1 || mappingsLoading}
+                className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              
+              <span className="px-4 py-1 text-sm text-gray-600">
+                Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
+              </span>
+              
+              <button
+                onClick={() => fetchCompetencyMappings(pagination.page + 1, pagination.limit, searchTerm, designationFilter)}
+                disabled={pagination.page === pagination.totalPages || mappingsLoading}
+                className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Create/Edit Map Modal */}
       {showCreateMap && (
@@ -241,6 +523,12 @@ const CompetencyMapping: React.FC<CompetencyMappingProps> = ({
             <h3 className="font-bold mb-6 text-xl text-black">
               {editingMap ? 'Edit Competency Map' : 'Create Competency Map'}
             </h3>
+            
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+                {error}
+              </div>
+            )}
             
             <div className="grid grid-cols-2 gap-6 mb-6">
               <div>
@@ -264,7 +552,7 @@ const CompetencyMapping: React.FC<CompetencyMappingProps> = ({
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2 text-black">Select Competency</label>
+              <label className="block text-sm font-medium mb-2 text-black">Search Competency Libraries</label>
               <div className="relative">
                 <input
                   className="border w-full p-3 pl-10 rounded-lg text-black"
@@ -278,91 +566,67 @@ const CompetencyMapping: React.FC<CompetencyMappingProps> = ({
               </div>
             </div>
 
-            {/* Library Selection */}
-            <div className="space-y-4 mb-6">
-              {filteredLibraries.map((library) => (
-                <div
-                  key={library.id}
-                  className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                    newMap.selectedLibrary?.id === library.id 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:bg-gray-50'
-                  }`}
-                  onClick={() => handleLibrarySelect(library)}
-                >
-                  <div className="flex items-center mb-2">
-                    <input
-                      type="radio"
-                      checked={newMap.selectedLibrary?.id === library.id}
-                      onChange={() => handleLibrarySelect(library)}
-                      className="mr-3"
-                    />
-                    <div>
-                      <div className="font-medium text-black">
-                        Competency- {library.name}
-                      </div>
-                      <div className="text-sm text-blue-600">Creator</div>
-                    </div>
-                  </div>
-                  <div className="ml-6">
-                    <div className="text-sm text-blue-600 mb-1">Sub Competency</div>
-                    <ul className="text-sm text-black space-y-1">
-                      {library.competencies.slice(0, 3).map((comp) => (
-                        <li key={comp.id} className="flex items-center">
-                          <span className="w-2 h-2 bg-black rounded-full mr-2"></span>
-                          {comp.name}
-                        </li>
-                      ))}
-                      {library.competencies.length > 3 && (
-                        <li className="text-gray-500">
-                          +{library.competencies.length - 3} more competencies
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* Loading State */}
+            {loading && (
+              <div className="text-center py-8">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                <p className="mt-2 text-gray-600">Loading competency libraries...</p>
+              </div>
+            )}
 
-            {/* Competency Selection */}
-            {newMap.selectedLibrary && (
-              <div className="mb-6">
-                <h4 className="font-medium text-black mb-4">
-                  Select Competencies from {newMap.selectedLibrary.name}
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  {newMap.selectedLibrary.competencies.map((competency) => (
+            {/* Library Selection */}
+            {!loading && (
+              <div className="space-y-4 mb-6">
+                {libraries.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No competency libraries found. {librarySearchTerm && 'Try adjusting your search term.'}
+                  </div>
+                ) : (
+                  libraries.map((library) => (
                     <div
-                      key={competency.id}
+                      key={library.id}
                       className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                        newMap.selectedCompetencies.some(c => c.id === competency.id)
+                        newMap.selectedCompetencies.includes(library.id)
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:bg-gray-50'
                       }`}
-                      onClick={() => handleCompetencyToggle(competency)}
+                      onClick={() => handleCompetencyToggle(library.id)}
                     >
                       <div className="flex items-center mb-2">
                         <input
                           type="checkbox"
-                          checked={newMap.selectedCompetencies.some(c => c.id === competency.id)}
-                          onChange={() => handleCompetencyToggle(competency)}
+                          checked={newMap.selectedCompetencies.includes(library.id)}
+                          onChange={() => handleCompetencyToggle(library.id)}
                           className="mr-3"
                         />
-                        <div className="font-medium text-black">{competency.name}</div>
+                        <div>
+                          <div className="font-medium text-black">
+                            Competency: {library.competencyName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            Created: {new Date(library.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
                       </div>
                       <div className="ml-6">
+                        <div className="text-sm text-blue-600 mb-1">Sub Competencies:</div>
                         <ul className="text-sm text-black space-y-1">
-                          {competency.subCompetencies.map((sub) => (
-                            <li key={sub.id} className="flex items-center">
+                          {library.subCompetencyNames.slice(0, 3).map((subComp, index) => (
+                            <li key={index} className="flex items-center">
                               <span className="w-2 h-2 bg-black rounded-full mr-2"></span>
-                              {sub.text}
+                              {subComp}
                             </li>
                           ))}
+                          {library.subCompetencyNames.length > 3 && (
+                            <li className="text-gray-500">
+                              +{library.subCompetencyNames.length - 3} more sub-competencies
+                            </li>
+                          )}
                         </ul>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  ))
+                )}
               </div>
             )}
 
@@ -370,14 +634,45 @@ const CompetencyMapping: React.FC<CompetencyMappingProps> = ({
               <button
                 className="px-6 py-2 text-black"
                 onClick={resetForm}
+                disabled={loading}
               >
                 Cancel
               </button>
               <button
-                className="bg-gray-800 text-white px-6 py-2 rounded-lg"
+                className="bg-gray-800 text-white px-6 py-2 rounded-lg disabled:opacity-50"
                 onClick={editingMap ? handleEditMap : handleCreateMap}
+                disabled={loading || !newMap.name.trim() || !newMap.designation.trim() || newMap.selectedCompetencies.length === 0}
               >
-                {editingMap ? 'Update Map' : 'Create Map'}
+                {loading ? 'Processing...' : (editingMap ? 'Update Map' : 'Create Map')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmation.isOpen && (
+        <div className="fixed inset-0 bg-black/20 bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h3 className="font-bold mb-4 text-xl text-black">Delete Competency Mapping</h3>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete <span className="font-semibold">&quot;{deleteConfirmation.mappingName}&quot;</span>? 
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                onClick={() => setDeleteConfirmation({ isOpen: false, mappingId: null, mappingName: '' })}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50"
+                onClick={handleDeleteMapping}
+                disabled={loading}
+              >
+                {loading ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

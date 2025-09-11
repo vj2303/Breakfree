@@ -1,7 +1,6 @@
-import { LetterText, CircleUser, Factory, Lightbulb, Mailbox } from 'lucide-react';
 import Dropdown from '@/components/Dropdown';
-import Button from '@/components/UI/Button';
-import Loader from '@/components/UI/Loader';
+import Button from '@/components/ui/Button';
+import Loader from '@/components/ui/Loader';
 import { audienceTypeOptions, contentTypeOptions, deliveryMethodOptions, outputTypeOptions, industryTypeOptions } from '@/constants/options';
 import Image from 'next/image';
 
@@ -13,27 +12,29 @@ type Prompt = {
   target_industry: string;
 };
 
-const ResponsesContainer = ({
+interface ResponsesContainerProps {
+  prompts?: { summary: string }[];
+  handleSelectPrompt: (prompt: string) => void;
+  isLoading: boolean;
+  prompt: Prompt;
+  handleChange: (name: string, value: string | number) => void;
+  handleGetPrompts: (prompt: Prompt) => void;
+}
+
+const ResponsesContainer: React.FC<ResponsesContainerProps> = ({
   prompts = [{ summary: "" }, { summary: "" }, { summary: "" }, { summary: "" }],
   handleSelectPrompt,
   isLoading,
   prompt,
   handleChange,
   handleGetPrompts,
-}: {
-  prompts: { summary: string }[];
-  handleSelectPrompt: (prompt: string) => void;
-  isLoading: boolean;
-  prompt: Prompt;
-  handleChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  handleGetPrompts: (prompt: Prompt) => void;
 }) => {
   return (
     <div className="h-full overflow-y-auto px-4 py-6">
       <div className="bg-[#FFFFFF] p-[28px] rounded-xl flex flex-col items-center gap-[20px] w-full max-w-[1400px] mx-auto">
         <div className="flex justify-between items-start w-full gap-[20px]">
           <Dropdown
-            img={<img src="/Icons/typeOfContentIcon.png" alt="Type of Content Icon" className='h-8 w-8' />}
+            img={<Image src="/Icons/typeOfContentIcon.png" alt="Type of Content Icon" width={32} height={32} />}
             options={contentTypeOptions}
             name="content_type"
             label="Type Of Content"
@@ -41,7 +42,7 @@ const ResponsesContainer = ({
             isHorizontal={true}
           />
           <Dropdown
-            img={<img src="/Icons/typeOfAudience.png" alt="Type of Audience Icon" className='h-8 w-8' />}
+            img={<Image src="/Icons/typeOfAudience.png" alt="Type of Audience Icon" width={32} height={32} />}
             options={audienceTypeOptions}
             name="audience_type"
             label="Type Of Audience"
@@ -49,7 +50,7 @@ const ResponsesContainer = ({
             isHorizontal={true}
           />
           <Dropdown
-            img={<img src="/Icons/DeliveryMethod.png" alt="Delivery Method Icon" className='h-8 w-8' />}
+            img={<Image src="/Icons/DeliveryMethod.png" alt="Delivery Method Icon" width={32} height={32} />}
             options={deliveryMethodOptions}
             name="delivery_method"
             label="Delivery Method"
@@ -57,7 +58,7 @@ const ResponsesContainer = ({
             isHorizontal={true}
           />
           <Dropdown
-            img={<img src="/Icons/ContentTheme.png" alt="Content Theme Icon" className='h-8 w-8' />}
+            img={<Image src="/Icons/ContentTheme.png" alt="Content Theme Icon" width={32} height={32} />}
             options={outputTypeOptions}
             name="content_theme"
             label="Content Theme"
@@ -65,7 +66,7 @@ const ResponsesContainer = ({
             isHorizontal={true}
           />
           <Dropdown
-            img={<img src="/Icons/Icons.png" alt="Target Industry Icon" className='h-8 w-8' />}
+            img={<Image src="/Icons/Icons.png" alt="Target Industry Icon" width={32} height={32} />}
             options={industryTypeOptions}
             name="target_industry"
             label="Target Industry"

@@ -1,12 +1,18 @@
 'use client';
-import React, { useState } from 'react';
+import React from 'react';
 import Upload from '@/components/Upload';
 import RecentContentCard from './RecentContentCard';
 import Button from '@/components/ui/Button';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
-const UploadPage = ({ uploadStatus, uploadedFileName, handleFileUpload }) => {
+type UploadStatus = 'idle' | 'loading' | 'success' | 'error';
+
+interface UploadPageProps {
+  uploadStatus: UploadStatus;
+  uploadedFileName?: string;
+  handleFileUpload: (file: File) => void;
+}
+
+const UploadPage: React.FC<UploadPageProps> = ({ uploadStatus, uploadedFileName, handleFileUpload }) => {
     
 
     const handleDoneClick = async () => {
@@ -21,9 +27,9 @@ const UploadPage = ({ uploadStatus, uploadedFileName, handleFileUpload }) => {
             <Upload onFileChange={handleFileUpload} uploadStatus={uploadStatus} />
 
             {/* Upload Status Message */}
-            {uploadStatus && (
-                <p className={`mt-2 ${uploadStatus.startsWith('✅') ? 'text-green-500' : 'text-red-500'}`}>
-                    {uploadStatus} {uploadedFileName && (`${uploadedFileName}`)}
+            {uploadStatus !== 'idle' && (
+                <p className={`mt-2 ${uploadStatus === 'success' ? 'text-green-500' : uploadStatus === 'error' ? 'text-red-500' : 'text-gray-600'}`}>
+                    {uploadStatus === 'loading' ? 'Uploading...' : uploadStatus === 'success' ? '✅ Uploaded' : uploadStatus === 'error' ? '❌ Upload failed' : ''} {uploadedFileName && (`${uploadedFileName}`)}
                 </p>
             )}
 

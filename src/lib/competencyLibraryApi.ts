@@ -1,41 +1,54 @@
 const API_URL = 'https://api.breakfreeacademy.in/api/competency-libraries';
-const AUTH_TOKEN = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODY2ZDc5NGU3OGJiM2VmZjc2Mzc1YWYiLCJpYXQiOjE3NTE1NzAzMjgsImV4cCI6MTc1MjE3NTEyOH0.4qIQk1NGkzsxaGUDmySQBb_Gj6c2qjSs4SNdgCKfpTs';
 
-export async function fetchCompetencyLibraries(search = '') {
+// Helper function to get auth token from localStorage
+function getAuthToken() {
+  if (typeof window === 'undefined') return '';
+  const token = localStorage.getItem('token');
+  return token ? `Bearer ${token}` : '';
+}
+
+export async function fetchCompetencyLibraries(search = '', authToken?: string) {
+  const token = authToken || getAuthToken();
   const res = await fetch(`${API_URL}?page=1&limit=10&search=${encodeURIComponent(search)}`, {
-    headers: { Authorization: AUTH_TOKEN }
+    headers: { Authorization: token }
   });
   return res.json();
 }
 
-export async function createCompetencyLibrary(competencyName: string, subCompetencyNames: string[]) {
+export async function createCompetencyLibrary(competencyName: string, subCompetencyNames: string[], authToken?: string) {
+  const token = authToken || getAuthToken();
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: AUTH_TOKEN
+      Authorization: token
     },
     body: JSON.stringify({ competencyName, subCompetencyNames })
   });
   return res.json();
 }
 
-export async function updateCompetencyLibrary(id: string, competencyName: string, subCompetencyNames: string[]) {
+export async function updateCompetencyLibrary(id: string, competencyName: string, subCompetencyNames: string[], authToken?: string) {
+  const token = authToken || getAuthToken();
   const res = await fetch(`${API_URL}/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: AUTH_TOKEN
+      Authorization: token
     },
     body: JSON.stringify({ competencyName, subCompetencyNames })
   });
   return res.json();
 }
 
-export async function deleteCompetencyLibrary(id: string) {
-  const res = await fetch(`${API_URL}/${id}`, {
+export async function deleteCompetencyLibrary(id: string, authToken?: string) {
+  const token = authToken || getAuthToken();
+  const res = await fetch(`/api/competency-libraries/${id}`, {
     method: 'DELETE',
-    headers: { Authorization: AUTH_TOKEN }
+    headers: { 
+      'Authorization': token,
+      'Content-Type': 'application/json'
+    }
   });
   return res.json();
 } 

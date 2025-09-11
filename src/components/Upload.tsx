@@ -1,9 +1,8 @@
 'use client';
 
-import Button from '@/components/UI/Button';
 import { CircleCheck, CircleX, Plus } from 'lucide-react';
 import React, { useState, DragEvent, ChangeEvent } from 'react';
-import Loader from './UI/Loader';
+import Loader from './ui/Loader';
 // import Papa from 'papaparse'; // Uncomment if using CSV parsing
 
 interface UploadProps {
@@ -13,9 +12,6 @@ interface UploadProps {
 
 const Upload: React.FC<UploadProps> = ({ onFileChange, uploadStatus }) => {
   const [dragging, setDragging] = useState<boolean>(false);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
-  const [csvData, setCsvData] = useState<any[] | null>(null); // Can define shape of your CSV rows instead of `any`
 
   const handleDrag = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -47,8 +43,9 @@ const Upload: React.FC<UploadProps> = ({ onFileChange, uploadStatus }) => {
   const handleFileSelection = (file: File) => {
     if (!file) return;
 
-    setFileName(file.name);
-    setFilePreview(URL.createObjectURL(file));
+    // Uncomment and implement when needed:
+    // setFileName(file.name);
+    // setFilePreview(URL.createObjectURL(file));
 
     // Uncomment to use CSV parsing
     // if (file.name.endsWith('.csv')) {
@@ -110,8 +107,3 @@ const Upload: React.FC<UploadProps> = ({ onFileChange, uploadStatus }) => {
 };
 
 export default Upload;
-
-
-
-
-

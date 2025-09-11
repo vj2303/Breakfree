@@ -22,14 +22,14 @@ export default function Dashboard() {
     if (option === 'ai-trainers') {
       router.push('/dashboard/ai-trainer/create')
     } else if (option === 'report-generation') {
-      router.push('/dashboard/report-generation')
+      router.push('/dashboard/report-generation/content')
     }
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar Component */}
-      <Navbar userData={{ name: user.firstName + ' ' + user.lastName, email: user.email, avatar: '' }} />
+      <Navbar />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

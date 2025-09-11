@@ -1,6 +1,44 @@
 import React from 'react';
+
+// Define interfaces for the data structures
+interface Classification {
+  "Training Proposal Score": string | number;
+  "E-learning Script Score": string | number;
+  "Predicted Category": string;
+  "Reasoning": string;
+  "Confidence": string;
+  "Compliance": string;
+}
+
+interface EvaluationScores {
+  [key: string]: string | number;
+}
+
+interface EvaluationReasoning {
+  [key: string]: string;
+}
+
+interface Evaluation {
+  scores: EvaluationScores;
+  Reasoning: EvaluationReasoning;
+  "Compliance Status": string;
+  "Total Score": string | number;
+  "Feedback": string;
+  "content": string;
+  "Suggestions": string[];
+}
+
+// Define props interface
+interface ModalProps {
+  isOpen: boolean;
+  closeModal: () => void;
+  contentType: 'classification' | 'evaluation';
+  classification?: Classification;
+  evaluation?: Evaluation;
+}
+
 // Modal Component to handle modal display
-const Modal = ({ isOpen, closeModal, contentType, classification, evaluation }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, closeModal, contentType, classification, evaluation }) => {
   if (!isOpen) return null;
 
   console.log({ classification })
@@ -17,9 +55,7 @@ const Modal = ({ isOpen, closeModal, contentType, classification, evaluation }) 
         </button>
 
         {/* Modal Content */}
-        {contentType === 'classification' && (
-
-
+        {contentType === 'classification' && classification && (
           <div>
             <h1 className='font-bold text-[32px] bg-[#476181] rounded-lg text-white mb-2 p-2'>Classification</h1>
             <div className='p-2'>
@@ -40,8 +76,7 @@ const Modal = ({ isOpen, closeModal, contentType, classification, evaluation }) 
           </div>
         )}
 
-        {contentType === 'evaluation' && (
-
+        {contentType === 'evaluation' && evaluation && (
           <div className='bg-white'>
           <h1 className='font-bold text-[32px] bg-[#476181] rounded-lg text-white mb-2 p-2'>Evaluation</h1>
           <div className='p-2 max-h-[500px] overflow-y-scroll'>
@@ -99,13 +134,7 @@ const Modal = ({ isOpen, closeModal, contentType, classification, evaluation }) 
             </div>
           </div>
           </div>
-
-
-
-       
         )}
-
-
       </div>
     </div>
   );

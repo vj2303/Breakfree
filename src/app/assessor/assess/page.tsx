@@ -1,40 +1,52 @@
 "use client";
 
-import React, { useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, Loader2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
-type Group = {
-  id: number;
-  name: string;
-  admin: string;
-  members: number;
-};
+interface AssessorGroup {
+  assignmentId: string;
+  groupId: string;
+  groupName: string;
+  adminName: string;
+  adminEmail: string;
+  participantCount: number;
+}
 
 type GroupsData = {
-  assigned: Group[];
-  completed: Group[];
-  inProgress: Group[];
-};
-
-const groupsData: GroupsData = {
-  assigned: [
-    { id: 1, name: "Group Name", admin: "John Doe", members: 5 },
-    { id: 2, name: "Development Team", admin: "Jane Smith", members: 8 },
-    { id: 3, name: "Marketing Group", admin: "Mike Johnson", members: 6 },
-  ],
-  completed: [
-    { id: 4, name: "Project Alpha", admin: "Sarah Wilson", members: 4 },
-    { id: 5, name: "Research Team", admin: "David Brown", members: 7 },
-  ],
-  inProgress: [
-    { id: 6, name: "Beta Testing", admin: "Lisa Davis", members: 5 },
-    { id: 7, name: "Design Squad", admin: "Tom Anderson", members: 3 },
-    { id: 8, name: "Quality Assurance", admin: "Emma Thompson", members: 9 },
-  ]
+  assigned: AssessorGroup[];
+  completed: AssessorGroup[];
+  inProgress: AssessorGroup[];
 };
 
 export default function AssessorPlatform() {
+  const router = useRouter();
+  const { user, assessorGroups, assessorGroupsLoading, fetchAssessorGroups } = useAuth();
   const [activeTab, setActiveTab] = useState<keyof GroupsData>('assigned');
+  const [groupsData, setGroupsData] = useState<GroupsData>({
+    assigned: [],
+    completed: [],
+    inProgress: []
+  });
+
+  useEffect(() => {
+    if (assessorGroups?.groups) {
+      // For now, we'll put all groups in 'assigned' since the API doesn't specify status
+      // You can modify this logic based on your business requirements
+      setGroupsData({
+        assigned: assessorGroups.groups,
+        completed: [],
+        inProgress: []
+      });
+    }
+  }, [assessorGroups]);
+
+  useEffect(() => {
+    if (!assessorGroups && !assessorGroupsLoading) {
+      fetchAssessorGroups();
+    }
+  }, [assessorGroups, assessorGroupsLoading, fetchAssessorGroups]);
 
   const tabs = [
     { key: 'assigned', label: 'Assigned' },
@@ -42,22 +54,24 @@ export default function AssessorPlatform() {
     { key: 'inProgress', label: 'In- Progress' }
   ];
 
-  const GroupCard = ({ group }: { group: Group }) => {
-    const router = require('next/navigation').useRouter();
+  const GroupCard = ({ group }: { group: AssessorGroup }) => {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{group.name}</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{group.groupName}</h3>
         <div className="space-y-2 mb-6">
           <p className="text-gray-600">
-            <span className="text-gray-500">Group Admin :</span> <span className="font-medium">{group.admin}</span>
+            <span className="text-gray-500">Group Admin:</span> <span className="font-medium">{group.adminName}</span>
           </p>
           <p className="text-gray-600">
-            <span className="text-gray-500">No. of Members:</span> <span className="font-medium">{group.members}</span>
+            <span className="text-gray-500">Admin Email:</span> <span className="font-medium">{group.adminEmail}</span>
+          </p>
+          <p className="text-gray-600">
+            <span className="text-gray-500">No. of Members:</span> <span className="font-medium">{group.participantCount}</span>
           </p>
         </div>
         <button
           className="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2"
-          onClick={() => router.push(`/assessor/assess/${group.id}`)}
+          onClick={() => router.push(`/assessor/assess/${group.groupId}`)}
         >
           View
           <ChevronRight size={16} />
@@ -66,16 +80,27 @@ export default function AssessorPlatform() {
     );
   };
 
+  if (assessorGroupsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading assessor groups...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome Assessor name
+            Welcome {assessorGroups?.assessor?.name || user?.firstName || 'Assessor'}
           </h1>
           <p className="text-gray-500 mb-6">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+            Manage and assess your assigned groups below.
           </p>
           
           {/* Management Groups Button */}
@@ -105,15 +130,20 @@ export default function AssessorPlatform() {
 
         {/* Group Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {groupsData[activeTab].map((group: Group) => (
-            <GroupCard key={group.id} group={group} />
+          {groupsData[activeTab].map((group: AssessorGroup) => (
+            <GroupCard key={group.groupId} group={group} />
           ))}
         </div>
 
         {/* Empty State */}
         {groupsData[activeTab].length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No groups found for {tabs.find(t => t.key === activeTab)?.label}</p>
+            <p className="text-gray-500 text-lg">
+              {assessorGroups?.groups?.length === 0 
+                ? 'No groups assigned to you yet.' 
+                : `No groups found for ${tabs.find(t => t.key === activeTab)?.label}`
+              }
+            </p>
           </div>
         )}
       </div>

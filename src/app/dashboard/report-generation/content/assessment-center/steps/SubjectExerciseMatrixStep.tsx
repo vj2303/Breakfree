@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useAssessmentForm } from '../create/context';
 
 const activityTypeLabel = (type: string) => {
@@ -99,27 +99,75 @@ const SubjectExerciseMatrixStep: React.FC = () => {
   // Scores: { [rowIdx_colIdx]: { [subCompetency]: score } }
   const [scores] = useState<{ [key: string]: SubCompetencyScore }>({});
 
-  // Initialize matrix to all false (off)
+  // Wrap updateFormData in useCallback to stabilize its reference
+  const stableUpdateFormData = useCallback((field: string, value: unknown) => {
+    updateFormData(field, value);
+  }, [updateFormData]);
+
+  // Initialize matrix to all false (off) - only when dimensions change
   useEffect(() => {
-    setMatrix(
-      finalCompetencies.map((): boolean[] => activities.map((): boolean => false))
-    );
+    if (activities.length > 0 && finalCompetencies.length > 0) {
+      setMatrix(prev => {
+        // If dimensions haven't changed, keep existing state
+        if (prev.length === finalCompetencies.length && 
+            prev[0]?.length === activities.length) {
+          return prev;
+        }
+        // Otherwise, initialize new matrix
+        return finalCompetencies.map((): boolean[] => activities.map((): boolean => false));
+      });
+    }
   }, [activities, finalCompetencies]);
 
   // Store matrix and scores in context
   useEffect(() => {
-    updateFormData('matrix', matrix);
-    updateFormData('matrixScores', scores);
-  }, [matrix, scores, updateFormData]);
+    stableUpdateFormData('matrix', matrix);
+    stableUpdateFormData('matrixScores', scores);
+    try {
+      console.log('[Assessment Center][Matrix] matrix updated:', matrix);
+    } catch {}
+  }, [matrix, scores, stableUpdateFormData]);
+
+  // Log when step is saved/next is clicked
+  useEffect(() => {
+    const handleStepSave = () => {
+      try {
+        console.log('=== SUBJECT EXERCISE MATRIX STEP SAVED ===');
+        console.log('Matrix state:', matrix);
+        console.log('Activities count:', activities.length);
+        console.log('Competencies count:', finalCompetencies.length);
+        console.log('Step validation:', {
+          hasMatrix: matrix.length > 0,
+          hasActivities: activities.length > 0,
+          hasCompetencies: finalCompetencies.length > 0,
+          matrixDimensions: `${matrix.length}x${matrix[0]?.length || 0}`
+        });
+      } catch {}
+    };
+
+    // Listen for step save events
+    window.addEventListener('step-save', handleStepSave);
+    return () => window.removeEventListener('step-save', handleStepSave);
+  }, [matrix, activities, finalCompetencies]);
 
   const handleToggle = (rowIdx: number, colIdx: number) => {
-    setMatrix(prev =>
-      prev.map((row: boolean[], r: number) =>
+    setMatrix(prev => {
+      // Ensure matrix is properly initialized
+      if (!prev[rowIdx] || prev[rowIdx].length <= colIdx) {
+        console.warn('Matrix not properly initialized for toggle operation');
+        return prev;
+      }
+      
+      const newMatrix = prev.map((row: boolean[], r: number) =>
         row.map((val: boolean, c: number) =>
           r === rowIdx && c === colIdx ? !val : val
         )
-      )
-    );
+      );
+      
+      // Log toggle action for debugging
+      console.log(`[Matrix Toggle] Competency ${rowIdx} - Activity ${colIdx}: ${!prev[rowIdx][colIdx]}`);
+      return newMatrix;
+    });
   };
 
   if (!activities.length || !finalCompetencies.length) {
@@ -136,24 +184,15 @@ const SubjectExerciseMatrixStep: React.FC = () => {
         <table className="min-w-full border-separate border-spacing-0">
           <thead>
             <tr className="bg-gray-50">
-              <th className="px-6 py-4 text-left text-base font-semibold text-black border-b">Assessment Type</th>
+              <th className="px-6 py-4 text-left text-base font-semibold text-black border-b">Competencies</th>
               {activities.map((activity: RenderActivity, idx: number) => (
                 <th key={idx} className="px-6 py-4 text-center text-base font-semibold text-black border-b">
-                  {activityTypeLabel(activity.activityType)}
+                  {activity.label}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {/* Assessment Description Row */}
-            <tr>
-              <td className="px-6 py-2 font-semibold text-black border-b border-blue-900">Assessment Description</td>
-              {activities.map((activity: RenderActivity, idx: number) => (
-                <td key={idx} className="px-6 py-2 text-gray-700 border-b border-blue-900">
-                  {activity.instruction}
-                </td>
-              ))}
-            </tr>
             {/* Competency Rows */}
             {finalCompetencies.map((comp: Competency, rowIdx: number) => (
               <tr key={comp.id}>
@@ -169,9 +208,10 @@ const SubjectExerciseMatrixStep: React.FC = () => {
                             checked={isOn}
                             onChange={() => handleToggle(rowIdx, colIdx)}
                             className="sr-only peer"
+                            aria-label={`Toggle ${comp.name} for ${activityTypeLabel(activity.activityType)}`}
                           />
-                          <div className="w-10 h-6 bg-gray-200 rounded-full peer peer-checked:bg-gray-900 transition-all duration-300"></div>
-                          <div className="absolute left-1 top-1 w-4 h-4 bg-white border border-gray-300 rounded-full transition-all duration-300 peer-checked:translate-x-4"></div>
+                          <div className="w-10 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-2 peer-focus:ring-blue-300 transition-all duration-300 ease-in-out"></div>
+                          <div className="absolute left-1 top-1 w-4 h-4 bg-white border border-gray-300 rounded-full transition-all duration-300 ease-in-out peer-checked:translate-x-4 peer-checked:border-blue-600 shadow-sm"></div>
                         </label>
                         {/* No subcompetencies or score input here */}
                       </div>

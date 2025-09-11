@@ -20,7 +20,7 @@ export default function ReportGenerationLayout({ children }: { children: React.R
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafd', display: 'flex', flexDirection: 'column', color: '#000' }}>
-      <Navbar userData={{name: 'Riya', email: 'andrea45@gmail.com', avatar: ''}} />
+      <Navbar />
       <div style={{ display: 'flex', flex: 1 }}>
         <aside style={{ width: 80, background: '#fff', borderRight: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 24, paddingBottom: 24, gap: 16, color: '#000' }}>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 32, flex: 1, color: '#000' }}>
@@ -55,6 +55,4 @@ export default function ReportGenerationLayout({ children }: { children: React.R
       </div>
     </div>
   );
-} 
-
-
+}

@@ -1,30 +1,45 @@
-import Button from '@/components/UI/Button'
 import { Check, X } from 'lucide-react'
 import React from 'react'
 
-const SuggetionsCard = ({ evaluation, classification, currentDetails }) => {
+// Define interfaces for the data structures
+interface EvaluationScores {
+  [key: string]: string | number | boolean; // Added boolean type
+}
+
+interface EvaluationReasoning {
+  [key: string]: string;
+}
+
+interface Evaluation {
+  scores: EvaluationScores;
+  Reasoning: EvaluationReasoning;
+  "Compliance Status": string;
+  "Total Score": string | number;
+  "Feedback": string;
+  "content"?: string;
+  "Suggestions": string[];
+}
+
+interface Classification {
+  "Training Proposal Score": string | number;
+  "E-learning Script Score": string | number;
+  "Predicted Category": string;
+  "Reasoning": string;
+  "Confidence": string | number; // Made consistent with ChatPage
+  "Compliance": string | number; // Made consistent with ChatPage
+}
+
+// Define props interface
+interface SuggetionsCardProps {
+  evaluation: Evaluation;
+  classification: Classification;
+  currentDetails: 'classification' | 'evaluation';
+}
+
+const SuggetionsCard: React.FC<SuggetionsCardProps> = ({ evaluation, classification, currentDetails }) => {
     return (
         <div className='px-[14px] mt-3'>
-            {/* <div className='flex justify-between items-center '>
-            <h1 className='text-[#111111] text-[24px] font-bold'>Suggetions</h1>
-            <Button>Evaluate</Button>
-        </div>
-        <div className='border rounded-xl p-2 mt-3'>
-            <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Consequuntur aliquid, animi maiores, vero voluptate neque eius quod rerum totam a ut sint error mollitia omnis in ipsam, cum qui! Sunt.</p>
-        </div>
-        <div className='border rounded-xl p-2 mt-3'>
-            <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Consequuntur aliquid, animi maiores, vero voluptate neque eius quod rerum totam a ut sint error mollitia omnis in ipsam, cum qui! Sunt.</p>
-        </div>
-        <div className='border rounded-xl p-2 mt-3'>
-            <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Consequuntur aliquid, animi maiores, vero voluptate neque eius quod rerum totam a ut sint error mollitia omnis in ipsam, cum qui! Sunt.</p>
-        </div>
-        <div className='border rounded-xl p-2 mt-3'>
-            <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Consequuntur aliquid, animi maiores, vero voluptate neque eius quod rerum totam a ut sint error mollitia omnis in ipsam, cum qui! Sunt.</p>
-        </div> */}
-
             {currentDetails === 'classification' && (
-
-
                 <div>
                     <h1 className='font-bold text-[32px] bg-[#476181] rounded-lg text-white mb-2 p-2'>Classification</h1>
                     <div className='p-2'>
@@ -46,7 +61,6 @@ const SuggetionsCard = ({ evaluation, classification, currentDetails }) => {
             )}
 
             {currentDetails === 'evaluation' && (
-
                 <div className='bg-white'>
                     <h1 className='font-bold text-[32px] bg-[#476181] rounded-lg text-white mb-2 p-2'>Evaluation</h1>
                     <div className='p-2 max-h-[500px] overflow-y-scroll'>
@@ -56,7 +70,12 @@ const SuggetionsCard = ({ evaluation, classification, currentDetails }) => {
                                 {Object.entries(evaluation["scores"]).map(([key, value]) => (
                                     <div key={key} className="flex gap-3">
                                         <h3 className="font-semibold">{key}:</h3>
-                                        <p className="text-gray-700">{Number(value)?<Check color='green' />: <X color='red' />}</p>
+                                        <p className="text-gray-700">
+                                            {typeof value === 'boolean' 
+                                                ? (value ? <Check color='green' /> : <X color='red' />)
+                                                : (Number(value) ? <Check color='green' /> : <X color='red' />)
+                                            }
+                                        </p>
                                     </div>
                                 ))}
                             </div>
@@ -104,12 +123,7 @@ const SuggetionsCard = ({ evaluation, classification, currentDetails }) => {
                         </div>
                     </div>
                 </div>
-
-
-
-
             )}
-
         </div>
     )
 }

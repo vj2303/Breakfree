@@ -1,4 +1,5 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useAssessmentForm } from '../create/context';
 import { Trash2, UploadCloud, FileText } from "lucide-react";
 
 // Define a type for uploaded files
@@ -12,6 +13,11 @@ type UploadedFile = {
 const AddDocumentStep = () => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const context = useAssessmentForm();
+  if (!context) {
+    throw new Error('AddDocumentStep must be used within AssessmentFormContext');
+  }
+  const { updateFormData } = context;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -37,6 +43,37 @@ const AddDocumentStep = () => {
       setFiles(prev => [...prev, ...newFiles]);
     }
   };
+
+  useEffect(() => {
+    const file = files[0]?.file || null;
+    updateFormData('document', file);
+    try {
+      console.log('[Assessment Center][AddDocument] document:', file ? { name: file.name, size: file.size } : null);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [files]);
+
+  // Log when step is saved/next is clicked
+  useEffect(() => {
+    const handleStepSave = () => {
+      try {
+        const file = files[0]?.file || null;
+        console.log('=== ADD DOCUMENT STEP SAVED ===');
+        console.log('Current document:', file ? { name: file.name, size: file.size, type: file.type } : null);
+        console.log('Files count:', files.length);
+        console.log('Step validation:', {
+          hasDocument: file !== null,
+          documentName: file?.name || 'None',
+          documentSize: file?.size || 0,
+          documentType: file?.type || 'None'
+        });
+      } catch {}
+    };
+
+    // Listen for step save events
+    window.addEventListener('step-save', handleStepSave);
+    return () => window.removeEventListener('step-save', handleStepSave);
+  }, [files]);
 
   const handleDelete = (idx: number) => {
     setFiles(prev => prev.filter((_, i) => i !== idx));
@@ -105,4 +142,4 @@ const AddDocumentStep = () => {
   );
 };
 
-export default AddDocumentStep; 
+export default AddDocumentStep;

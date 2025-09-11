@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-// import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/context/AuthContext'
 
 export default function AssessorLogin() {
   const router = useRouter()
-  // const { login, user, loading } = useAuth()
+  const { login, user, loading, logout, assessorId } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -39,19 +39,15 @@ export default function AssessorLogin() {
     }
     setIsLoading(true)
     try {
-      // const result = await login({ 
-      //   email: formData.email, 
-      //   password: formData.password 
-      // })
-      // if (result.success) {
-      //   router.push('/dashboard')
-      // } else {
-      //   setError(result.message || 'Login failed. Please check your credentials.')
-      // }
-      // Simulate successful login for UI testing
-      setTimeout(() => {
+      const result = await login({ 
+        email: formData.email, 
+        password: formData.password 
+      })
+      if (result.success) {
         router.push('/assessor/dashboard')
-      }, 1000)
+      } else {
+        setError(result.message || 'Login failed. Please check your credentials.')
+      }
     } catch {
       setError('An unexpected error occurred. Please try again.')
     } finally {
@@ -67,19 +63,43 @@ export default function AssessorLogin() {
     router.push('/forgot-password')
   }
 
-  // useEffect(() => {
-  //   if (user && !loading) {
-  //     router.push('/dashboard')
-  //   }
-  // }, [user, loading, router])
+  useEffect(() => {
+    if (user && !loading && assessorId) {
+      router.push('/assessor/dashboard')
+    }
+  }, [user, loading, assessorId, router])
 
-  // if (loading) {
-  //   return (
-  //     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-  //       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-  //     </div>
-  //   )
-  // }
+  // If user is logged in but not an assessor, show option to logout
+  if (user && !loading && !assessorId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Wrong Account Type
+            </h1>
+            <p className="text-gray-600 mb-6">
+              You&apos;re logged in as a {user.role || 'participant'}, but this is the assessor login page.
+            </p>
+            <button
+              onClick={logout}
+              className="w-full bg-red-600 text-white py-3 rounded-full font-medium hover:bg-red-700 transition-all duration-200"
+            >
+              Logout and Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">

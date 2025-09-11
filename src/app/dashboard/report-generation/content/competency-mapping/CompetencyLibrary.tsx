@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   fetchCompetencyLibraries,
   createCompetencyLibrary,
@@ -48,12 +48,31 @@ const CompetencyLibrary: React.FC = () => {
     subCompetencies: [{ id: '1', text: '' }] as SubCompetency[]
   });
   const [editLibraryId, setEditLibraryId] = useState<string | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    libraryId: string | null;
+    libraryName: string;
+  }>({
+    isOpen: false,
+    libraryId: null,
+    libraryName: ''
+  });
 
-  // Fetch libraries
-  const loadLibraries = async (search = '') => {
+  // Helper function to get auth token
+  const getAuthToken = () => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      return token ? `Bearer ${token}` : '';
+    }
+    return '';
+  };
+
+  // Fetch libraries - wrapped in useCallback to stabilize reference
+  const loadLibraries = useCallback(async (search = '') => {
     setLoading(true);
     try {
-      const data = await fetchCompetencyLibraries(search);
+      const authToken = getAuthToken();
+      const data = await fetchCompetencyLibraries(search, authToken);
       const libs = Array.isArray(data?.data?.competencyLibraries)
         ? data.data.competencyLibraries.map((lib: LibraryData) => ({
             id: lib.id,
@@ -82,18 +101,19 @@ const CompetencyLibrary: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadLibraries(searchTerm);
-  }, [searchTerm]);
+  }, [searchTerm, loadLibraries]);
 
   const handleCreateCompetency = async () => {
     if (!newCompetency.name.trim()) return;
     const validSubCompetencies = newCompetency.subCompetencies.filter(sub => sub.text.trim());
     const subCompetencyNames = validSubCompetencies.map(sub => sub.text);
     try {
-      await createCompetencyLibrary(newCompetency.name, subCompetencyNames);
+      const authToken = getAuthToken();
+      await createCompetencyLibrary(newCompetency.name, subCompetencyNames, authToken);
       setShowCreateCompetency(false);
       setNewCompetency({ name: '', subCompetencies: [{ id: '1', text: '' }] });
       loadLibraries();
@@ -102,13 +122,29 @@ const CompetencyLibrary: React.FC = () => {
     }
   };
 
-  const handleDeleteLibrary = async (id: string) => {
+  const openDeleteConfirmation = (library: CompetencyLibrary) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      libraryId: library.id,
+      libraryName: library.name
+    });
+    setDropdownOpen(null);
+  };
+
+  const handleDeleteLibrary = async () => {
+    if (!deleteConfirmation.libraryId) return;
+    
     try {
-      await deleteCompetencyLibrary(id);
-      setDropdownOpen(null);
+      setLoading(true);
+      const authToken = getAuthToken();
+      await deleteCompetencyLibrary(deleteConfirmation.libraryId, authToken);
+      setDeleteConfirmation({ isOpen: false, libraryId: null, libraryName: '' });
       loadLibraries();
-    } catch {
-      // handle error
+    } catch (error) {
+      console.error('Error deleting library:', error);
+      // You could add error state handling here
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -147,7 +183,8 @@ const CompetencyLibrary: React.FC = () => {
     const validSubCompetencies = editCompetency.subCompetencies.filter(sub => sub.text.trim());
     const subCompetencyNames = validSubCompetencies.map(sub => sub.text);
     try {
-      await updateCompetencyLibrary(editLibraryId, editCompetency.name, subCompetencyNames);
+      const authToken = getAuthToken();
+      await updateCompetencyLibrary(editLibraryId, editCompetency.name, subCompetencyNames, authToken);
       setEditLibraryId(null);
       setEditCompetency({ name: '', subCompetencies: [{ id: '1', text: '' }] });
       loadLibraries();
@@ -233,7 +270,7 @@ const CompetencyLibrary: React.FC = () => {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDeleteLibrary(library.id)}
+                      onClick={() => openDeleteConfirmation(library)}
                       className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
                     >
                       Delete
@@ -439,6 +476,35 @@ const CompetencyLibrary: React.FC = () => {
                 }}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmation.isOpen && (
+        <div className="fixed inset-0 bg-black/20 bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h3 className="font-bold mb-4 text-xl text-black">Delete Competency Library</h3>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete <span className="font-semibold">&quot;{deleteConfirmation.libraryName}&quot;</span>? 
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                onClick={() => setDeleteConfirmation({ isOpen: false, libraryId: null, libraryName: '' })}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50"
+                onClick={handleDeleteLibrary}
+                disabled={loading}
+              >
+                {loading ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

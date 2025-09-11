@@ -3,11 +3,14 @@
 import React, { useState } from "react";
 import Slider from "./Slider";
 
-const SettingsPopUp = ({ isOpen, onClose }) => {
-  const [temperature, setTemperature] = useState(5);
-  const [randomness, setRandomness] = useState(5);
-  const [selectedModel, setSelectedModel] = useState("");
+interface SettingsPopUpProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
 
+const SettingsPopUp: React.FC<SettingsPopUpProps> = ({ isOpen, onClose }) => {
+  const [temperature, setTemperature] = useState(5);
+  const [selectedModel, setSelectedModel] = useState("");
 
   if (!isOpen) return null;
 
@@ -44,10 +47,8 @@ const SettingsPopUp = ({ isOpen, onClose }) => {
 
         {/* Temperature Slider */}
         <div className="mt-6">
-        <Slider label="Temperature" value={temperature} setValue={setTemperature} />
+          <Slider label="Temperature" value={temperature} setValue={setTemperature} />
         </div>
-
-  
 
         {/* Done Button */}
         <div className="mt-6 flex justify-center">

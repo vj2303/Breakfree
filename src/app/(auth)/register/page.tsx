@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import { showError, showSuccess } from '@/utils/toast'
 
 // 1. Define a type for formData
 type FormDataType = {
@@ -29,6 +30,7 @@ export default function MultiStepRegister() {
   const [currentStep, setCurrentStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
   const [selectedCountryCode, setSelectedCountryCode] = useState('+91')
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState<FormDataType>({
     // Step 1 data
     firstName: '',
@@ -59,7 +61,7 @@ export default function MultiStepRegister() {
     e.preventDefault()
     // Validate Step 1 fields
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.agreeToTerms) {
-      alert('Please fill in all required fields and agree to terms')
+      showError('Please fill in all required fields and agree to terms')
       return
     }
     setCurrentStep(2)
@@ -71,7 +73,7 @@ export default function MultiStepRegister() {
     // Validate required fields for step 2
     if (!formData.phoneNumber || !formData.batchNo || !formData.designation || 
         !formData.managerName || !formData.location || !formData.department || !formData.division) {
-      alert('Please fill in all required fields')
+      showError('Please fill in all required fields')
       return
     }
 
@@ -91,17 +93,25 @@ export default function MultiStepRegister() {
     };
 
     try {
+      setIsLoading(true);
       // Call register API
       const result = await register(payload);
+      
       if (result.success) {
-        alert('Registration completed successfully!');
-        router.push('/login');
+        // Only navigate if registration was successful
+        showSuccess('Registration completed successfully!');
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000);
       } else {
-        alert(result.message || 'Registration failed');
+        // Show error message without navigating
+        showError(result.message || 'Registration failed. Please check your information and try again.');
       }
     } catch (error) {
       console.error('Registration error:', error);
-      alert('Registration failed. Please try again.');
+      showError('An error occurred during registration. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -230,9 +240,10 @@ export default function MultiStepRegister() {
               {/* Register Button */}
               <button
                 type="submit"
-                className="w-full bg-gray-800 text-white py-3 rounded-full font-medium hover:bg-gray-900 transition-colors"
+                disabled={isLoading}
+                className={`w-full bg-gray-800 text-white py-3 rounded-full font-medium hover:bg-gray-900 transition-colors ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                Register Account
+                {isLoading ? 'Registering...' : 'Register Account'}
               </button>
 
               {/* Login Link */}

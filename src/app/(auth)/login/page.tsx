@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import { showError, showSuccess } from '@/utils/toast'
 
 export default function Login() {
   const router = useRouter()
@@ -32,14 +33,14 @@ export default function Login() {
     
     // Basic validation
     if (!formData.email || !formData.password) {
-      setError('Please fill in all fields')
+      showError('Please fill in all fields')
       return
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address')
+      showError('Please enter a valid email address')
       return
     }
 
@@ -52,12 +53,16 @@ export default function Login() {
       })
       
       if (result.success) {
-        router.push('/dashboard')
+        showSuccess('Login successful! Redirecting...')
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 1000)
       } else {
-        setError(result.message || 'Login failed. Please check your credentials.')
+        showError(result.message || 'Login failed. Please check your credentials.')
       }
-    } catch {
-      setError('An unexpected error occurred. Please try again.')
+    } catch (error) {
+      console.error('Login error:', error)
+      showError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -117,13 +122,6 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
-            {/* Error Message */}
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{error}</p>
-              </div>
-            )}
-
             {/* Email Address */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

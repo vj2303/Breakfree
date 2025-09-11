@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import Editor from "@/components/Editor";
 
 interface Character {
@@ -9,9 +9,15 @@ interface Character {
 
 interface AddContentStepProps {
   characters: Character[];
+  emails: Email[];
+  setEmails: React.Dispatch<React.SetStateAction<Email[]>>;
+  exerciseTime: number;
+  setExerciseTime: React.Dispatch<React.SetStateAction<number>>;
+  readingTime: number;
+  setReadingTime: React.Dispatch<React.SetStateAction<number>>;
 }
 
-interface Email {
+export interface Email {
   id: number;
   from: string;
   to: string;
@@ -23,10 +29,7 @@ interface Email {
   isCollapsed: boolean;
 }
 
-const AddContentStep: React.FC<AddContentStepProps> = ({ characters }) => {
-  const [emails, setEmails] = useState<Email[]>([]);
-  const [exerciseTime, setExerciseTime] = useState(30);
-  const [readingTime, setReadingTime] = useState(30);
+const AddContentStep: React.FC<AddContentStepProps> = ({ characters, emails, setEmails, exerciseTime, setExerciseTime, readingTime, setReadingTime }) => {
 
   const addEmail = () => {
     const newEmail: Email = {
@@ -40,27 +43,19 @@ const AddContentStep: React.FC<AddContentStepProps> = ({ characters }) => {
       emailContent: "",
       isCollapsed: false,
     };
-    setEmails([...emails, newEmail]);
+    setEmails(prev => [...prev, newEmail]);
   };
 
-  const updateEmail = (id: number, field: keyof Email, value: any) => {
-    setEmails(
-      emails.map(email =>
-        email.id === id ? { ...email, [field]: value } : email
-      )
-    );
+  const updateEmail = <K extends keyof Email>(id: number, field: K, value: Email[K]) => {
+    setEmails(prev => prev.map(email => (email.id === id ? { ...email, [field]: value } : email)));
   };
 
   const toggleCollapse = (id: number) => {
-    setEmails(
-      emails.map(email =>
-        email.id === id ? { ...email, isCollapsed: !email.isCollapsed } : email
-      )
-    );
+    setEmails(prev => prev.map(email => (email.id === id ? { ...email, isCollapsed: !email.isCollapsed } : email)));
   };
 
   const deleteEmail = (id: number) => {
-    setEmails(emails.filter(email => email.id !== id));
+    setEmails(prev => prev.filter(email => email.id !== id));
   };
 
   const formatDate = (dateString: string): string => {
@@ -75,7 +70,7 @@ const AddContentStep: React.FC<AddContentStepProps> = ({ characters }) => {
     };
     try {
         return new Date(dateString).toLocaleString('en-US', options).replace(',', '');
-    } catch (e) {
+    } catch {
         return new Date(dateString).toLocaleString('en-US', options);
     }
   };

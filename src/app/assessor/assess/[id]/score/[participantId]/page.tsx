@@ -1,29 +1,95 @@
 "use client";
 
-import React, { useState } from 'react';
-import { FileText, ChevronRight, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Loader2, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
-const mockAssessments = [
-  { id: '1', name: 'Group Name', admin: 'John Doe', members: 5 },
-  { id: '2', name: 'Development Team', admin: 'Jane Smith', members: 8 },
-  { id: '3', name: 'Marketing Group', admin: 'Mike Johnson', members: 6 },
-  { id: '4', name: 'Project Alpha', admin: 'Sarah Wilson', members: 4 },
-  { id: '5', name: 'Research Team', admin: 'David Brown', members: 7 },
-  { id: '6', name: 'Beta Testing', admin: 'Lisa Davis', members: 5 },
-  { id: '7', name: 'Design Squad', admin: 'Tom Anderson', members: 3 },
-  { id: '8', name: 'Quality Assurance', admin: 'Emma Thompson', members: 9 },
-];
+interface ParticipantScoringProps {
+  params: Promise<{ id: string; participantId: string }>;
+}
 
-const participantsData = [
-  {
-    id: 1,
-    name: "Participant Name",
-    email: "sakshi@gmail.com",
-    activities: [
-      { name: "Case Study Activity", type: "View Task" }
-    ]
-  }
-];
+interface ParticipantDetails {
+  success: boolean;
+  message: string;
+  data: {
+    assessor: {
+      id: string;
+      name: string;
+      email: string;
+      designation: string;
+      accessLevel: string;
+      isActive: boolean;
+      createdAt: string;
+      updatedAt: string;
+    };
+    participant: {
+      id: string;
+      name: string;
+      email: string;
+      designation: string;
+      managerName: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+    assignments: Array<{
+      assignmentId: string;
+      assessmentCenter: {
+        id: string;
+        name: string;
+        description: string;
+        displayName: string;
+        displayInstructions: string;
+        competencyIds: string[];
+        documentUrl?: string;
+        reportTemplateName: string;
+        reportTemplateType: string;
+        createdBy: string;
+        createdAt: string;
+        updatedAt: string;
+      };
+      group: {
+        id: string;
+        name: string;
+        admin: string;
+        adminEmail: string;
+        participantIds: string[];
+        createdAt: string;
+        updatedAt: string;
+      };
+      activities: Array<{
+        activityId: string;
+        activityType: string;
+        displayOrder: number;
+        competency: {
+          id: string;
+          competencyName: string;
+          subCompetencyNames: string[];
+          createdAt: string;
+          updatedAt: string;
+        };
+        activityDetail: {
+          id: string;
+          name: string;
+          description: string;
+          instructions: string;
+          videoUrl?: string;
+        };
+        submission: unknown;
+      }>;
+      assessorScore: unknown;
+      submissionCount: number;
+      totalActivities: number;
+      competencies: Array<{
+        id: string;
+        competencyName: string;
+        subCompetencyNames: string[];
+        createdAt: string;
+        updatedAt: string;
+      }>;
+    }>;
+  };
+}
 
 interface Evaluation {
   metric: string;
@@ -42,18 +108,131 @@ interface EvaluationResponse {
   };
 }
 
-const AssessmentDetail = () => {
+const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
+  const { participantId } = React.use(params);
+  const router = useRouter();
+  const { assessorId, token } = useAuth();
+  const [participantDetails, setParticipantDetails] = useState<ParticipantDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('videos');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationData, setEvaluationData] = useState<EvaluationResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [averageScore, setAverageScore] = useState('2.5');
+  // Removed unused averageScore state
   const [comments, setComments] = useState('');
-  
-  // Mock data - in real app, you'd get this from useParams
-  const id = '1';
-  const assessment = mockAssessments.find(a => a.id === id);
+  const [competencyScores, setCompetencyScores] = useState<Record<string, Record<string, number>>>({});
+  const [isSubmittingScore, setIsSubmittingScore] = useState(false);
+  const [scoreStatus, setScoreStatus] = useState<'DRAFT' | 'SUBMITTED'>('DRAFT');
+
+  useEffect(() => {
+    const fetchParticipantDetails = async () => {
+      if (!assessorId || !token) {
+        setError('Assessor ID or token not available');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/assessors/${assessorId}/participants/${participantId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          setParticipantDetails(result);
+        } else {
+          setError(result.message || 'Failed to fetch participant details');
+        }
+      } catch (err) {
+        console.error('Error fetching participant details:', err);
+        setError('An error occurred while fetching participant details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchParticipantDetails();
+  }, [assessorId, token, participantId]);
+
+  // Initialize competency scores when participant details are loaded
+  useEffect(() => {
+    if (participantDetails?.data.assignments[0]?.competencies) {
+      const initialScores: Record<string, Record<string, number>> = {};
+      participantDetails.data.assignments[0].competencies.forEach(competency => {
+        initialScores[competency.id] = {};
+        competency.subCompetencyNames.forEach(subComp => {
+          initialScores[competency.id][subComp] = 5.0; // Default score
+        });
+      });
+      setCompetencyScores(initialScores);
+    }
+  }, [participantDetails]);
+
+  const updateCompetencyScore = (competencyId: string, subCompetency: string, score: number) => {
+    setCompetencyScores(prev => ({
+      ...prev,
+      [competencyId]: {
+        ...prev[competencyId],
+        [subCompetency]: score
+      }
+    }));
+  };
+
+  const submitScores = async (status: 'DRAFT' | 'SUBMITTED') => {
+    if (!participantDetails?.data || !assessorId || !token) {
+      setError('Missing required data for score submission');
+      return;
+    }
+
+    setIsSubmittingScore(true);
+    setError(null);
+
+    try {
+      const assignment = participantDetails.data.assignments[0];
+      if (!assignment) {
+        throw new Error('No assignment data available');
+      }
+
+      const payload = {
+        participantId: participantDetails.data.participant.id,
+        assessorId: assessorId,
+        assessmentCenterId: assignment.assessmentCenter.id,
+        competencyScores: competencyScores,
+        overallComments: comments,
+        status: status
+      };
+
+      const response = await fetch('/api/assessors/scores', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setScoreStatus(status);
+        alert(`Scores ${status === 'DRAFT' ? 'saved as draft' : 'submitted'} successfully!`);
+      } else {
+        throw new Error(result.message || 'Failed to submit scores');
+      }
+    } catch (err) {
+      console.error('Error submitting scores:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred while submitting scores');
+    } finally {
+      setIsSubmittingScore(false);
+    }
+  };
 
   const generateReport = async () => {
     setIsGenerating(true);
@@ -125,7 +304,7 @@ const AssessmentDetail = () => {
       formData.append('video', videoFile);
       
       console.log('FormData entries:');
-      for (let pair of formData.entries()) {
+      for (const pair of formData.entries()) {
         console.log(pair[0], pair[1]);
       }
 
@@ -157,22 +336,59 @@ const AssessmentDetail = () => {
     }
   };
 
-  if (!assessment) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-2xl font-bold mb-4 text-black">Assessment Not Found</h1>
-          <p className="text-lg text-black">No assessment found for ID: {id}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading participant details...</p>
         </div>
       </div>
     );
   }
 
-  const ParticipantCard = ({ participant }: { participant: { id: number; name: string; email: string; activities: { name: string; type: string }[] } }) => (
+  if (error || !participantDetails || !participantDetails.data) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-md p-8">
+          <h1 className="text-2xl font-bold mb-4 text-black">Error Loading Participant</h1>
+          <p className="text-lg text-red-600 mb-4">{error || 'Invalid participant data received'}</p>
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+          >
+            <ArrowLeft size={16} />
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const ParticipantCard = () => (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 flex flex-col justify-between">
       <div>
-        <h2 className="text-lg font-semibold text-black">{participant.name}, <span className="text-black font-normal">Email- {participant.email}</span></h2>
-        <p className="text-black mt-1">Case Study Activity, Date- 12/02/2025</p>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-black">
+            {participantDetails.data.participant.name}, <span className="text-black font-normal">Email- {participantDetails.data.participant.email}</span>
+          </h2>
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </button>
+        </div>
+        <p className="text-black mt-1">
+          {participantDetails.data.participant.designation} • Manager: {participantDetails.data.participant.managerName}
+        </p>
+        {participantDetails.data.assignments.length > 0 && (
+          <p className="text-black mt-1">
+            {participantDetails.data.assignments[0].activities[0]?.activityDetail.name}, 
+            Date- {new Date(participantDetails.data.participant.createdAt).toLocaleDateString()}
+          </p>
+        )}
       </div>
       <div className="flex justify-between items-center mt-4">
         <div className="flex gap-3">
@@ -206,8 +422,47 @@ const AssessmentDetail = () => {
           </button>
         </div>
         <div className="flex gap-2">
-          <button className="border border-gray-300 rounded-full px-4 py-1 text-sm text-black">View Task</button>
-          <button className="bg-black text-white rounded-full px-4 py-1 text-sm">Done</button>
+          {participantDetails.data.assignments[0]?.activities[0]?.activityDetail.instructions && (
+            <button 
+              onClick={() => {
+                // You can implement a modal or navigate to view instructions
+                alert(participantDetails.data.assignments[0].activities[0].activityDetail.instructions.replace(/<[^>]*>/g, ''));
+              }}
+              className="border border-gray-300 rounded-full px-4 py-1 text-sm text-black"
+            >
+              View Task
+            </button>
+          )}
+          <div className="flex gap-2">
+            <button 
+              onClick={() => submitScores('DRAFT')}
+              disabled={isSubmittingScore}
+              className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white rounded-full px-4 py-1 text-sm flex items-center gap-1"
+            >
+              {isSubmittingScore ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Draft'
+              )}
+            </button>
+            <button 
+              onClick={() => submitScores('SUBMITTED')}
+              disabled={isSubmittingScore}
+              className="bg-black hover:bg-gray-800 disabled:bg-gray-400 text-white rounded-full px-4 py-1 text-sm flex items-center gap-1"
+            >
+              {isSubmittingScore ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                'Submit Final'
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -252,9 +507,7 @@ const AssessmentDetail = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Title & Participant */}
-        {participantsData.map((participant) => (
-          <ParticipantCard key={participant.id} participant={participant} />
-        ))}
+        <ParticipantCard />
 
         {/* Error Display */}
         {error && (
@@ -267,38 +520,88 @@ const AssessmentDetail = () => {
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Competency Section */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold mb-4 text-black">Competency</h3>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-black mb-4">
-              <p>2. Struggled to align cross-functional teams and lacked a comprehensive approach to collaboration. Outcomes were not well-defined. Did share examples of working with NA and France teams. Limited outcome level.</p>
-            </div>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-black mb-4">
-              <p>2. Struggled to align cross-functional teams and lacked a comprehensive approach to collaboration. Outcomes were not well-defined. Did share examples of working with NA and France teams. Limited outcome level.</p>
-            </div>
-            <div className="text-sm text-white bg-slate-700 px-3 py-1 rounded-md inline-block mb-4">
-              Score given to this sub competency- 1
-            </div>
-            <div className="mb-4">
-              <p className="font-medium text-black">Average Competency Score</p>
-              <input
-                type="number"
-                value={averageScore}
-                onChange={(e) => setAverageScore(e.target.value)}
-                min="0"
-                max="10"
-                step="0.1"
-                className="w-full mt-1 border border-gray-300 rounded-md p-2 text-black focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                placeholder="Enter score (0-10)"
-              />
-            </div>
-            <div>
-              <p className="font-medium text-black">Add Comments</p>
-              <textarea
-                rows={4}
-                value={comments}
-                onChange={(e) => setComments(e.target.value)}
-                className="w-full mt-1 border border-gray-300 rounded-md p-2 text-black focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                placeholder="Add your comments here"
-              />
+            <h3 className="text-lg font-semibold mb-4 text-black">Competencies</h3>
+            
+            {participantDetails.data.assignments[0]?.competencies.map((competency) => (
+              <div key={competency.id} className="mb-6">
+                <h4 className="font-medium text-black mb-3">{competency.competencyName}</h4>
+                
+                {competency.subCompetencyNames.map((subComp, index) => (
+                  <div key={index} className="mb-4">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-black mb-2">
+                      <p className="font-medium mb-2">Sub-competency: {subComp}</p>
+                      <p className="text-sm text-gray-600">Assessment notes and observations will be displayed here based on participant&apos;s performance.</p>
+                    </div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <label className="text-sm font-medium text-black">Score (0-10):</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        step="0.5"
+                        value={competencyScores[competency.id]?.[subComp] || 5.0}
+                        onChange={(e) => updateCompetencyScore(competency.id, subComp, parseFloat(e.target.value) || 0)}
+                        className="w-20 px-2 py-1 border border-gray-300 rounded text-black focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                      />
+                      <span className="text-sm text-gray-600">/10</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+            
+            <div className="border-t pt-4">
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium text-black">Overall Assessment</p>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    scoreStatus === 'SUBMITTED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {scoreStatus}
+                  </span>
+                </div>
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 mb-2">Overall Comments (Required)</p>
+                  <textarea
+                    rows={4}
+                    value={comments}
+                    onChange={(e) => setComments(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md p-2 text-black focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                    placeholder="Add your overall assessment comments here..."
+                    required
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => submitScores('DRAFT')}
+                    disabled={isSubmittingScore || !comments.trim()}
+                    className="flex-1 bg-slate-600 hover:bg-slate-700 disabled:bg-slate-400 text-white px-4 py-2 rounded-lg text-sm flex items-center justify-center gap-2"
+                  >
+                    {isSubmittingScore ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Saving Draft...
+                      </>
+                    ) : (
+                      'Save as Draft'
+                    )}
+                  </button>
+                  <button 
+                    onClick={() => submitScores('SUBMITTED')}
+                    disabled={isSubmittingScore || !comments.trim()}
+                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-lg text-sm flex items-center justify-center gap-2"
+                  >
+                    {isSubmittingScore ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Submitting Final...
+                      </>
+                    ) : (
+                      'Submit Final Score'
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -306,8 +609,33 @@ const AssessmentDetail = () => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-black">Submissions</h3>
-              <p className="text-sm text-black">Completion Date- 12/02/2025</p>
+              <p className="text-sm text-black">
+                Submission Status: {participantDetails.data.assignments[0]?.submissionCount || 0}/{participantDetails.data.assignments[0]?.totalActivities || 0}
+              </p>
             </div>
+            
+            {/* Activity Details */}
+            {participantDetails.data.assignments[0]?.activities.map((activity) => (
+              <div key={activity.activityId} className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-black mb-2">{activity.activityDetail.name}</h4>
+                <p className="text-sm text-gray-600 mb-2">{activity.activityDetail.description}</p>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    Boolean(activity.submission) ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {Boolean(activity.submission) ? 'Submitted' : 'Pending'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Type: {activity.activityType.replace('_', ' ')}
+                  </span>
+                </div>
+                {activity.activityDetail.instructions && (
+                  <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
+                    <div dangerouslySetInnerHTML={{ __html: activity.activityDetail.instructions }} />
+                  </div>
+                )}
+              </div>
+            ))}
 
             <div className="mt-4 flex gap-3">
               <button 
@@ -335,31 +663,59 @@ const AssessmentDetail = () => {
             <div className="mt-4 border border-gray-300 rounded-md p-4 h-[400px] overflow-y-auto">
               {activeTab === 'videos' ? (
                 <div className="space-y-4">
-                  <div className="text-sm text-black mb-3">
-                    <strong>Video Submission:</strong> test.MP4
-                  </div>
-                  <video 
-                    controls 
-                    className="w-full h-64 bg-black rounded-md"
-                    preload="metadata"
-                  >
-                    <source src="/test1.mp4" type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-                  <div className="text-xs text-black mt-2">
-                    <p><strong>File:</strong> test.MP4</p>
-                    <p><strong>Submitted:</strong> 12/02/2025</p>
-                  </div>
+                  {participantDetails.data.assignments[0]?.activities.some(a => Boolean(a.submission)) ? (
+                    <div>
+                      <div className="text-sm text-black mb-3">
+                        <strong>Video Submissions:</strong>
+                      </div>
+                      {participantDetails.data.assignments[0].activities
+                        .filter(a => Boolean(a.submission))
+                        .map((activity) => (
+                          <div key={activity.activityId} className="mb-4">
+                            <p className="text-sm font-medium text-black mb-2">{activity.activityDetail.name}</p>
+                            <video 
+                              controls 
+                              className="w-full h-64 bg-black rounded-md"
+                              preload="metadata"
+                            >
+                              <source src="/test1.mp4" type="video/mp4" />
+                              Your browser does not support the video tag.
+                            </video>
+                            <div className="text-xs text-black mt-2">
+                              <p><strong>Activity:</strong> {activity.activityDetail.name}</p>
+                              <p><strong>Type:</strong> {activity.activityType}</p>
+                            </div>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-500 py-8">
+                      <p>No video submissions found</p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-sm text-black">
-                  <p>
-                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-                  </p>
-                  <br />
-                  <p>
-                    "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo."
-                  </p>
+                  {participantDetails.data.assignments[0]?.activities.some(a => Boolean(a.submission)) ? (
+                    participantDetails.data.assignments[0].activities
+                      .filter(a => Boolean(a.submission))
+                      .map((activity) => (
+                        <div key={activity.activityId} className="mb-4 p-3 bg-gray-50 rounded">
+                          <h5 className="font-medium mb-2">{activity.activityDetail.name}</h5>
+                          <p className="text-sm">{activity.activityDetail.description}</p>
+                          {Boolean(activity.submission) && (
+                            <div className="mt-2 text-xs text-gray-600">
+                              <p>Submission data available</p>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                  ) : (
+                    <div className="text-center text-gray-500 py-8">
+                      <p>No document submissions found</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

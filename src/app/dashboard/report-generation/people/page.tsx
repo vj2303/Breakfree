@@ -24,7 +24,7 @@ interface Group {
 // Note: User interface will be added when UsersComponent requires it
 
 const PeopleManagement = () => {
-  const [tab, setTab] = useState<'groups' | 'participants' | 'users'>('groups');
+  const [tab, setTab] = useState<'groups' | 'participants' | 'assessors'>('groups');
   const [groups, setGroups] = useState<Group[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState<string | null>(null);
@@ -194,16 +194,16 @@ const PeopleManagement = () => {
           Participants
         </button>
         <button
-          className={`px-6 py-2 rounded-full transition-colors ${tab === 'users' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-black hover:bg-gray-200'}`}
-          onClick={() => setTab('users')}
+          className={`px-6 py-2 rounded-full transition-colors ${tab === 'assessors' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-black hover:bg-gray-200'}`}
+          onClick={() => setTab('assessors')}
         >
-          Users
+          Assessors
         </button>
       </div>
 
-      {/* Render appropriate component based on tab */}
-      {tab === 'groups' ? (
-        groupsLoading ? (
+      {/* Keep all tabs mounted to avoid re-fetching on toggle */}
+      <div className={tab === 'groups' ? '' : 'hidden'}>
+        {groupsLoading ? (
           <div className="text-gray-500">Loading groups...</div>
         ) : groupsError ? (
           <div className="text-red-500">{groupsError}</div>
@@ -219,17 +219,18 @@ const PeopleManagement = () => {
             onEditGroup={handleEditGroup}
             onRemoveGroup={handleRemoveGroup}
           />
-        )
-      ) : tab === 'participants' ? (
+        )}
+      </div>
+      <div className={tab === 'participants' ? '' : 'hidden'}>
         <ParticipantsComponent
           onAddParticipant={handleAddParticipant}
           onEditParticipant={handleEditParticipant}
           onRemoveParticipant={handleRemoveParticipant}
         />
-      ) : (
-        <UsersComponent
-        />
-      )}
+      </div>
+      <div className={tab === 'assessors' ? '' : 'hidden'}>
+        <UsersComponent />
+      </div>
     </div>
   );
 };

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronDown, Plus, Smile, Trash2 } from 'lucide-react';
 import { useAssessmentForm } from '../create/context';
 
 interface Competency {
@@ -81,6 +81,28 @@ const CompetencyFramework = () => {
     }));
   };
 
+  // Log when step is saved/next is clicked
+  useEffect(() => {
+    const handleStepSave = () => {
+      try {
+        console.log('=== ADD FRAMEWORK STEP SAVED ===');
+        console.log('Competencies count:', competencies.length);
+        console.log('Score state:', scoreState);
+        console.log('Expanded competencies:', Object.keys(expandedCompetencies).filter(key => expandedCompetencies[key]));
+        console.log('Step validation:', {
+          hasCompetencies: competencies.length > 0,
+          hasScoreData: Object.keys(scoreState).length > 0,
+          totalSubCompetencies: competencies.reduce((sum, comp) => sum + comp.subCompetencies.length, 0),
+          competenciesWithScores: Object.keys(scoreState).length
+        });
+      } catch {}
+    };
+
+    // Listen for step save events
+    window.addEventListener('step-save', handleStepSave);
+    return () => window.removeEventListener('step-save', handleStepSave);
+  }, [competencies, scoreState, expandedCompetencies]);
+
   return (
     <div className=" p-6 bg-white">
       <div className="border-t pt-6">
@@ -96,13 +118,13 @@ const CompetencyFramework = () => {
                   <span className="font-medium text-black">{competency.name}</span>
                   <button
                     onClick={() => toggleCompetencyExpansion(competency.id)}
-                    className="p-1 text-gray-500 hover:text-gray-700"
+                    className="p-1 text-gray-500 hover:text-gray-700 transition-all duration-200 ease-in-out"
                   >
-                    {expandedCompetencies[competency.id] ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
+                    <div className={`transform transition-transform duration-300 ease-in-out ${
+                      expandedCompetencies[competency.id] ? 'rotate-180' : 'rotate-0'
+                    }`}>
                       <ChevronDown className="w-4 h-4" />
-                    )}
+                    </div>
                   </button>
                 </div>
                 <div className="flex space-x-2">
@@ -111,26 +133,32 @@ const CompetencyFramework = () => {
                     className="p-1 text-gray-500 hover:text-gray-700"
                     title="Add Descriptor"
                   >
-                    <span className="text-2xl">+</span>
+                    <Plus className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => openRubricModal(competency)}
                     className="p-1 text-gray-500 hover:text-gray-700"
                     title="Score"
                   >
-                    <span className="text-2xl">😊</span>
+                    <Smile className="w-5 h-5" />
                   </button>
                   <button className="p-1 text-red-500 hover:text-red-700" title="Delete">
-                    <span className="text-2xl">🗑️</span>
+                    <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
               </div>
-              {expandedCompetencies[competency.id] && (
-                <div className="ml-9 space-y-2 bg-gray-50 rounded-lg p-4">
+              <div 
+                className={`ml-9 overflow-hidden transition-all duration-300 ease-in-out ${
+                  expandedCompetencies[competency.id] 
+                    ? 'max-h-96 opacity-100 mt-3' 
+                    : 'max-h-0 opacity-0 mt-0'
+                }`}
+              >
+                <div className="space-y-2 bg-gray-50 rounded-lg p-4">
                   <div className="font-semibold mb-2">Sub competency</div>
                   {competency.subCompetencies.length > 0 ? (
                     competency.subCompetencies.map((sub: string, index: number) => (
-                      <div key={index} className="text-sm text-black bg-white rounded p-2 mb-2">
+                      <div key={index} className="text-sm text-black bg-white rounded p-2 mb-2 transform transition-all duration-200 ease-in-out">
                         {sub}
                       </div>
                     ))
@@ -138,7 +166,7 @@ const CompetencyFramework = () => {
                     <div className="text-gray-400 text-sm">No subcompetencies</div>
                   )}
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
