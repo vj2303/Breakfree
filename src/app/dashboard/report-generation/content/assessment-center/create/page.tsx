@@ -97,14 +97,18 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
               console.log('Raw API data:', data);
               
               // Map activities to the expected format
-              const mappedActivities = (data.activities || []).map(activity => {
+              const mappedActivities = (data.activities || []).map((activity: Record<string, unknown>) => {
                 // Get the first participant's activity details if available
                 const activityDetails = data.assignments?.[0]?.participants?.[0]?.activities?.[0];
+                const activityTypeStr = typeof activity.activityType === 'string' 
+                  ? activity.activityType.toLowerCase().replace('_', '-') 
+                  : '';
+                
                 return {
                   id: activity.activityId,
                   name: activityDetails?.name || '',
-                  type: activity.activityType?.toLowerCase().replace('_', '-') || '',
-                  activityType: activity.activityType?.toLowerCase().replace('_', '-') || '',
+                  type: activityTypeStr,
+                  activityType: activityTypeStr,
                   activityContent: activity.activityId,
                   displayName: activityDetails?.name || '',
                   displayInstructions: activityDetails?.instructions || '',
@@ -112,14 +116,20 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
               });
               
               // Map assignments to the expected format
-              const mappedAssignments = (data.assignments || []).map(assignment => ({
-                groupId: assignment.groupId,
-                participants: assignment.participants?.map(participant => ({
-                  participantId: participant.participantId,
-                  activityIds: participant.activityIds || [],
-                  assessorId: participant.assessorId,
-                })) || [],
-              }));
+              const mappedAssignments = (data.assignments || []).map((assignment: Record<string, unknown>) => {
+                const participants = Array.isArray(assignment.participants) 
+                  ? assignment.participants.map((participant: Record<string, unknown>) => ({
+                      participantId: participant.participantId,
+                      activityIds: participant.activityIds || [],
+                      assessorId: participant.assessorId,
+                    }))
+                  : [];
+                
+                return {
+                  groupId: assignment.groupId,
+                  participants,
+                };
+              });
               
               const newFormData = {
                 name: data.name || '',
@@ -288,12 +298,12 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
         'inbox-activity': 'INBOX_ACTIVITY',
       };
 
-      const transformedActivities = (formData.activities || []).map((activity: any, index: number) => {
+      const transformedActivities = (formData.activities || []).map((activity: Activity, index: number) => {
         // Get the competencyLibraryId from the first selected competency
         const competencyLibraryId = (formData.competencyIds || [])[0] || '';
 
         return {
-          activityType: activityTypeMap[activity.activityType] || activity.activityType || 'CASE_STUDY',
+          activityType: activityTypeMap[activity.activityType || ''] || activity.activityType || 'CASE_STUDY',
           activityId: activity.activityContent || activity.id || `activity_${index}`,
           competencyLibraryId: competencyLibraryId,
           displayOrder: index + 1,
@@ -347,7 +357,7 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
         'Content-Type': 'multipart/form-data'
       });
       console.log("📡 [Assessment Center] Form data being sent:");
-      for (let [key, value] of form.entries()) {
+      for (const [key, value] of form.entries()) {
         if (key === 'document' && value instanceof File) {
           console.log(`  - ${key}: ${value.name} (${value.size} bytes)`);
         } else {
@@ -507,12 +517,12 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h3 className="font-semibold text-blue-800 mb-2">Debug: Form Data (Edit Mode)</h3>
           <div className="text-sm text-blue-700 space-y-1">
-            <p><strong>Name:</strong> "{formData.name}"</p>
-            <p><strong>Description:</strong> "{formData.description}"</p>
-            <p><strong>Display Name:</strong> "{formData.displayName}"</p>
-            <p><strong>Display Instructions:</strong> "{formData.displayInstructions}"</p>
-            <p><strong>Report Template Name:</strong> "{formData.reportTemplateName}"</p>
-            <p><strong>Report Template Type:</strong> "{formData.reportTemplateType}"</p>
+            <p><strong>Name:</strong> &quot;{formData.name}&quot;</p>
+            <p><strong>Description:</strong> &quot;{formData.description}&quot;</p>
+            <p><strong>Display Name:</strong> &quot;{formData.displayName}&quot;</p>
+            <p><strong>Display Instructions:</strong> &quot;{formData.displayInstructions}&quot;</p>
+            <p><strong>Report Template Name:</strong> &quot;{formData.reportTemplateName}&quot;</p>
+            <p><strong>Report Template Type:</strong> &quot;{formData.reportTemplateType}&quot;</p>
             <p><strong>Competency IDs:</strong> {JSON.stringify(formData.competencyIds)}</p>
             <p><strong>Selected Competencies:</strong> {formData.selectedCompetenciesData.length} items</p>
             <p><strong>Activities:</strong> {formData.activities.length} items</p>

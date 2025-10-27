@@ -240,7 +240,7 @@ interface AuthContextType {
   fetchAssignments: () => Promise<void>;
   fetchAssessorGroups: () => Promise<void>;
   fetchAssessmentCenters: (page?: number, limit?: number, search?: string) => Promise<void>;
-  updateAssessmentCenter: (id: string, data: any) => Promise<{ success: boolean; message?: string }>;
+  updateAssessmentCenter: (id: string, data: Record<string, unknown>) => Promise<{ success: boolean; message?: string }>;
   deleteAssessmentCenter: (id: string) => Promise<{ success: boolean; message?: string }>;
 }
 
@@ -406,7 +406,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Function to update assessment center
-  const updateAssessmentCenter = async (id: string, data: any) => {
+  const updateAssessmentCenter = async (id: string, data: Record<string, unknown>) => {
     if (!token) {
       return { success: false, message: 'No authentication token available' };
     }
@@ -415,16 +415,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const formData = new FormData();
       
       // Add all the form fields
-      if (data.name) formData.append('name', data.name);
-      if (data.description) formData.append('description', data.description);
-      if (data.displayName) formData.append('displayName', data.displayName);
-      if (data.displayInstructions) formData.append('displayInstructions', data.displayInstructions);
+      if (data.name) formData.append('name', String(data.name));
+      if (data.description) formData.append('description', String(data.description));
+      if (data.displayName) formData.append('displayName', String(data.displayName));
+      if (data.displayInstructions) formData.append('displayInstructions', String(data.displayInstructions));
       if (data.competencyIds) formData.append('competencyIds', JSON.stringify(data.competencyIds));
-      if (data.reportTemplateName) formData.append('reportTemplateName', data.reportTemplateName);
-      if (data.reportTemplateType) formData.append('reportTemplateType', data.reportTemplateType);
+      if (data.reportTemplateName) formData.append('reportTemplateName', String(data.reportTemplateName));
+      if (data.reportTemplateType) formData.append('reportTemplateType', String(data.reportTemplateType));
       if (data.activities) formData.append('activities', JSON.stringify(data.activities));
       if (data.assignments) formData.append('assignments', JSON.stringify(data.assignments));
-      if (data.document) formData.append('document', data.document);
+      if (data.document && data.document instanceof Blob) formData.append('document', data.document);
 
       const res = await fetch(`http://localhost:3000/api/assessment-centers/${id}`, {
         method: 'PATCH',

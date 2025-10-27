@@ -75,7 +75,7 @@ type AccuracyRateProps = {
   classification?: Classification;
 };
 
-const AccuracyRate = ({ currentDetails, setCurrentDetails, documentEvaluation, evaluation, classification }: AccuracyRateProps) => {
+const AccuracyRate = ({ currentDetails, setCurrentDetails, documentEvaluation }: AccuracyRateProps) => {
   // Determine if we're using document evaluation or legacy data
   const isDocumentEvaluation = !!documentEvaluation;
   

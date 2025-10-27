@@ -103,7 +103,7 @@ const Page = () => {
   const { token } = useAuth();
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const [uploadedFileName, setUploadedFileName] = useState<string | undefined>(undefined);
-  const [result, setResult] = useState<EvaluationResult | null>(null);
+  const [result] = useState<EvaluationResult | null>(null);
   const [documentEvaluationResult, setDocumentEvaluationResult] = useState<DocumentEvaluationResponse | null>(null);
   const [showEvaluation, setShowEvaluation] = useState(false);
 

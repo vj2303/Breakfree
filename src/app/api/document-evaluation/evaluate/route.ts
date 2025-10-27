@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
             name: "Data/evidence supports claims",
             answer: "yes",
             confidence: 0.8,
-            evidence: "Study & Presentation\n\u2022\nCase Study Analysis\n\u2022\nInterview\n\u2022\nSituational Judgement Test\nIt is essential to note that the report focuses observations based on the competencies exhibited during the \nexercises rather than the "right or wrong" responses to the situations or the tasks presented.",
+            evidence: "Study & Presentation\n\u2022\nCase Study Analysis\n\u2022\nInterview\n\u2022\nSituational Judgement Test\nIt is essential to note that the report focuses observations based on the competencies exhibited during the \nexercises rather than the \"right or wrong\" responses to the situations or the tasks presented.",
             location: "Evidence",
             note: ""
           },

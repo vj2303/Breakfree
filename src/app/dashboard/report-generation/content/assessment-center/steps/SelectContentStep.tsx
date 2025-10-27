@@ -36,11 +36,11 @@ const SelectContentStep: React.FC = () => {
 
   // Basic assessment center fields - use formData directly to prevent circular updates
   const [contentOptions, setContentOptions] = useState<{ [key: string]: { value: string; label: string }[] }>({});
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [error, setError] = useState("");
 
   // Use refs to prevent infinite loops
-  const isUpdatingFormData = useRef(false);
+  // const isUpdatingFormData = useRef(false);
 
   // Memoize activity types to prevent unnecessary re-renders
   const activityTypesString = useMemo(() => {
@@ -151,41 +151,41 @@ const SelectContentStep: React.FC = () => {
   }, [activityTypesString, token, formData.activities]); // Depend on formData.activities
 
   // Fetch activity details when activity content is selected
-  const fetchActivityDetails = useCallback(async (activityId: string, activityType: string, idx: number) => {
-    if (!activityId || !token || loading) {
-      console.log(`[SelectContentStep] Skipping fetchActivityDetails: activityId=${activityId}, token=${!!token}, loading=${loading}`);
-      return;
-    }
+  // const fetchActivityDetails = useCallback(async (activityId: string, activityType: string) => {
+  //   if (!activityId || !token || loading) {
+  //     console.log(`[SelectContentStep] Skipping fetchActivityDetails: activityId=${activityId}, token=${!!token}, loading=${loading}`);
+  //     return;
+  //   }
 
-    console.log(`[SelectContentStep] Fetching activity details for ${activityType}/${activityId}`);
-    try {
-      setLoading(true);
-      const endpoint = activityType === 'case-study'
-        ? `http://localhost:3000/api/case-studies/${activityId}`
-        : `http://localhost:3000/api/inbox-activities/${activityId}`;
+  //   console.log(`[SelectContentStep] Fetching activity details for ${activityType}/${activityId}`);
+  //   try {
+  //     setLoading(true);
+  //     const endpoint = activityType === 'case-study'
+  //       ? `http://localhost:3000/api/case-studies/${activityId}`
+  //       : `http://localhost:3000/api/inbox-activities/${activityId}`;
 
-      const response = await fetch(endpoint, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+  //     const response = await fetch(endpoint, {
+  //       headers: {
+  //         'Authorization': `Bearer ${token}`,
+  //         'Content-Type': 'application/json',
+  //       },
+  //     });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          console.log(`[SelectContentStep] Fetched activity details:`, result.data);
-          // Don't auto-populate any fields - let user enter manually
-        }
-      } else {
-        console.error(`[SelectContentStep] Failed to fetch activity details: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('Error fetching activity details:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [token, loading]);
+  //     if (response.ok) {
+  //       const result = await response.json();
+  //       if (result.success && result.data) {
+  //         console.log(`[SelectContentStep] Fetched activity details:`, result.data);
+  //         // Don't auto-populate any fields - let user enter manually
+  //       }
+  //     } else {
+  //       console.error(`[SelectContentStep] Failed to fetch activity details: ${response.status}`);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching activity details:', error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, [token, loading]);
 
   const handleAdd = useCallback(() => {
     const newActivities = [...(formData.activities || []), { ...initialActivity }];

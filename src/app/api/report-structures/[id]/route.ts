@@ -1,7 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface ReportStructure {
+  id: string;
+  reportName: string;
+  description: string;
+  selectedAssessment: string;
+  reportTemplate: string;
+  aiProfile: string;
+  reportCover: {
+    reportName: boolean;
+    candidateName: boolean;
+    date: boolean;
+  };
+  part1Introduction: boolean;
+  part2Analysis: {
+    detailObservation: boolean;
+    customerOrientation: boolean;
+    innovation: boolean;
+    flexibleAndAdaptive: boolean;
+    analyticalSkills: boolean;
+    achievementOrientation: boolean;
+    communicationSkills: boolean;
+    inspiresTeam: boolean;
+    developsTeamMembers: boolean;
+    isAnSME: boolean;
+    overallCompetencyRating: boolean;
+  };
+  part3Comments: {
+    areasOfStrength: boolean;
+    areasOfDevelopment: boolean;
+  };
+  part4OverallRatings: {
+    interpretingScoreTable: boolean;
+    competenciesScoreMatrix: boolean;
+    chartType: 'bar' | 'pie';
+  };
+  part5Recommendation: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Mock data store (in a real app, this would be a database)
-let reportStructures: any[] = [
+const reportStructures: ReportStructure[] = [
   {
     id: '1',
     reportName: 'Assessment Report Template',
@@ -46,7 +87,7 @@ let reportStructures: any[] = [
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -67,7 +108,7 @@ export async function GET(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
@@ -102,7 +143,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -123,7 +164,7 @@ export async function PUT(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
@@ -216,7 +257,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -237,7 +278,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(

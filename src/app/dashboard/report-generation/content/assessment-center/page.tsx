@@ -59,7 +59,7 @@ export default function AssessmentCenterPage() {
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = () => {
       if (activeDropdown) {
         setActiveDropdown(null);
       }

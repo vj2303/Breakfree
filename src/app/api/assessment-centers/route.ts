@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     const reportTemplateType = formData.get('reportTemplateType') as string;
     const activities = formData.get('activities') as string;
     const assignments = formData.get('assignments') as string;
-    const document = formData.get('document') as File | null;
+    // const document = formData.get('document') as File | null;
 
     // Validate required fields
     if (!name || !description || !displayName) {
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       parsedCompetencyIds = competencyIds ? JSON.parse(competencyIds) : [];
       parsedActivities = activities ? JSON.parse(activities) : [];
       parsedAssignments = assignments ? JSON.parse(assignments) : [];
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { success: false, message: 'Invalid JSON in competencyIds, activities, or assignments' },
         { status: 400 }
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare the request body
-    const requestBody: any = {
+    const requestBody: Record<string, unknown> = {
       name,
       description,
       displayName,

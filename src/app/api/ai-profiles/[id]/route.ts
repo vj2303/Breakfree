@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface AIProfile {
+  id: string;
+  title: string;
+  systemInstruction: string;
+  temperature: number;
+  model: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Mock data store (in a real app, this would be a database)
-let aiProfiles: any[] = [
+const aiProfiles: AIProfile[] = [
   {
     id: '1',
     title: 'Assessment Expert',
     systemInstruction: 'You are an expert assessor who generates professional evaluation reports. Always maintain objectivity and use professional language.',
     temperature: 0.7,
     model: 'gpt-4o',
+    createdBy: '689db10a67791b3839b99c0d',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }
@@ -15,7 +27,7 @@ let aiProfiles: any[] = [
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -36,7 +48,7 @@ export async function PATCH(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
@@ -106,7 +118,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -127,7 +139,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(

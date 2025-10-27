@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import ReportStructureCard from './ReportStructureCard'
 import CreateReportForm from './CreateReportForm'
-import { ReportStructureApi, ReportStructure } from '../../../../../lib/reportStructureApi'
+import { ReportStructureApi, ReportStructure, PaginationInfo } from '../../../../../lib/reportStructureApi'
 import { useAuth } from '../../../../../context/AuthContext'
 
 interface DisplayReportStructure {
@@ -20,7 +20,7 @@ export default function ReportStructurePage() {
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState('')
-  const [pagination, setPagination] = useState<any>(null)
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null)
   const [editingReport, setEditingReport] = useState<ReportStructure | null>(null)
   const [editLoading, setEditLoading] = useState(false)
 
@@ -81,7 +81,7 @@ export default function ReportStructurePage() {
     setEditingReport(null)
   }
 
-  const handleSaveReport = (data: any) => {
+  const handleSaveReport = (data: ReportStructure) => {
     // Handle saving the report structure
     console.log(`Report structure ${editingReport ? 'updated' : 'created'} successfully:`, data)
     
@@ -92,7 +92,7 @@ export default function ReportStructurePage() {
           ? {
               id: data.id,
               title: data.reportName,
-              createdDate: new Date(data.updatedAt || data.createdAt).toLocaleDateString('en-GB', {
+              createdDate: new Date(data.updatedAt || data.createdAt || new Date().toISOString()).toLocaleDateString('en-GB', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric'
@@ -106,7 +106,7 @@ export default function ReportStructurePage() {
       const newReport = {
         id: data.id,
         title: data.reportName,
-        createdDate: new Date(data.createdAt).toLocaleDateString('en-GB', {
+        createdDate: new Date(data.createdAt || new Date().toISOString()).toLocaleDateString('en-GB', {
           day: 'numeric',
           month: 'short',
           year: 'numeric'

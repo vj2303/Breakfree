@@ -12,7 +12,7 @@ export const CreateProfileModal: React.FC<CreateProfileModalProps> = ({
     title: '',
     systemInstruction: '',
     temperature: 0.7,
-    model: 'gpt-4o' as const
+    model: 'gpt-4o' as 'gpt-4o' | 'gpt-4' | 'gpt-3.5-turbo' | 'claude-3' | 'gemini-pro'
   });
 
   useEffect(() => {
@@ -87,7 +87,7 @@ export const CreateProfileModal: React.FC<CreateProfileModalProps> = ({
             </label>
             <select
               value={formData.model}
-              onChange={(e) => setFormData({ ...formData, model: e.target.value as any })}
+              onChange={(e) => setFormData({ ...formData, model: e.target.value as 'gpt-4o' | 'gpt-4' | 'gpt-3.5-turbo' | 'claude-3' | 'gemini-pro' })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
             >
               <option value="gpt-4o">GPT-4o</option>

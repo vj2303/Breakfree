@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface AIProfile {
+  id: string;
+  title: string;
+  systemInstruction: string;
+  temperature: number;
+  model: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Mock data store (in a real app, this would be a database)
-let aiProfiles: any[] = [
+const aiProfiles: AIProfile[] = [
   {
     id: '1',
     title: 'Assessment Expert',
@@ -177,6 +188,7 @@ export async function POST(request: NextRequest) {
       systemInstruction,
       temperature,
       model,
+      createdBy: '689db10a67791b3839b99c0d', // In a real app, get from token
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

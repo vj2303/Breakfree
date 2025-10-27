@@ -7,7 +7,7 @@ import { ReportStructureApi, ReportFormData, ReportStructure } from '../../../..
 
 interface CreateReportFormProps {
   onCancel: () => void
-  onSave: (data: ReportFormData) => void
+  onSave: (data: ReportStructure) => void
   editingReport?: ReportStructure | null
 }
 
@@ -132,21 +132,28 @@ const CreateReportForm: React.FC<CreateReportFormProps> = ({ onCancel, onSave, e
     fetchAiProfiles()
   }, [token])
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
   }
 
-  const handleNestedChange = (parent: string, field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [parent]: {
-        ...prev[parent as keyof ReportFormData],
-        [field]: value
+  const handleNestedChange = (parent: string, field: string, value: unknown) => {
+    setFormData(prev => {
+      const parentValue = prev[parent as keyof ReportFormData]
+      const parentObject = typeof parentValue === 'object' && parentValue !== null 
+        ? parentValue as Record<string, unknown>
+        : {}
+      
+      return {
+        ...prev,
+        [parent]: {
+          ...parentObject,
+          [field]: value
+        }
       }
-    }))
+    })
   }
 
   const handleSave = async () => {
