@@ -14,7 +14,18 @@ const ReportConfigurationStep = () => {
   if (!context) {
     throw new Error('ReportConfigurationStep must be used within AssessmentFormContext');
   }
-  const { updateFormData } = context;
+  const { formData, updateFormData } = context;
+
+  // Update local state when form data changes (for edit mode)
+  useEffect(() => {
+    if (formData.reportTemplateName) {
+      setName(formData.reportTemplateName);
+    }
+    if (formData.reportTemplateType) {
+      const templateNumber = formData.reportTemplateType.replace('TEMPLATE', '');
+      setSelectedTemplate(parseInt(templateNumber) || null);
+    }
+  }, [formData.reportTemplateName, formData.reportTemplateType]);
 
   useEffect(() => {
     updateFormData('reportTemplateName', name);

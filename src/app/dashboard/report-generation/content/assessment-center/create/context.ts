@@ -44,6 +44,7 @@ export interface FormData {
 export interface AssessmentFormContextType {
   formData: FormData;
   updateFormData: (field: string, value: unknown) => void;
+  isLoading?: boolean;
 }
 
 export const AssessmentFormContext = React.createContext<AssessmentFormContextType | null>(null);

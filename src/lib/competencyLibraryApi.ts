@@ -1,4 +1,4 @@
-const API_URL = 'https://api.breakfreeacademy.in/api/competency-libraries';
+const API_URL = 'http://localhost:3000/api/competency-libraries';
 
 // Helper function to get auth token from localStorage
 function getAuthToken() {

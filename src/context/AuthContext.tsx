@@ -240,6 +240,8 @@ interface AuthContextType {
   fetchAssignments: () => Promise<void>;
   fetchAssessorGroups: () => Promise<void>;
   fetchAssessmentCenters: (page?: number, limit?: number, search?: string) => Promise<void>;
+  updateAssessmentCenter: (id: string, data: any) => Promise<{ success: boolean; message?: string }>;
+  deleteAssessmentCenter: (id: string) => Promise<{ success: boolean; message?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -380,7 +382,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     setAssessmentCentersLoading(true);
     try {
-      const res = await fetch(`/api/assessment-centers?page=${page}&limit=${limit}&search=${search}`, {
+      const res = await fetch(`http://localhost:3000/api/assessment-centers?page=${page}&limit=${limit}&search=${search}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -403,6 +405,80 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Function to update assessment center
+  const updateAssessmentCenter = async (id: string, data: any) => {
+    if (!token) {
+      return { success: false, message: 'No authentication token available' };
+    }
+
+    try {
+      const formData = new FormData();
+      
+      // Add all the form fields
+      if (data.name) formData.append('name', data.name);
+      if (data.description) formData.append('description', data.description);
+      if (data.displayName) formData.append('displayName', data.displayName);
+      if (data.displayInstructions) formData.append('displayInstructions', data.displayInstructions);
+      if (data.competencyIds) formData.append('competencyIds', JSON.stringify(data.competencyIds));
+      if (data.reportTemplateName) formData.append('reportTemplateName', data.reportTemplateName);
+      if (data.reportTemplateType) formData.append('reportTemplateType', data.reportTemplateType);
+      if (data.activities) formData.append('activities', JSON.stringify(data.activities));
+      if (data.assignments) formData.append('assignments', JSON.stringify(data.assignments));
+      if (data.document) formData.append('document', data.document);
+
+      const res = await fetch(`http://localhost:3000/api/assessment-centers/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      
+      const result = await res.json();
+      
+      if (result.success) {
+        // Refresh the assessment centers list
+        await fetchAssessmentCenters();
+        return { success: true, message: result.message };
+      } else {
+        return { success: false, message: result.message || 'Failed to update assessment center' };
+      }
+    } catch (error) {
+      console.error('Error updating assessment center:', error);
+      return { success: false, message: 'An error occurred while updating the assessment center' };
+    }
+  };
+
+  // Function to delete assessment center
+  const deleteAssessmentCenter = async (id: string) => {
+    if (!token) {
+      return { success: false, message: 'No authentication token available' };
+    }
+
+    try {
+      const res = await fetch(`http://localhost:3000/api/assessment-centers/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await res.json();
+      
+      if (result.success) {
+        // Refresh the assessment centers list
+        await fetchAssessmentCenters();
+        return { success: true, message: result.message };
+      } else {
+        return { success: false, message: result.message || 'Failed to delete assessment center' };
+      }
+    } catch (error) {
+      console.error('Error deleting assessment center:', error);
+      return { success: false, message: 'An error occurred while deleting the assessment center' };
+    }
+  };
+
   // Check for existing token on app load
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
@@ -415,9 +491,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   // Fetch assignments when participantId and token are available
+  // Only fetch if we're on a participant-related page
   useEffect(() => {
-    if (participantId && token && !assignments) {
-      fetchAssignments();
+    if (participantId && token && !assignments && typeof window !== 'undefined') {
+      // Only fetch assignments if we're on a participant page
+      const currentPath = window.location.pathname;
+      if (currentPath.includes('/participant/') || currentPath.includes('/dashboard/participant/')) {
+        fetchAssignments();
+      }
     }
   }, [participantId, token, assignments, fetchAssignments]);
 
@@ -532,7 +613,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       logout, 
       fetchAssignments,
       fetchAssessorGroups,
-      fetchAssessmentCenters
+      fetchAssessmentCenters,
+      updateAssessmentCenter,
+      deleteAssessmentCenter
     }}>
       {children}
     </AuthContext.Provider>

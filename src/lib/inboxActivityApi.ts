@@ -1,4 +1,4 @@
-const API_URL = 'https://api.breakfreeacademy.in/api/inbox-activities';
+const API_URL = 'http://localhost:3000/api/inbox-activities';
 
 function getAuthToken() {
   if (typeof window === 'undefined') throw new Error('No window object');

@@ -3,11 +3,64 @@ import React, { useState } from 'react'
 import UploadPage from './UploadPage'
 import axios from 'axios';
 import ChatPage from './ChatPage';
+import { useAuth } from '@/context/AuthContext';
 
 // Define the UploadStatus type to match what UploadPage expects
 type UploadStatus = 'idle' | 'loading' | 'success' | 'error';
 
-// Define interfaces that match the Modal component expectations
+// Define interfaces for the new document evaluation API response
+interface UIChecklistItem {
+  id: number;
+  label: string;
+  checked: boolean;
+  subchecks?: Array<{
+    key: string;
+    label: string;
+    checked: boolean;
+  }>;
+}
+
+interface CriteriaItem {
+  id: number;
+  name: string;
+  answer: string;
+  confidence: number;
+  evidence: string;
+  location: string;
+  note: string;
+  smart?: {
+    [key: string]: {
+      answer: string;
+      evidence: string;
+      confidence: number;
+    };
+  };
+}
+
+interface ScoreBreakdown {
+  totalScore: number;
+  totalPossible: number;
+  perCriterionScore: Array<{
+    id: number;
+    points: number;
+  }>;
+}
+
+interface DocumentEvaluationData {
+  uiChecklist: UIChecklistItem[];
+  criteria: CriteriaItem[];
+  scoreBreakdown: ScoreBreakdown;
+  compliance: string;
+  overallNotes: string;
+}
+
+interface DocumentEvaluationResponse {
+  success: boolean;
+  message: string;
+  data: DocumentEvaluationData;
+}
+
+// Legacy interfaces for backward compatibility
 interface EvaluationScores {
   [key: string]: string | number;
 }
@@ -47,30 +100,42 @@ interface ApiError {
 }
 
 const Page = () => {
+  const { token } = useAuth();
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const [uploadedFileName, setUploadedFileName] = useState<string | undefined>(undefined);
-  const [result, setResult] = useState<EvaluationResult | null>(null)
+  const [result, setResult] = useState<EvaluationResult | null>(null);
+  const [documentEvaluationResult, setDocumentEvaluationResult] = useState<DocumentEvaluationResponse | null>(null);
+  const [showEvaluation, setShowEvaluation] = useState(false);
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
 
+    // Check if token is available
+    if (!token) {
+      alert('Authentication token not found. Please log in again.');
+      setUploadStatus('error');
+      return;
+    }
+
     setUploadStatus('loading');
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('document', file);
 
     try {
       const res = await axios({
         method: 'post',
-        url: 'https://breakfreeai-evaluation.onrender.com/evaluate',
+        url: 'http://localhost:3000/api/document-evaluation/evaluate',
         data: formData,
         headers: {
-          "Content-Type": "multipart/form-data"
+          "Content-Type": "multipart/form-data",
+          "Authorization": `Bearer ${token}`
         }
       });
 
       setUploadedFileName(file.name);
-      setResult(res.data)
-      setUploadStatus("success")
+      setDocumentEvaluationResult(res.data);
+      setUploadStatus("success");
+      // Don't show evaluation immediately, wait for Done button click
     } catch (error) {
       // Type guard to handle error properly
       const apiError = error as ApiError;
@@ -79,9 +144,17 @@ const Page = () => {
     }
   };
 
+  const handleEvaluationComplete = () => {
+    setShowEvaluation(true);
+  };
+
   return (
     <div className="h-full overflow-hidden">
-      {result ? (
+      {showEvaluation && documentEvaluationResult ? (
+        <ChatPage 
+          documentEvaluation={documentEvaluationResult.data}
+        />
+      ) : showEvaluation && result ? (
         <ChatPage 
           evaluation={result.evaluation} 
           classification={result.classification} 
@@ -90,7 +163,8 @@ const Page = () => {
         <UploadPage 
           handleFileUpload={handleFileUpload} 
           uploadStatus={uploadStatus} 
-          uploadedFileName={uploadedFileName} 
+          uploadedFileName={uploadedFileName}
+          onEvaluationComplete={handleEvaluationComplete}
         />
       )}
     </div>

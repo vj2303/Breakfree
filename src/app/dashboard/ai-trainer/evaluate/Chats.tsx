@@ -213,16 +213,16 @@ interface ChatBoxProps {
 
 const ChatBox = ({ userName, message, img, isPrompt, isMarkdown }: ChatBoxProps) => {
   return (
-    <div className={`flex items-start gap-[10px] p-[10px] rounded-[20px] ${isPrompt ? 'bg-[#ffffff] w-[80%] self-end' : ''}`}>
+    <div className={`flex items-start gap-[10px] p-[10px] rounded-[20px] ${isPrompt ? 'bg-[#ffffff] w-[60%] self-end' : ''}`}>
       <Image width={50} height={50} src={img} alt="user" className={isPrompt ? 'order-2 rounded-full flex-shrink-0' : 'rounded-full flex-shrink-0'} />
       <span className="min-w-0 flex-1">
-        <p className="font-bold text-xl">{userName}</p>
+        <p className="font-bold text-xl text-black">{userName}</p>
         {isMarkdown ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto text-black">
             <ReactMarkdown rehypePlugins={[rehypeHighlight]}>{message}</ReactMarkdown>
           </div>
         ) : (
-          <p className="text-[16px] break-words">{message}</p>
+          <p className="text-[16px] break-words text-black">{message}</p>
         )}
       </span>
     </div>
@@ -245,17 +245,17 @@ const MessengerInput = ({ handleAddPrompt }: MessengerInputProps) => {
   };
 
   return (
-    <div className="absolute bottom-5 left-0 right-0 mx-4 z-10 bg-[#ffffff] border-[1px] border-gray-500 rounded-lg p-2 flex gap-2">
+    <div className="absolute bottom-5 left-[40%] transform -translate-x-1/2 w-[50%]  z-10 bg-[#ffffff] border-[1px] border-gray-500 rounded-lg p-2 flex gap-2">
       <input
         type="text"
-        className="outline-none flex-grow min-w-0"
+        className="outline-none flex-grow min-w-0 text-black"
         value={message}
         placeholder="Type your message here..."
         onChange={(e) => setMessage(e.target.value)}
         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
       />
       <Button bg="dark-blue" text="white" size="sm" onClick={handleSendMessage}>
-        <Image width={20} height={20} alt="send" src="/Vector.png" />
+        <p className='text-black'>search</p>
       </Button>
     </div>
   );

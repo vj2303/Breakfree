@@ -51,42 +51,39 @@ const AITrainerSidebar: React.FC<AITrainerSidebarProps> = ({ activePage, onPageC
   }
 
   return (
-    <div className="w-20 h-screen bg-white flex flex-col items-center py-6 fixed left-0 top-0">
-      {/* Top Spacing */}
-      <div className="h-20"></div>
-      
+    <>
       {/* Menu Items */}
-      <div className="flex flex-col items-center space-y-8 flex-1">
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, flex: 1 }}>
         {menuItems.map((item) => {
           const Icon = item.icon
-          const isActive = activePage === item.id || pathname.includes(item.path)
-          
+          const isActive = activePage === item.id || (activePage === '' && pathname.includes(item.path))
+
           return (
             <button
               key={item.id}
               onClick={() => handleMenuClick(item)}
-              className={`flex flex-col items-center space-y-2 p-3 rounded-xl transition-all duration-200 ${
-                isActive 
-                  ? ' text-gray-600 hover:text-gray-800 hover:bg-gray-50' 
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-              }`}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 12, borderRadius: 12, background: isActive ? '#e6effa' : 'transparent', color: '#000', fontWeight: isActive ? 600 : 400, transition: 'background 0.2s', cursor: 'pointer', border: 'none'
+              }}
             >
               <Icon size={24} />
-              <span className="text-xs font-medium">{item.label}</span>
+              <span style={{ fontSize: 12, marginTop: 4, color: '#000' }}>{item.label}</span>
             </button>
           )
         })}
-      </div>
 
-      {/* Logout Button */}
-      <button
-        onClick={handleLogout}
-        className="flex flex-col items-center space-y-2 p-3 rounded-xl text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-all duration-200"
-      >
-        <LogOut size={24} />
-        <span className="text-xs font-medium">Log Out</span>
-      </button>
-    </div>
+        {/* Logout Button */}
+        <div style={{ marginTop: 260 }}>
+          <button
+            onClick={handleLogout}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 8, borderRadius: 12, color: '#000', fontWeight: 400, cursor: 'pointer', background: 'none', border: 'none' }}
+          >
+            <LogOut size={24} />
+            <span style={{ fontSize: 12, marginTop: 4, color: '#000' }}>Log Out</span>
+          </button>
+        </div>
+      </div>
+    </>
   )
 }
 

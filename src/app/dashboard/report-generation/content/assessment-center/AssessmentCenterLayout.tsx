@@ -19,6 +19,7 @@ interface AssessmentCenterLayoutProps {
   showSaveButton?: boolean;
   showCancelButton?: boolean;
   saveButtonText?: string;
+  isEditMode?: boolean;
 }
 
 const stepTitles = [
@@ -40,6 +41,7 @@ const AssessmentCenterLayout: React.FC<AssessmentCenterLayoutProps> = ({
   showSaveButton = true,
   showCancelButton = false,
   saveButtonText = "Save and Next",
+  isEditMode = false,
 }) => {
   const steps: Step[] = stepTitles.map((title, idx) => ({
     id: `step-${idx}`,
@@ -62,9 +64,11 @@ const AssessmentCenterLayout: React.FC<AssessmentCenterLayoutProps> = ({
           <div>
             <h1 className="text-2xl font-semibold text-black flex items-center gap-2">
               Assessment Center
-              <span className="text-gray-400">✏️</span>
+              <span className="text-gray-400">{isEditMode ? '✏️' : '🆕'}</span>
             </h1>
-            <p className="text-sm text-black mt-1">Created on 2 Jan 2025</p>
+            <p className="text-sm text-black mt-1">
+              {isEditMode ? 'Editing existing assessment center' : 'Created on ' + new Date().toLocaleDateString()}
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">

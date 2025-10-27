@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Trash2 } from "lucide-react";
 import { useAssessmentForm } from '../create/context';
 import { useAuth } from '@/context/AuthContext';
@@ -30,38 +30,32 @@ const SelectContentStep: React.FC = () => {
   if (!context) {
     throw new Error('SelectContentStep must be used within AssessmentFormContext');
   }
-  const { updateFormData } = context;
-  
+  const { formData, updateFormData } = context;
+
   const { token } = useAuth();
-  
-  const [activities, setActivities] = useState([
-    { ...initialActivity },
-  ]);
+
+  // Basic assessment center fields - use formData directly to prevent circular updates
   const [contentOptions, setContentOptions] = useState<{ [key: string]: { value: string; label: string }[] }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    updateFormData('activities', activities);
-    try {
-      const mapped = activities.map((a, i) => ({
-        activityType: a.activityType,
-        activityId: a.activityContent,
-        competencyLibraryId: '', // This will be set from the competency selection step
-        displayOrder: i + 1,
-        displayName: a.displayName,
-        displayInstructions: a.displayInstructions,
-      }));
-      console.log('[Assessment Center][SelectContentStep] activities updated:', mapped);
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activities]);
+  // Use refs to prevent infinite loops
+  const isUpdatingFormData = useRef(false);
+
+  // Memoize activity types to prevent unnecessary re-renders
+  const activityTypesString = useMemo(() => {
+    return formData.activities?.map(a => a.activityType).filter(Boolean).sort().join(',') || '';
+  }, [formData.activities]);
+
+  // Track which activity types are currently being fetched to prevent duplicates
+  const fetchingTypes = useRef<Set<string>>(new Set());
 
   // Log when step is saved/next is clicked
   useEffect(() => {
     const handleStepSave = () => {
       try {
-        const mapped = activities.map((a, i) => ({
+        const currentActivities = formData.activities || [];
+        const mapped = currentActivities.map((a, i) => ({
           activityType: a.activityType,
           activityId: a.activityContent,
           displayOrder: i + 1,
@@ -71,11 +65,11 @@ const SelectContentStep: React.FC = () => {
         console.log('=== SELECT CONTENT STEP SAVED ===');
         console.log('Current activities:', mapped);
         console.log('Step validation:', {
-          hasActivities: activities.length > 0,
-          allTypesSelected: activities.every(a => a.activityType),
-          allContentSelected: activities.every(a => a.activityContent),
-          allNamesFilled: activities.every(a => a.displayName),
-          allInstructionsFilled: activities.every(a => a.displayInstructions)
+          hasActivities: currentActivities.length > 0,
+          allTypesSelected: currentActivities.every(a => a.activityType),
+          allContentSelected: currentActivities.every(a => a.activityContent),
+          allNamesFilled: currentActivities.every(a => a.displayName),
+          allInstructionsFilled: currentActivities.every(a => a.displayInstructions)
         });
       } catch {}
     };
@@ -83,24 +77,42 @@ const SelectContentStep: React.FC = () => {
     // Listen for step save events
     window.addEventListener('step-save', handleStepSave);
     return () => window.removeEventListener('step-save', handleStepSave);
-  }, [activities]);
+  }, [formData.activities]);
 
-  // Fetch content options when activity type changes
+  // Fetch content options when activity types change - only run when necessary
   useEffect(() => {
+    // Only run if we have activities and a token
+    const currentActivities = formData.activities || [];
+    if (currentActivities.length === 0 || !token) return;
+
     const fetchContent = async (type: string) => {
-      setLoading(true);
-      setError("");
+      // Prevent duplicate requests for the same type
+      if (fetchingTypes.current.has(type)) {
+        console.log(`[SelectContentStep] Already fetching for type: ${type}`);
+        return;
+      }
+
+      // Don't fetch if already have options for this type
+      if (contentOptions[type] && contentOptions[type].length > 0) {
+        console.log(`[SelectContentStep] Already have options for type: ${type}`);
+        return;
+      }
+
+      fetchingTypes.current.add(type);
+      console.log(`[SelectContentStep] Starting fetch for type: ${type}`);
+
       try {
         let url = "";
         if (type === "case-study") {
-          url = "https://api.breakfreeacademy.in/api/case-studies?page=1&limit=10";
+          url = "http://localhost:3000/api/case-studies?page=1&limit=10";
         } else if (type === "inbox-activity") {
-          url = "https://api.breakfreeacademy.in/api/inbox-activities?page=1&limit=10";
+          url = "http://localhost:3000/api/inbox-activities?page=1&limit=10";
         } else {
           setContentOptions((prev) => ({ ...prev, [type]: [] }));
-          setLoading(false);
+          fetchingTypes.current.delete(type);
           return;
         }
+
         const res = await fetch(url, {
           headers: {
             Authorization: token ? `Bearer ${token}` : '',
@@ -114,61 +126,122 @@ const SelectContentStep: React.FC = () => {
           options = data.data.inboxActivities.map((ia: InboxActivity) => ({ value: ia.id, label: ia.name }));
         }
         setContentOptions((prev) => ({ ...prev, [type]: options }));
-      } catch {
+        console.log(`[SelectContentStep] Successfully fetched ${options.length} options for ${type}`);
+      } catch (error) {
+        console.error(`[SelectContentStep] Error fetching ${type}:`, error);
         setError("Failed to fetch content options");
       } finally {
-        setLoading(false);
+        fetchingTypes.current.delete(type);
       }
     };
-    // For each unique activityType in activities, fetch if not already fetched
-    activities.forEach((activity) => {
-      if (
-        activity.activityType &&
-        !contentOptions[activity.activityType] &&
-        !loading
-      ) {
-        fetchContent(activity.activityType);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activities]);
 
-  const handleChange = (idx: number, field: string, value: string) => {
-    setActivities((prev) =>
-      prev.map((a, i) => (i === idx ? { ...a, [field]: value } : a))
-    );
-    // If activityType changes, reset activityContent
-    if (field === "activityType") {
-      setActivities((prev) =>
-        prev.map((a, i) =>
-          i === idx ? { ...a, activityContent: "" } : a
-        )
-      );
+    // Get unique activity types that need fetching
+    const uniqueTypes = [...new Set(currentActivities.map(a => a.activityType).filter(Boolean))];
+    const typesToFetch = uniqueTypes.filter(type => !contentOptions[type]);
+
+    console.log(`[SelectContentStep] Current activity types: [${activityTypesString}]`);
+    console.log(`[SelectContentStep] Types to fetch: [${typesToFetch.join(', ')}]`);
+
+    // Fetch content for each unique activity type that hasn't been fetched yet
+    if (typesToFetch.length > 0) {
+      typesToFetch.forEach(fetchContent);
     }
-  };
 
-  const handleAdd = () => {
-    setActivities((prev) => [...prev, { ...initialActivity }]);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activityTypesString, token, formData.activities]); // Depend on formData.activities
 
-  const handleRemove = (idx: number) => {
-    setActivities((prev) => prev.filter((_, i) => i !== idx));
-  };
+  // Fetch activity details when activity content is selected
+  const fetchActivityDetails = useCallback(async (activityId: string, activityType: string, idx: number) => {
+    if (!activityId || !token || loading) {
+      console.log(`[SelectContentStep] Skipping fetchActivityDetails: activityId=${activityId}, token=${!!token}, loading=${loading}`);
+      return;
+    }
+
+    console.log(`[SelectContentStep] Fetching activity details for ${activityType}/${activityId}`);
+    try {
+      setLoading(true);
+      const endpoint = activityType === 'case-study'
+        ? `http://localhost:3000/api/case-studies/${activityId}`
+        : `http://localhost:3000/api/inbox-activities/${activityId}`;
+
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          console.log(`[SelectContentStep] Fetched activity details:`, result.data);
+          // Don't auto-populate any fields - let user enter manually
+        }
+      } else {
+        console.error(`[SelectContentStep] Failed to fetch activity details: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error fetching activity details:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, loading]);
+
+  const handleAdd = useCallback(() => {
+    const newActivities = [...(formData.activities || []), { ...initialActivity }];
+    console.log('[SelectContentStep] Adding new activity:', newActivities);
+    updateFormData('activities', newActivities);
+  }, [formData.activities, updateFormData]);
+
+  const handleRemove = useCallback((idx: number) => {
+    const newActivities = (formData.activities || []).filter((_, i) => i !== idx);
+    console.log('[SelectContentStep] Removing activity at index:', idx);
+    updateFormData('activities', newActivities);
+  }, [formData.activities, updateFormData]);
 
   return (
     <div>
+      <h2 className="text-2xl font-bold text-black mb-6">Assessment Center Details</h2>
+      
+      {/* Basic Assessment Center Information */}
+      <div className="mb-8 p-6 bg-gray-50 rounded-lg">
+        <h3 className="text-lg font-semibold text-black mb-4">Basic Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold mb-1 text-black">Assessment Center Name</label>
+            <input
+              type="text"
+              value={formData.name || ''}
+              onChange={(e) => {
+                console.log('[SelectContentStep] Name changed:', e.target.value);
+                updateFormData('name', e.target.value);
+              }}
+              placeholder="Enter assessment center name"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md text-black"
+            />
+          </div>
+        </div>
+      </div>
+
       <h2 className="text-2xl font-bold text-black mb-8">Select Activity and Content</h2>
       {error && <div className="mb-2 text-red-600">{error}</div>}
       <div className="flex flex-col gap-8">
-        {activities.map((activity, idx) => (
+        {(formData.activities || []).map((activity, idx) => (
           <div key={idx} className="grid grid-cols-4 gap-6 items-end mb-2">
             <div>
               <label className="block text-sm font-semibold mb-1 text-black flex items-center gap-1">
                 Select Activity <span className="text-black text-xs">?</span>
               </label>
               <select
-                value={activity.activityType}
-                onChange={e => handleChange(idx, "activityType", e.target.value)}
+                value={activity.activityType || ''}
+                onChange={e => {
+                  console.log(`[SelectContentStep] Activity type changed for idx ${idx}:`, e.target.value);
+                  const newActivities = [...(formData.activities || [])];
+                  if (newActivities[idx]) {
+                    newActivities[idx] = { ...newActivities[idx], activityType: e.target.value, activityContent: '' };
+                    updateFormData('activities', newActivities);
+                  }
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md text-black bg-white"
               >
                 <option value="">Select Type</option>
@@ -182,12 +255,19 @@ const SelectContentStep: React.FC = () => {
                 Select Activity Content <span className="text-black text-xs">?</span>
               </label>
               <select
-                value={activity.activityContent}
-                onChange={e => handleChange(idx, "activityContent", e.target.value)}
+                value={activity.activityContent || ''}
+                onChange={e => {
+                  console.log(`[SelectContentStep] Activity content changed for idx ${idx}:`, e.target.value);
+                  const newActivities = [...(formData.activities || [])];
+                  if (newActivities[idx]) {
+                    newActivities[idx] = { ...newActivities[idx], activityContent: e.target.value };
+                    updateFormData('activities', newActivities);
+                  }
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md text-black bg-white"
                 disabled={!activity.activityType || loading}
               >
-                <option value="">Select Type</option>
+                <option value="">Select Content</option>
                 {(contentOptions[activity.activityType] || []).map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
@@ -199,8 +279,15 @@ const SelectContentStep: React.FC = () => {
               </label>
               <input
                 type="text"
-                value={activity.displayName}
-                onChange={e => handleChange(idx, "displayName", e.target.value)}
+                value={activity.displayName || ''}
+                onChange={e => {
+                  console.log(`[SelectContentStep] Display name changed for idx ${idx}:`, e.target.value);
+                  const newActivities = [...(formData.activities || [])];
+                  if (newActivities[idx]) {
+                    newActivities[idx] = { ...newActivities[idx], displayName: e.target.value };
+                    updateFormData('activities', newActivities);
+                  }
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md text-black"
               />
             </div>
@@ -209,12 +296,19 @@ const SelectContentStep: React.FC = () => {
                 <label className="block text-sm font-semibold mb-1 text-black">Display Instructions</label>
                 <input
                   type="text"
-                  value={activity.displayInstructions}
-                  onChange={e => handleChange(idx, "displayInstructions", e.target.value)}
+                  value={activity.displayInstructions || ''}
+                  onChange={e => {
+                    console.log(`[SelectContentStep] Display instructions changed for idx ${idx}:`, e.target.value);
+                    const newActivities = [...(formData.activities || [])];
+                    if (newActivities[idx]) {
+                      newActivities[idx] = { ...newActivities[idx], displayInstructions: e.target.value };
+                      updateFormData('activities', newActivities);
+                    }
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md text-black"
                 />
               </div>
-              {activities.length > 1 && (
+              {(formData.activities || []).length > 1 && (
                 <button
                   type="button"
                   onClick={() => handleRemove(idx)}
