@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import AssessmentCenterLayout from "../AssessmentCenterLayout";
 import SelectContentStep from "../steps/SelectContentStep";
 import SelectCompetenciesStep from "../steps/SelectCompetenciesStep";
@@ -535,7 +535,7 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
   );
 };
 
-const CreateAssessmentCenter = () => {
+const CreateAssessmentCenterWithSearchParams = () => {
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit') || undefined;
   
@@ -546,6 +546,17 @@ const CreateAssessmentCenter = () => {
     <AssessmentFormProvider editId={editId}>
       <CreateAssessmentCenterContent editId={editId} />
     </AssessmentFormProvider>
+  );
+};
+
+const CreateAssessmentCenter = () => {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center py-12">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <span className="ml-3 text-gray-600">Loading...</span>
+    </div>}>
+      <CreateAssessmentCenterWithSearchParams />
+    </Suspense>
   );
 };
 
