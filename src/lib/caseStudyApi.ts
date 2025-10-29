@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api/case-studies';
+const API_URL = 'https://api.breakfreeacademy.in/api/case-studies';
 
 function getAuthToken() {
   if (typeof window === 'undefined') throw new Error('No window object');

@@ -1,175 +1,200 @@
 import React, { useState } from 'react';
 
 interface TaskStepProps {
-  activityDetail?: {
-    id: string;
-    name: string;
-    description: string;
-    instructions: string;
-    videoUrl?: string;
-    createdBy: string;
-    createdAt: string;
-    updatedAt: string;
-    scenarios: Array<{
-      id: string;
-      title: string;
-      readTime: number;
-      exerciseTime: number;
-      data: string;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    characters: Array<{
-      id: string;
-      name: string;
-      email: string;
-      designation: string;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    organizationCharts: Array<{
-      id: string;
-      name: string;
-      email: string;
-      designation: string;
-      parentId: string | null;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    contents: Array<{
-      id: string;
-      to: string[];
-      from: string;
-      cc: string[];
-      bcc: string[];
-      subject: string;
-      date: string;
-      emailContent: string;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
+  activityData?: any;
+  submissionData: {
+    textContent?: string;
+    notes?: string;
+    file?: File;
+    submissionType: 'TEXT' | 'DOCUMENT' | 'VIDEO';
   };
+  setSubmissionData: (data: any) => void;
 }
 
-const TaskStep: React.FC<TaskStepProps> = ({ activityDetail }) => {
-  const [selectedEmail, setSelectedEmail] = useState<number>(0);
-  const [responses, setResponses] = useState<{ [key: string]: string }>({});
+const TaskStep: React.FC<TaskStepProps> = ({ activityData, submissionData, setSubmissionData }) => {
+  const [fileInputKey, setFileInputKey] = useState(0);
 
-  const emails = activityDetail?.contents || [];
-  const characters = activityDetail?.characters || [];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSubmissionData({
+        ...submissionData,
+        file,
+        submissionType: file.type.startsWith('video/') ? 'VIDEO' : 'DOCUMENT'
+      });
+    }
+  };
 
-  if (!activityDetail || emails.length === 0) {
+  const removeFile = () => {
+    setSubmissionData({
+      ...submissionData,
+      file: undefined,
+      submissionType: 'TEXT'
+    });
+    setFileInputKey(prev => prev + 1);
+  };
+
+  const contents = activityData?.activityDetail?.contents || [];
+
+  if (!activityData?.activityDetail || contents.length === 0) {
     return (
       <div>
         <h2 className="text-2xl font-bold mb-4">Task</h2>
         <div className="bg-white p-6 rounded-lg border text-black">
-          <p>No email tasks available for this activity.</p>
+          <p>No task content available for this activity.</p>
         </div>
       </div>
     );
   }
 
-  const handleResponseChange = (emailId: string, response: string) => {
-    setResponses(prev => ({ ...prev, [emailId]: response }));
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">Task - Email Management</h2>
-      <div className="flex gap-6">
-        {/* Email List */}
-        <div className="w-80">
-          <div className="bg-white rounded-lg border">
-            <div className="p-4 border-b font-semibold">Inbox ({emails.length})</div>
-            <div className="divide-y max-h-96 overflow-y-auto">
-              {emails.map((email, idx) => (
-                <button
-                  key={email.id}
-                  className={`w-full p-4 text-left hover:bg-gray-50 ${selectedEmail === idx ? 'bg-blue-50 border-r-2 border-blue-500' : ''}`}
-                  onClick={() => setSelectedEmail(idx)}
-                >
-                  <div className="font-medium text-sm truncate">{email.subject}</div>
-                  <div className="text-xs text-black truncate">From: {email.from}</div>
-                  <div className="text-xs text-black">{formatDate(email.date)}</div>
-                </button>
-              ))}
-            </div>
+      <h2 className="text-2xl font-bold mb-4">Task</h2>
+      <div className="bg-white p-6 rounded-lg border text-gray-700">
+        {/* Task Content */}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-4">Email Contents</h3>
+          <div className="space-y-4">
+            {contents.map((content: any, index: number) => (
+              <div key={content.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-semibold text-gray-900">{content.subject}</h4>
+                  <span className="text-sm text-gray-500">{content.date}</span>
+                </div>
+                <div className="text-sm text-gray-600 mb-2">
+                  <p><strong>From:</strong> {content.from}</p>
+                  <p><strong>To:</strong> {content.to.join(', ')}</p>
+                  {content.cc && content.cc.length > 0 && (
+                    <p><strong>CC:</strong> {content.cc.join(', ')}</p>
+                  )}
+                </div>
+                <div 
+                  className="prose max-w-none text-gray-700"
+                  dangerouslySetInnerHTML={{ __html: content.emailContent }}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Email Content and Response */}
-        <div className="flex-1">
-          <div className="bg-white rounded-lg border">
-            {/* Email Header */}
-            <div className="p-4 border-b">
-              <h3 className="font-semibold text-lg mb-2">{emails[selectedEmail].subject}</h3>
-              <div className="text-sm text-black space-y-1">
-                <div><span className="font-medium">From:</span> {emails[selectedEmail].from}</div>
-                <div><span className="font-medium">To:</span> {emails[selectedEmail].to.join(', ')}</div>
-                {emails[selectedEmail].cc.length > 0 && (
-                  <div><span className="font-medium">CC:</span> {emails[selectedEmail].cc.join(', ')}</div>
-                )}
-                <div><span className="font-medium">Date:</span> {formatDate(emails[selectedEmail].date)}</div>
-              </div>
+        {/* Submission Options */}
+        <div className="border-t pt-6">
+          <h3 className="text-lg font-semibold mb-4">Submit Your Response</h3>
+          
+          {/* Submission Type Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Submission Type</label>
+            <div className="flex gap-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="submissionType"
+                  value="TEXT"
+                  checked={submissionData.submissionType === 'TEXT'}
+                  onChange={(e) => setSubmissionData({ ...submissionData, submissionType: e.target.value as 'TEXT' })}
+                  className="mr-2"
+                />
+                Text Response
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="submissionType"
+                  value="DOCUMENT"
+                  checked={submissionData.submissionType === 'DOCUMENT'}
+                  onChange={(e) => setSubmissionData({ ...submissionData, submissionType: e.target.value as 'DOCUMENT' })}
+                  className="mr-2"
+                />
+                Document Upload
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="submissionType"
+                  value="VIDEO"
+                  checked={submissionData.submissionType === 'VIDEO'}
+                  onChange={(e) => setSubmissionData({ ...submissionData, submissionType: e.target.value as 'VIDEO' })}
+                  className="mr-2"
+                />
+                Video Upload
+              </label>
             </div>
+          </div>
 
-            {/* Email Content */}
-            <div className="p-4 border-b">
-              <div 
-                className="prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: emails[selectedEmail].emailContent }}
-              />
-            </div>
-
-            {/* Response Section */}
-            <div className="p-4">
-              <h4 className="font-semibold mb-3">Your Response:</h4>
+          {/* Text Response */}
+          {submissionData.submissionType === 'TEXT' && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Your Response
+              </label>
               <textarea
-                className="w-full h-32 p-3 border rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Type your response to this email..."
-                value={responses[emails[selectedEmail].id] || ''}
-                onChange={(e) => handleResponseChange(emails[selectedEmail].id, e.target.value)}
+                value={submissionData.textContent || ''}
+                onChange={(e) => setSubmissionData({ ...submissionData, textContent: e.target.value })}
+                rows={8}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter your detailed response here..."
               />
-              <div className="mt-2 flex justify-between items-center">
-                <div className="text-sm text-black">
-                  Characters: {(responses[emails[selectedEmail].id] || '').length}
-                </div>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                  Save Response
-                </button>
-              </div>
             </div>
+          )}
+
+          {/* File Upload */}
+          {(submissionData.submissionType === 'DOCUMENT' || submissionData.submissionType === 'VIDEO') && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Upload {submissionData.submissionType === 'VIDEO' ? 'Video' : 'Document'}
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <input
+                  key={fileInputKey}
+                  type="file"
+                  accept={submissionData.submissionType === 'VIDEO' ? 'video/*' : '.pdf,.doc,.docx,.txt'}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer text-blue-600 hover:text-blue-800"
+                >
+                  <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <p className="mt-2 text-sm text-gray-600">
+                    Click to upload {submissionData.submissionType === 'VIDEO' ? 'video' : 'document'}
+                  </p>
+                </label>
+              </div>
+              {submissionData.file && (
+                <div className="mt-2 flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                  <span className="text-sm text-gray-700">{submissionData.file.name}</span>
+                  <button
+                    onClick={removeFile}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Notes */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Additional Notes (Optional)
+            </label>
+            <textarea
+              value={submissionData.notes || ''}
+              onChange={(e) => setSubmissionData({ ...submissionData, notes: e.target.value })}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Any additional context or assumptions..."
+            />
           </div>
         </div>
       </div>
-
-      {/* Characters Reference */}
-      {characters.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-3">Key Characters</h3>
-          <div className="bg-white rounded-lg border p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {characters.map((character) => (
-                <div key={character.id} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="font-medium text-black">{character.name}</div>
-                  <div className="text-sm text-black">{character.designation}</div>
-                  <div className="text-xs text-black">{character.email}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default TaskStep; 
+export default TaskStep;

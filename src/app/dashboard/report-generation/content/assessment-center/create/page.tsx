@@ -81,7 +81,7 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
       const loadAssessmentCenter = async () => {
         try {
           console.log('Fetching assessment center:', editId);
-          const response = await fetch(`http://localhost:3000/api/assessment-centers/${editId}`, {
+          const response = await fetch(`https://api.breakfreeacademy.in/api/assessment-centers/${editId}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
@@ -346,8 +346,8 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
       }
       
       const url = editId
-        ? `http://localhost:3000/api/assessment-centers/${editId}`
-        : 'http://localhost:3000/api/assessment-centers';
+        ? `https://api.breakfreeacademy.in/api/assessment-centers/${editId}`
+        : 'https://api.breakfreeacademy.in/api/assessment-centers';
       const method = editId ? 'PATCH' : 'POST';
 
       console.log("📡 [Assessment Center] Making API call to:", url);

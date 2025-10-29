@@ -1,66 +1,15 @@
 import React from 'react';
 
 interface ScenarioStepProps {
-  activityDetail?: {
-    id: string;
-    name: string;
-    description: string;
-    instructions: string;
-    videoUrl?: string;
-    createdBy: string;
-    createdAt: string;
-    updatedAt: string;
-    scenarios: Array<{
-      id: string;
-      title: string;
-      readTime: number;
-      exerciseTime: number;
-      data: string;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    characters: Array<{
-      id: string;
-      name: string;
-      email: string;
-      designation: string;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    organizationCharts: Array<{
-      id: string;
-      name: string;
-      email: string;
-      designation: string;
-      parentId: string | null;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    contents: Array<{
-      id: string;
-      to: string[];
-      from: string;
-      cc: string[];
-      bcc: string[];
-      subject: string;
-      date: string;
-      emailContent: string;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-  };
+  activityData?: any;
 }
 
-const ScenarioStep: React.FC<ScenarioStepProps> = ({ activityDetail }) => {
+const ScenarioStep: React.FC<ScenarioStepProps> = ({ activityData }) => {
   const [selected, setSelected] = React.useState(0);
   
-  const scenarios = activityDetail?.scenarios || [];
+  const scenarios = activityData?.activityDetail?.scenarios || [];
   
-  if (!activityDetail || scenarios.length === 0) {
+  if (!activityData?.activityDetail || scenarios.length === 0) {
     return (
       <div>
         <h2 className="text-2xl font-bold mb-4">Scenario Description</h2>

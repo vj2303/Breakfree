@@ -382,7 +382,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     setAssessmentCentersLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/assessment-centers?page=${page}&limit=${limit}&search=${search}`, {
+      const res = await fetch(`https://api.breakfreeacademy.in/api/assessment-centers?page=${page}&limit=${limit}&search=${search}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -426,7 +426,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data.assignments) formData.append('assignments', JSON.stringify(data.assignments));
       if (data.document && data.document instanceof Blob) formData.append('document', data.document);
 
-      const res = await fetch(`http://localhost:3000/api/assessment-centers/${id}`, {
+      const res = await fetch(`https://api.breakfreeacademy.in/api/assessment-centers/${id}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -456,7 +456,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
-      const res = await fetch(`http://localhost:3000/api/assessment-centers/${id}`, {
+      const res = await fetch(`https://api.breakfreeacademy.in/api/assessment-centers/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

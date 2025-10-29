@@ -16,55 +16,13 @@ interface OrganizationChartNode extends OrganizationChartItem {
 }
 
 interface OrganizationChartStepProps {
-  activityDetail?: {
-    id: string;
-    name: string;
-    description: string;
-    instructions: string;
-    videoUrl?: string;
-    createdBy: string;
-    createdAt: string;
-    updatedAt: string;
-    scenarios: Array<{
-      id: string;
-      title: string;
-      readTime: number;
-      exerciseTime: number;
-      data: string;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    characters: Array<{
-      id: string;
-      name: string;
-      email: string;
-      designation: string;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    organizationCharts: OrganizationChartItem[];
-    contents: Array<{
-      id: string;
-      to: string[];
-      from: string;
-      cc: string[];
-      bcc: string[];
-      subject: string;
-      date: string;
-      emailContent: string;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-  };
+  activityData?: any;
 }
 
-const OrganizationChartStep: React.FC<OrganizationChartStepProps> = ({ activityDetail }) => {
-  const organizationCharts = activityDetail?.organizationCharts || [];
+const OrganizationChartStep: React.FC<OrganizationChartStepProps> = ({ activityData }) => {
+  const organizationCharts = activityData?.activityDetail?.organizationCharts || [];
 
-  if (!activityDetail || organizationCharts.length === 0) {
+  if (!activityData?.activityDetail || organizationCharts.length === 0) {
     return (
       <div>
         <h2 className="text-2xl font-bold mb-4">Organization Chart</h2>

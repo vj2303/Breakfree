@@ -68,7 +68,7 @@ const SelectCompetenciesStep: React.FC = () => {
     try {
       console.log('Fetching competencies with token:', token ? 'Token available' : 'No token');
       
-      const res = await fetch('http://localhost:3000/api/competency-libraries?page=1&limit=10&search=', {
+      const res = await fetch('https://api.breakfreeacademy.in/api/competency-libraries?page=1&limit=10&search=', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ const SelectCompetenciesStep: React.FC = () => {
     setDeletingIds(prev => new Set(prev).add(competencyId));
     
     try {
-      const res = await fetch(`http://localhost:3000/api/competency-libraries/${competencyId}`, {
+      const res = await fetch(`https://api.breakfreeacademy.in/api/competency-libraries/${competencyId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

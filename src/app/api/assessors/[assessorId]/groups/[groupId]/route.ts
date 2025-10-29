@@ -20,7 +20,7 @@ export async function GET(
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     // Forward the request to the external API
-    const response = await fetch(`http://localhost:3000/api/assessors/${assessorId}/groups/${groupId}`, {
+    const response = await fetch(`https://api.breakfreeacademy.in/api/assessors/${assessorId}/groups/${groupId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -1,77 +1,26 @@
 import React from 'react';
 
 interface OverviewStepProps {
-  activityDetail?: {
-    id: string;
-    name: string;
-    description: string;
-    instructions: string;
-    videoUrl?: string;
-    createdBy: string;
-    createdAt: string;
-    updatedAt: string;
-    scenarios: Array<{
-      id: string;
-      title: string;
-      readTime: number;
-      exerciseTime: number;
-      data: string;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    characters: Array<{
-      id: string;
-      name: string;
-      email: string;
-      designation: string;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    organizationCharts: Array<{
-      id: string;
-      name: string;
-      email: string;
-      designation: string;
-      parentId: string | null;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    contents: Array<{
-      id: string;
-      to: string[];
-      from: string;
-      cc: string[];
-      bcc: string[];
-      subject: string;
-      date: string;
-      emailContent: string;
-      inboxActivityId: string;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-  };
+  activityData?: any;
 }
 
-const OverviewStep: React.FC<OverviewStepProps> = ({ activityDetail }) => (
+const OverviewStep: React.FC<OverviewStepProps> = ({ activityData }) => (
   <div>
     <h2 className="text-2xl font-bold mb-4">Overview And Instructions</h2>
     <div className="bg-white p-6 rounded-lg border text-black">
-      {activityDetail ? (
+      {activityData?.activityDetail ? (
         <>
-          <h3 className="text-xl text-black font-semibold mb-3">{activityDetail.name}</h3>
-          <p className="mb-4 text-black">{activityDetail.description}</p>
+          <h3 className="text-xl text-black font-semibold mb-3">{activityData.activityDetail.name}</h3>
+          <p className="mb-4 text-black">{activityData.activityDetail.description}</p>
           <div 
             className="mb-4" 
-            dangerouslySetInnerHTML={{ __html: activityDetail.instructions }}
+            dangerouslySetInnerHTML={{ __html: activityData.activityDetail.instructions }}
           />
-          {activityDetail.videoUrl && (
+          {activityData.activityDetail.videoUrl && (
             <div className="mb-4">
               <h4 className="font-semibold mb-2 text-black">Instructional Video:</h4>
               <a 
-                href={activityDetail.videoUrl} 
+                href={activityData.activityDetail.videoUrl} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:text-blue-800 underline"

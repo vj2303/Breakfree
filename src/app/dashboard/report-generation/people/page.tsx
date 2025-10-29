@@ -47,7 +47,7 @@ const PeopleManagement = () => {
     setGroupsError(null);
     try {
       const token = getAuthToken();
-      const res = await fetch('http://localhost:3000/api/groups?page=1&limit=10&search=', {
+      const res = await fetch('https://api.breakfreeacademy.in/api/groups?page=1&limit=10&search=', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -72,7 +72,7 @@ const PeopleManagement = () => {
     setParticipantsError(null);
     try {
       const token = getAuthToken();
-      const url = new URL('http://localhost:3000/api/participants');
+      const url = new URL('https://api.breakfreeacademy.in/api/participants');
       url.searchParams.append('page', '1');
       url.searchParams.append('limit', '100');
       url.searchParams.append('search', '');
@@ -139,7 +139,7 @@ const PeopleManagement = () => {
   const handleAddGroup = async (newGroup: Omit<Group, 'id'>) => {
     try {
       const token = getAuthToken();
-      const res = await fetch('http://localhost:3000/api/groups', {
+      const res = await fetch('https://api.breakfreeacademy.in/api/groups', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

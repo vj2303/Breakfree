@@ -2,7 +2,7 @@
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://your-production-domain.com/api' 
-  : 'http://localhost:3000/api';
+  : 'https://api.breakfreeacademy.in/api';
 
 export interface ReportFormData {
   reportName: string;
