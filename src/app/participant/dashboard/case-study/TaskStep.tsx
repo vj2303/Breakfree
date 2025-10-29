@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
+import { ActivityData, Task } from './types';
 
 interface TaskStepProps {
-  activityData?: any;
+  activityData?: ActivityData;
   submissionData: {
     textContent?: string;
     notes?: string;
     file?: File;
     submissionType: 'TEXT' | 'DOCUMENT' | 'VIDEO';
   };
-  setSubmissionData: (data: any) => void;
+  setSubmissionData: (data: {
+    textContent?: string;
+    notes?: string;
+    file?: File;
+    submissionType: 'TEXT' | 'DOCUMENT' | 'VIDEO';
+  }) => void;
 }
 
 const TaskStep: React.FC<TaskStepProps> = ({ activityData, submissionData, setSubmissionData }) => {
@@ -42,7 +48,7 @@ const TaskStep: React.FC<TaskStepProps> = ({ activityData, submissionData, setSu
         <div className="mb-6">
           {activityData?.activityDetail?.tasks && activityData.activityDetail.tasks.length > 0 ? (
             <div className="space-y-6">
-              {activityData.activityDetail.tasks.map((task: any, index: number) => (
+              {activityData.activityDetail.tasks.map((task: Task) => (
                 <div key={task.id} className="border-l-4 border-green-500 pl-4">
                   <h3 className="text-lg font-semibold mb-2">{task.title}</h3>
                   <div className="mb-3">

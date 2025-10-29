@@ -18,7 +18,7 @@ export interface SubmissionData {
 export interface SubmissionResponse {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 export class AssignmentSubmissionApi {

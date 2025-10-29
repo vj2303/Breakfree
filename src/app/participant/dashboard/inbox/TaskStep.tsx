@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
+import { InboxActivityData, EmailContent } from './types';
 
 interface TaskStepProps {
-  activityData?: any;
+  activityData?: InboxActivityData;
   submissionData: {
     textContent?: string;
     notes?: string;
     file?: File;
     submissionType: 'TEXT' | 'DOCUMENT' | 'VIDEO';
   };
-  setSubmissionData: (data: any) => void;
+  setSubmissionData: (data: {
+    textContent?: string;
+    notes?: string;
+    file?: File;
+    submissionType: 'TEXT' | 'DOCUMENT' | 'VIDEO';
+  }) => void;
 }
 
 const TaskStep: React.FC<TaskStepProps> = ({ activityData, submissionData, setSubmissionData }) => {
@@ -55,7 +61,7 @@ const TaskStep: React.FC<TaskStepProps> = ({ activityData, submissionData, setSu
         <div className="mb-6">
           <h3 className="text-lg font-semibold mb-4">Email Contents</h3>
           <div className="space-y-4">
-            {contents.map((content: any, index: number) => (
+            {contents.map((content: EmailContent) => (
               <div key={content.id} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex justify-between items-start mb-2">
                   <h4 className="font-semibold text-gray-900">{content.subject}</h4>

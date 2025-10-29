@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { AssignmentSubmissionApi, SubmissionData } from '@/lib/assignmentSubmissionApi';
+import { AssignmentSubmissionApi } from '@/lib/assignmentSubmissionApi';
+import { InboxActivityData } from './types';
 import OverviewStep from './OverviewStep';
 import ScenarioStep from './ScenarioStep';
 import OrganizationChartStep from './OrganizationChartStep';
@@ -16,13 +17,13 @@ const steps = [
   'Task',
 ];
 
-const InboxPage = () => {
+const InboxPageWithSearchParams = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { token, assignments, assignmentsLoading } = useAuth();
+  const { token, assignments } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
-  const [assignmentData, setAssignmentData] = useState<any>(null);
-  const [activityData, setActivityData] = useState<any>(null);
+  const [assignmentData, setAssignmentData] = useState<unknown>(null);
+  const [activityData, setActivityData] = useState<InboxActivityData | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submissionData, setSubmissionData] = useState<{
@@ -39,15 +40,15 @@ const InboxPage = () => {
   useEffect(() => {
     if (assignmentId && assignments?.assignments) {
       const assignment = assignments.assignments.find(
-        (a: any) => a.assignmentId === assignmentId
+        (a: unknown) => (a as { assignmentId: string }).assignmentId === assignmentId
       );
       
       if (assignment) {
         setAssignmentData(assignment);
         // Find the first INBOX_ACTIVITY activity
-        const inboxActivity = assignment.activities.find(
-          (activity: any) => activity.activityType === 'INBOX_ACTIVITY'
-        );
+        const inboxActivity = (assignment as unknown as { activities: unknown[] }).activities.find(
+          (activity: unknown) => (activity as { activityType: string }).activityType === 'INBOX_ACTIVITY'
+        ) as InboxActivityData | undefined;
         if (inboxActivity) {
           setActivityData(inboxActivity);
         }
@@ -85,11 +86,11 @@ const InboxPage = () => {
 
     setSubmitting(true);
     try {
-      const submissionPayload: SubmissionData = {
+      const submissionPayload = {
         participantId: assignments?.participant?.id || '',
-        assessmentCenterId: assignmentData.assessmentCenter.id,
+        assessmentCenterId: (assignmentData as { assessmentCenter: { id: string } }).assessmentCenter.id,
         activityId: activityData.activityId,
-        activityType: 'INBOX_ACTIVITY',
+        activityType: 'INBOX_ACTIVITY' as const,
         submissionType: submissionData.submissionType,
         notes: submissionData.notes,
         textContent: submissionData.textContent,
@@ -142,9 +143,9 @@ const InboxPage = () => {
     <div className="mt-8 p-4">
       {/* Header */}
       <div className="bg-white rounded-xl p-2 mb-6 shadow border">
-        <h1 className="text-2xl font-bold mb-1">{assignmentData.assessmentCenter.displayName || assignmentData.assessmentCenter.name}</h1>
+        <h1 className="text-2xl font-bold mb-1">{(assignmentData as { assessmentCenter: { displayName?: string; name: string } }).assessmentCenter.displayName || (assignmentData as { assessmentCenter: { displayName?: string; name: string } }).assessmentCenter.name}</h1>
         <div className="text-gray-500 text-sm mb-4">
-          Created on {new Date(assignmentData.assessmentCenter.createdAt).toLocaleDateString('en-GB', {
+          Created on {new Date((assignmentData as { assessmentCenter: { createdAt: string } }).assessmentCenter.createdAt).toLocaleDateString('en-GB', {
             day: 'numeric',
             month: 'short',
             year: 'numeric'
@@ -213,6 +214,19 @@ const InboxPage = () => {
         )}
       </div>
     </div>
+  );
+};
+
+const InboxPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600">Loading...</span>
+      </div>
+    }>
+      <InboxPageWithSearchParams />
+    </Suspense>
   );
 };
 

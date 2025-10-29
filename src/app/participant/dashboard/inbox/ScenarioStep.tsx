@@ -1,7 +1,8 @@
 import React from 'react';
+import { InboxActivityData } from './types';
 
 interface ScenarioStepProps {
-  activityData?: any;
+  activityData?: InboxActivityData;
 }
 
 const ScenarioStep: React.FC<ScenarioStepProps> = ({ activityData }) => {

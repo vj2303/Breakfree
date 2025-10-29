@@ -1,7 +1,8 @@
 import React from 'react';
+import { InboxActivityData } from './types';
 
 interface OverviewStepProps {
-  activityData?: any;
+  activityData?: InboxActivityData;
 }
 
 const OverviewStep: React.FC<OverviewStepProps> = ({ activityData }) => (

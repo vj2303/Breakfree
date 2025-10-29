@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { AssignmentSubmissionApi, SubmissionData } from '@/lib/assignmentSubmissionApi';
+import { AssignmentSubmissionApi } from '@/lib/assignmentSubmissionApi';
+import { ActivityData } from './types';
 import OverviewStep from './OverviewStep';
 import ScenarioStep from './ScenarioStep';
 import TaskStep from './TaskStep';
@@ -16,13 +17,13 @@ const steps = [
   'Review',
 ];
 
-const CaseStudyPage = () => {
+const CaseStudyPageWithSearchParams = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { token, assignments } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
-  const [assignmentData, setAssignmentData] = useState<any>(null);
-  const [activityData, setActivityData] = useState<any>(null);
+  const [assignmentData, setAssignmentData] = useState<unknown>(null);
+  const [activityData, setActivityData] = useState<ActivityData | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submissionData, setSubmissionData] = useState<{
@@ -46,15 +47,15 @@ const CaseStudyPage = () => {
   useEffect(() => {
     if (assignmentId && assignments?.assignments) {
       const assignment = assignments.assignments.find(
-        (a: any) => a.assignmentId === assignmentId
+        (a: unknown) => (a as { assignmentId: string }).assignmentId === assignmentId
       );
       
       if (assignment) {
         setAssignmentData(assignment);
         // Find the first CASE_STUDY activity
-        const caseStudyActivity = assignment.activities.find(
-          (activity: any) => activity.activityType === 'CASE_STUDY'
-        );
+        const caseStudyActivity = (assignment as unknown as { activities: unknown[] }).activities.find(
+          (activity: unknown) => (activity as { activityType: string }).activityType === 'CASE_STUDY'
+        ) as ActivityData | undefined;
         if (caseStudyActivity) {
           setActivityData(caseStudyActivity);
         }
@@ -85,11 +86,11 @@ const CaseStudyPage = () => {
 
     setSubmitting(true);
     try {
-      const submissionPayload: SubmissionData = {
+      const submissionPayload = {
         participantId: assignments?.participant?.id || '',
-        assessmentCenterId: assignmentData.assessmentCenter.id,
+        assessmentCenterId: (assignmentData as { assessmentCenter: { id: string } }).assessmentCenter.id,
         activityId: activityData.activityId,
-        activityType: 'CASE_STUDY',
+        activityType: 'CASE_STUDY' as const,
         submissionType: submissionData.submissionType,
         notes: submissionData.notes,
         textContent: submissionData.textContent,
@@ -142,9 +143,9 @@ const CaseStudyPage = () => {
     <div className=" mt-8 p-4">
       {/* Header */}
       <div className="bg-white rounded-xl p-2 mb-6 shadow border">
-        <h1 className="text-2xl font-bold mb-1">{assignmentData.assessmentCenter.displayName || assignmentData.assessmentCenter.name}</h1>
+        <h1 className="text-2xl font-bold mb-1">{(assignmentData as { assessmentCenter: { displayName?: string; name: string } }).assessmentCenter.displayName || (assignmentData as { assessmentCenter: { displayName?: string; name: string } }).assessmentCenter.name}</h1>
         <div className="text-gray-500 text-sm mb-4">
-          Created on {new Date(assignmentData.assessmentCenter.createdAt).toLocaleDateString('en-GB', {
+          Created on {new Date((assignmentData as { assessmentCenter: { createdAt: string } }).assessmentCenter.createdAt).toLocaleDateString('en-GB', {
             day: 'numeric',
             month: 'short',
             year: 'numeric'
@@ -213,6 +214,19 @@ const CaseStudyPage = () => {
         )}
       </div>
     </div>
+  );
+};
+
+const CaseStudyPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600">Loading...</span>
+      </div>
+    }>
+      <CaseStudyPageWithSearchParams />
+    </Suspense>
   );
 };
 

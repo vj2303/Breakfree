@@ -1,7 +1,8 @@
 import React from 'react';
+import { ActivityData } from './types';
 
 interface ReviewStepProps {
-  activityData?: any;
+  activityData?: ActivityData;
   submissionData: {
     textContent?: string;
     notes?: string;

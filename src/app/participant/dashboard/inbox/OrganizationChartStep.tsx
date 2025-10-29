@@ -1,22 +1,12 @@
 import React from 'react';
-
-interface OrganizationChartItem {
-  id: string;
-  name: string;
-  email: string;
-  designation: string;
-  parentId: string | null;
-  inboxActivityId: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { InboxActivityData, OrganizationChartItem } from './types';
 
 interface OrganizationChartNode extends OrganizationChartItem {
   children: OrganizationChartNode[];
 }
 
 interface OrganizationChartStepProps {
-  activityData?: any;
+  activityData?: InboxActivityData;
 }
 
 const OrganizationChartStep: React.FC<OrganizationChartStepProps> = ({ activityData }) => {
