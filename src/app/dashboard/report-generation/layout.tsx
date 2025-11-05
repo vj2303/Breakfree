@@ -12,7 +12,7 @@ export default function ReportGenerationLayout({ children }: { children: React.R
   const router = useRouter();
   // Sidebar items
   const navItems = [
-    { label: 'Home', icon: <Home size={24} />, href: '/dashboard' },
+    { label: 'Home', icon: <Home size={24} />, href: '/dashboard/report-generation/home' },
     { label: 'Content', icon: <FileText size={24} />, href: '/dashboard/report-generation/content' },
     { label: 'Reports', icon: <BarChart2 size={24} />, href: '/dashboard/report-generation/reports' },
     { label: 'People', icon: <Users size={24} />, href: '/dashboard/report-generation/people' },

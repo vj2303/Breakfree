@@ -1,0 +1,972 @@
+'use client';
+import React, { useState, useEffect, useCallback } from 'react';
+
+interface Assessor {
+  id: string;
+  name: string;
+  email: string;
+  designation: string;
+  accessLevel: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Score {
+  id: string;
+  participantId: string;
+  assessorId: string;
+  assessmentCenterId: string;
+  competencyScores?: {
+    [competencyId: string]: {
+      [subCompetency: string]: number;
+    };
+  };
+  overallComments?: string;
+  individualComments?: {
+    [competencyId: string]: string;
+  } | null;
+  status: 'DRAFT' | 'SUBMITTED' | 'FINALIZED';
+  submittedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  assessor: Assessor;
+  participant: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  assessmentCenter: {
+    id: string;
+    name: string;
+  };
+}
+
+interface AssessorStats {
+  assessor: Assessor;
+  totalAllotted: number;
+  assessed: number;
+  inProgress: number;
+  notAssessed: number;
+  scores: Score[];
+}
+
+interface Pagination {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+}
+
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    scores: Score[];
+    pagination: Pagination;
+  };
+}
+
+interface EditScoreData {
+  competencyScores: {
+    [competencyId: string]: {
+      [subCompetency: string]: number;
+    };
+  };
+  overallComments: string;
+  individualComments: {
+    [competencyId: string]: string;
+  };
+  status: 'DRAFT' | 'SUBMITTED' | 'FINALIZED';
+}
+
+const AssessorsPage = () => {
+  const [assessorStats, setAssessorStats] = useState<AssessorStats[]>([]);
+  const [filteredStats, setFilteredStats] = useState<AssessorStats[]>([]);
+  const [pagination, setPagination] = useState<Pagination>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedAssessor, setSelectedAssessor] = useState<AssessorStats | null>(null);
+  const [selectedScore, setSelectedScore] = useState<Score | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState<EditScoreData | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const getAuthToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token') || '';
+    }
+    return '';
+  };
+
+  // Fetch scores from API and group by assessor
+  const fetchAssessorScores = useCallback(async (page = 1, limit = 10) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const url = new URL('https://api.breakfreeacademy.in/api/assessors/admin/scores');
+      url.searchParams.append('page', page.toString());
+      url.searchParams.append('limit', limit.toString());
+      url.searchParams.append('assessorId', '');
+      url.searchParams.append('participantId', '');
+      url.searchParams.append('assessmentCenterId', '');
+      url.searchParams.append('status', '');
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch assessor scores');
+      }
+
+      const data: ApiResponse = await response.json();
+      
+      if (!data.success || !data.data) {
+        throw new Error(data.message || 'Failed to fetch assessor scores');
+      }
+
+      // Group scores by assessor and calculate statistics
+      const assessorMap = new Map<string, AssessorStats>();
+
+      data.data.scores.forEach((score) => {
+        const assessorId = score.assessor.id;
+        
+        if (!assessorMap.has(assessorId)) {
+          assessorMap.set(assessorId, {
+            assessor: score.assessor,
+            totalAllotted: 0,
+            assessed: 0,
+            inProgress: 0,
+            notAssessed: 0,
+            scores: [],
+          });
+        }
+
+        const stats = assessorMap.get(assessorId)!;
+        stats.scores.push(score);
+        stats.totalAllotted += 1;
+
+        if (score.status === 'SUBMITTED' || score.status === 'FINALIZED') {
+          stats.assessed += 1;
+        } else if (score.status === 'DRAFT') {
+          stats.inProgress += 1;
+        }
+      });
+
+      // Convert map to array and calculate not assessed
+      const statsArray = Array.from(assessorMap.values());
+      
+      statsArray.forEach((stat) => {
+        stat.notAssessed = 0;
+      });
+      
+      setAssessorStats(statsArray);
+      setFilteredStats(statsArray);
+      setPagination(data.data.pagination);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch assessor scores');
+      setAssessorStats([]);
+      setFilteredStats([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Filter assessors based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredStats(assessorStats);
+    } else {
+      const filtered = assessorStats.filter(
+        (stat) =>
+          stat.assessor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          stat.assessor.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredStats(filtered);
+    }
+  }, [searchTerm, assessorStats]);
+
+  // Fetch data on mount
+  useEffect(() => {
+    fetchAssessorScores(pagination.currentPage, pagination.itemsPerPage);
+  }, [fetchAssessorScores]);
+
+  // Handle pagination
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      fetchAssessorScores(newPage, pagination.itemsPerPage);
+    }
+  };
+
+  // Handle opening edit modal
+  const handleEditScore = (score: Score) => {
+    setSelectedScore(score);
+    setEditData({
+      competencyScores: score.competencyScores || {},
+      overallComments: score.overallComments || '',
+      individualComments: score.individualComments || {},
+      status: score.status === 'FINALIZED' ? 'FINALIZED' : score.status,
+    });
+    setShowEditModal(true);
+  };
+
+  // Handle saving edited score
+  const handleSaveScore = async () => {
+    if (!selectedScore || !editData) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(
+        `https://api.breakfreeacademy.in/api/assessors/admin/scores/${selectedScore.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${getAuthToken()}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(editData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update score');
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update score');
+      }
+
+      // Refresh the data
+      await fetchAssessorScores(pagination.currentPage, pagination.itemsPerPage);
+      setShowEditModal(false);
+      setSelectedScore(null);
+      setEditData(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update score');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle viewing assessor details
+  const handleViewAssessor = (stat: AssessorStats) => {
+    setSelectedAssessor(stat);
+  };
+
+  return (
+    <div style={{ padding: '24px', background: '#f8fafd', minHeight: '100vh' }}>
+      {/* Header */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '24px',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
+        <h1 style={{ 
+          fontSize: '32px', 
+          fontWeight: 700, 
+          color: '#1a1a1a',
+          margin: 0
+        }}>
+          Assessors
+        </h1>
+        
+        {/* Search Bar */}
+        <div style={{ 
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center'
+        }}>
+          <svg 
+            width="20" 
+            height="20" 
+            viewBox="0 0 20 20" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ 
+              position: 'absolute', 
+              left: '12px', 
+              zIndex: 1,
+              color: '#6b7280'
+            }}
+          >
+            <path 
+              d="M9 3C5.686 3 3 5.686 3 9C3 12.314 5.686 15 9 15C10.039 15 11.008 14.694 11.817 14.175L15.293 17.651C15.488 17.846 15.744 17.943 16 17.943C16.256 17.943 16.512 17.846 16.707 17.651C17.098 17.26 17.098 16.627 16.707 16.236L13.231 12.76C13.75 11.951 14.056 10.982 14.056 9.943C14.056 6.629 11.37 3.943 8.056 3.943H9V3ZM9 5C10.657 5 12 6.343 12 8C12 9.657 10.657 11 9 11C7.343 11 6 9.657 6 8C6 6.343 7.343 5 9 5Z" 
+              fill="currentColor"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search by Assessor name"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              padding: '12px 12px 12px 40px',
+              fontSize: '16px',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              width: '300px',
+              outline: 'none',
+              background: '#ffffff',
+              color: '#000'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Error State */}
+      {error && (
+        <div style={{
+          padding: '16px',
+          background: '#fee2e2',
+          color: '#991b1b',
+          borderRadius: '8px',
+          marginBottom: '24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#991b1b',
+              cursor: 'pointer',
+              fontSize: '18px',
+              padding: '0 8px'
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading ? (
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '48px',
+          color: '#6b7280'
+        }}>
+          Loading assessors...
+        </div>
+      ) : (
+        <>
+          {/* Assessor Cards */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '16px',
+            marginBottom: '24px'
+          }}>
+            {filteredStats.length === 0 ? (
+              <div style={{
+                padding: '48px',
+                textAlign: 'center',
+                background: '#ffffff',
+                borderRadius: '8px',
+                color: '#6b7280'
+              }}>
+                {searchTerm ? 'No assessors found matching your search' : 'No assessors found'}
+              </div>
+            ) : (
+              filteredStats.map((stat) => (
+                <div
+                  key={stat.assessor.id}
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: '8px',
+                    padding: '24px',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '16px',
+                    cursor: 'pointer',
+                    transition: 'box-shadow 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 4px 6px 0 rgba(0, 0, 0, 0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)';
+                  }}
+                  onClick={() => handleViewAssessor(stat)}
+                >
+                  {/* Left Section - Assessor Info */}
+                  <div style={{ flex: 1, minWidth: '250px' }}>
+                    <h3 style={{
+                      fontSize: '20px',
+                      fontWeight: 600,
+                      color: '#1a1a1a',
+                      margin: '0 0 8px 0'
+                    }}>
+                      {stat.assessor.name}
+                    </h3>
+                    <p style={{
+                      fontSize: '14px',
+                      color: '#6b7280',
+                      margin: 0
+                    }}>
+                      E-mail- {stat.assessor.email}
+                    </p>
+                  </div>
+
+                  {/* Right Section - Assessment Stats */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '12px',
+                    flexWrap: 'wrap',
+                    alignItems: 'center'
+                  }}>
+                    {/* Total Allotted */}
+                    <div style={{
+                      padding: '8px 16px',
+                      background: '#dbeafe',
+                      borderRadius: '20px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#1e40af'
+                    }}>
+                      Number of assessment allotted- {stat.totalAllotted}
+                    </div>
+
+                    {/* Assessed */}
+                    <div style={{
+                      padding: '8px 16px',
+                      background: '#d1fae5',
+                      borderRadius: '20px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#065f46'
+                    }}>
+                      Assessed assessment- {stat.assessed}
+                    </div>
+
+                    {/* In Progress */}
+                    <div style={{
+                      padding: '8px 16px',
+                      background: '#dbeafe',
+                      borderRadius: '20px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#1e40af'
+                    }}>
+                      Assessment in Progress- {stat.inProgress}
+                    </div>
+
+                    {/* Not Assessed */}
+                    <div style={{
+                      padding: '8px 16px',
+                      background: '#fce7f3',
+                      borderRadius: '20px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#9f1239'
+                    }}>
+                      Not Assessed assessment- {stat.notAssessed}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '16px',
+              marginTop: '32px'
+            }}>
+              <button
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
+                disabled={pagination.currentPage === 1}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px',
+                  background: pagination.currentPage === 1 ? '#f3f4f6' : '#ffffff',
+                  color: pagination.currentPage === 1 ? '#9ca3af' : '#1a1a1a',
+                  cursor: pagination.currentPage === 1 ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Previous
+              </button>
+
+              <span style={{
+                fontSize: '14px',
+                color: '#1a1a1a',
+                fontWeight: 500
+              }}>
+                {pagination.currentPage} / {pagination.totalPages}
+              </span>
+
+              <button
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                disabled={pagination.currentPage === pagination.totalPages}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px',
+                  background: pagination.currentPage === pagination.totalPages ? '#f3f4f6' : '#ffffff',
+                  color: pagination.currentPage === pagination.totalPages ? '#9ca3af' : '#1a1a1a',
+                  cursor: pagination.currentPage === pagination.totalPages ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                Next
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* View Assessor Assessments Modal */}
+      {selectedAssessor && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }} onClick={() => setSelectedAssessor(null)}>
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '900px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 700,
+                color: '#1a1a1a',
+                margin: 0
+              }}>
+                Assessments for {selectedAssessor.assessor.name}
+              </h2>
+              <button
+                onClick={() => setSelectedAssessor(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  color: '#6b7280',
+                  cursor: 'pointer',
+                  padding: '0',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {selectedAssessor.scores.length === 0 ? (
+                <p style={{ color: '#6b7280', textAlign: 'center', padding: '24px' }}>
+                  No assessments found for this assessor
+                </p>
+              ) : (
+                selectedAssessor.scores.map((score) => (
+                  <div
+                    key={score.id}
+                    style={{
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      background: '#f9fafb'
+                    }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'start',
+                      marginBottom: '12px'
+                    }}>
+                      <div>
+                        <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: '#1a1a1a' }}>
+                          Participant: {score.participant.name}
+                        </p>
+                        <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: '#6b7280' }}>
+                          Assessment Center: {score.assessmentCenter.name}
+                        </p>
+                        <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
+                          Status: <span style={{
+                            color: score.status === 'SUBMITTED' || score.status === 'FINALIZED' ? '#065f46' : '#1e40af',
+                            fontWeight: 500
+                          }}>{score.status}</span>
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleEditScore(score)}
+                        style={{
+                          padding: '8px 16px',
+                          background: '#3b82f6',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: 500
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Score Modal */}
+      {showEditModal && selectedScore && editData && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 60,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }} onClick={() => !saving && setShowEditModal(false)}>
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '800px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 700,
+                color: '#1a1a1a',
+                margin: 0
+              }}>
+                Edit Assessment Score
+              </h2>
+              <button
+                onClick={() => !saving && setShowEditModal(false)}
+                disabled={saving}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  color: '#6b7280',
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  padding: '0',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: saving ? 0.5 : 1
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: '#1a1a1a' }}>
+                Participant: {selectedScore.participant.name}
+              </p>
+              <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: '#6b7280' }}>
+                Assessment Center: {selectedScore.assessmentCenter.name}
+              </p>
+            </div>
+
+            {/* Competency Scores */}
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                color: '#1a1a1a',
+                marginBottom: '16px'
+              }}>
+                Competency Scores
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {Object.entries(editData.competencyScores).map(([competencyId, subCompetencies]) => (
+                  <div key={competencyId} style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '16px',
+                    background: '#f9fafb'
+                  }}>
+                    <h4 style={{
+                      fontSize: '16px',
+                      fontWeight: 600,
+                      color: '#1a1a1a',
+                      marginBottom: '12px'
+                    }}>
+                      Competency {competencyId.slice(-6)}
+                    </h4>
+                    {Object.entries(subCompetencies).map(([subCompetency, score]) => (
+                      <div key={subCompetency} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '8px'
+                      }}>
+                        <label style={{
+                          fontSize: '14px',
+                          color: '#374151',
+                          flex: 1
+                        }}>
+                          {subCompetency}
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="10"
+                          value={score}
+                          onChange={(e) => {
+                            const newValue = parseFloat(e.target.value) || 0;
+                            setEditData({
+                              ...editData,
+                              competencyScores: {
+                                ...editData.competencyScores,
+                                [competencyId]: {
+                                  ...editData.competencyScores[competencyId],
+                                  [subCompetency]: newValue
+                                }
+                              }
+                            });
+                          }}
+                          style={{
+                            width: '100px',
+                            padding: '8px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '6px',
+                            fontSize: '14px'
+                          }}
+                        />
+                      </div>
+                    ))}
+                    
+                    {/* Individual Comments for this competency */}
+                    <div style={{ marginTop: '12px' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#374151',
+                        marginBottom: '4px'
+                      }}>
+                        Comments for this competency:
+                      </label>
+                      <textarea
+                        value={editData.individualComments[competencyId] || ''}
+                        onChange={(e) => {
+                          setEditData({
+                            ...editData,
+                            individualComments: {
+                              ...editData.individualComments,
+                              [competencyId]: e.target.value
+                            }
+                          });
+                        }}
+                        placeholder="Enter comments for this competency..."
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          minHeight: '60px',
+                          fontFamily: 'inherit',
+                          resize: 'vertical'
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Overall Comments */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '16px',
+                fontWeight: 600,
+                color: '#1a1a1a',
+                marginBottom: '8px'
+              }}>
+                Overall Comments
+              </label>
+              <textarea
+                value={editData.overallComments}
+                onChange={(e) => {
+                  setEditData({
+                    ...editData,
+                    overallComments: e.target.value
+                  });
+                }}
+                placeholder="Enter overall comments..."
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  minHeight: '100px',
+                  fontFamily: 'inherit',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            {/* Status */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '16px',
+                fontWeight: 600,
+                color: '#1a1a1a',
+                marginBottom: '8px'
+              }}>
+                Status
+              </label>
+              <select
+                value={editData.status}
+                onChange={(e) => {
+                  setEditData({
+                    ...editData,
+                    status: e.target.value as 'DRAFT' | 'SUBMITTED' | 'FINALIZED'
+                  });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  background: '#ffffff'
+                }}
+              >
+                <option value="DRAFT">DRAFT</option>
+                <option value="SUBMITTED">SUBMITTED</option>
+                <option value="FINALIZED">FINALIZED</option>
+              </select>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '12px',
+              marginTop: '24px'
+            }}>
+              <button
+                onClick={() => setShowEditModal(false)}
+                disabled={saving}
+                style={{
+                  padding: '10px 20px',
+                  background: '#f3f4f6',
+                  color: '#374151',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  opacity: saving ? 0.5 : 1
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveScore}
+                disabled={saving}
+                style={{
+                  padding: '10px 20px',
+                  background: saving ? '#9ca3af' : '#3b82f6',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500
+                }}
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AssessorsPage;
