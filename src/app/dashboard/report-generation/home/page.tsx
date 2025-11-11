@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
+import { saveAs } from 'file-saver';
 
 interface Assessor {
   id: string;
@@ -97,6 +99,7 @@ const AssessorsPage = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editData, setEditData] = useState<EditScoreData | null>(null);
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const getAuthToken = () => {
     if (typeof window !== 'undefined') {
@@ -110,7 +113,7 @@ const AssessorsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const url = new URL('https://api.breakfreeacademy.in/api/assessors/admin/scores');
+      const url = new URL('http://localhost:3000/api/assessors/admin/scores');
       url.searchParams.append('page', page.toString());
       url.searchParams.append('limit', limit.toString());
       url.searchParams.append('assessorId', '');
@@ -227,7 +230,7 @@ const AssessorsPage = () => {
     setSaving(true);
     try {
       const response = await fetch(
-        `https://api.breakfreeacademy.in/api/assessors/admin/scores/${selectedScore.id}`,
+        `http://localhost:3000/api/assessors/admin/scores/${selectedScore.id}`,
         {
           method: 'PATCH',
           headers: {
@@ -264,6 +267,366 @@ const AssessorsPage = () => {
   // Handle viewing assessor details
   const handleViewAssessor = (stat: AssessorStats) => {
     setSelectedAssessor(stat);
+  };
+
+  // Format report content for DOCX
+  const formatReportContent = (reportData: any): Paragraph[] => {
+    const paragraphs: Paragraph[] = [];
+
+    // Report Cover
+    if (reportData.reportCover?.content) {
+      paragraphs.push(
+        new Paragraph({
+          text: 'Report Cover',
+          heading: HeadingLevel.HEADING_1,
+          spacing: { after: 200 },
+        })
+      );
+      paragraphs.push(
+        new Paragraph({
+          text: reportData.reportCover.content || '',
+          spacing: { after: 400 },
+        })
+      );
+    }
+
+    // Part 1: Introduction
+    if (reportData.part1Introduction?.content) {
+      paragraphs.push(
+        new Paragraph({
+          text: 'Introduction',
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 200, after: 200 },
+        })
+      );
+      paragraphs.push(
+        new Paragraph({
+          text: reportData.part1Introduction.content || '',
+          spacing: { after: 400 },
+        })
+      );
+    }
+
+    // Part 2: Analysis
+    if (reportData.part2Analysis?.content) {
+      paragraphs.push(
+        new Paragraph({
+          text: 'Analysis',
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 200, after: 200 },
+        })
+      );
+      
+      try {
+        const analysisContent = JSON.parse(reportData.part2Analysis.content);
+        // Format the analysis content
+        Object.keys(analysisContent).forEach((step) => {
+          paragraphs.push(
+            new Paragraph({
+              text: step,
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 200, after: 100 },
+            })
+          );
+          
+          const stepData = analysisContent[step];
+          if (typeof stepData === 'object') {
+            Object.keys(stepData).forEach((key) => {
+              paragraphs.push(
+                new Paragraph({
+                  text: key,
+                  heading: HeadingLevel.HEADING_3,
+                  spacing: { before: 100, after: 50 },
+                })
+              );
+              
+              if (Array.isArray(stepData[key])) {
+                stepData[key].forEach((item: any) => {
+                  if (typeof item === 'string') {
+                    paragraphs.push(new Paragraph({ text: `• ${item}`, spacing: { after: 50 } }));
+                  } else if (typeof item === 'object') {
+                    Object.keys(item).forEach((prop) => {
+                      paragraphs.push(
+                        new Paragraph({
+                          text: `${prop}: ${item[prop]}`,
+                          spacing: { after: 50 },
+                        })
+                      );
+                    });
+                  }
+                });
+              } else if (typeof stepData[key] === 'object') {
+                Object.keys(stepData[key]).forEach((subKey) => {
+                  paragraphs.push(
+                    new Paragraph({
+                      text: `${subKey}: ${JSON.stringify(stepData[key][subKey], null, 2)}`,
+                      spacing: { after: 50 },
+                    })
+                  );
+                });
+              }
+            });
+          }
+        });
+      } catch (e) {
+        paragraphs.push(
+          new Paragraph({
+            text: reportData.part2Analysis.content || '',
+            spacing: { after: 400 },
+          })
+        );
+      }
+    }
+
+    // Part 3: Comments
+    if (reportData.part3Comments?.content) {
+      paragraphs.push(
+        new Paragraph({
+          text: 'Comments',
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 200, after: 200 },
+        })
+      );
+      
+      try {
+        const commentsContent = JSON.parse(reportData.part3Comments.content);
+        
+        if (commentsContent.Strengths) {
+          paragraphs.push(
+            new Paragraph({
+              text: 'Strengths',
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 100, after: 100 },
+            })
+          );
+          Object.keys(commentsContent.Strengths).forEach((key) => {
+            paragraphs.push(
+              new Paragraph({
+                text: `${key}: ${commentsContent.Strengths[key]}`,
+                spacing: { after: 50 },
+              })
+            );
+          });
+        }
+        
+        if (commentsContent['Areas of Opportunity']) {
+          paragraphs.push(
+            new Paragraph({
+              text: 'Areas of Opportunity',
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 100, after: 100 },
+            })
+          );
+          Object.keys(commentsContent['Areas of Opportunity']).forEach((key) => {
+            paragraphs.push(
+              new Paragraph({
+                text: `${key}: ${commentsContent['Areas of Opportunity'][key]}`,
+                spacing: { after: 50 },
+              })
+            );
+          });
+        }
+      } catch (e) {
+        paragraphs.push(
+          new Paragraph({
+            text: reportData.part3Comments.content || '',
+            spacing: { after: 400 },
+          })
+        );
+      }
+    }
+
+    // Part 4: Overall Ratings
+    if (reportData.part4OverallRatings?.content) {
+      paragraphs.push(
+        new Paragraph({
+          text: 'Overall Ratings',
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 200, after: 200 },
+        })
+      );
+      
+      if (reportData.part4OverallRatings.scoreTable) {
+        paragraphs.push(
+          new Paragraph({
+            text: 'Score Table',
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 100, after: 100 },
+          })
+        );
+        
+        if (reportData.part4OverallRatings.scoreTable.readiness) {
+          paragraphs.push(
+            new Paragraph({
+              text: `Readiness Scores: ${reportData.part4OverallRatings.scoreTable.readiness.join(', ')}`,
+              spacing: { after: 50 },
+            })
+          );
+        }
+        
+        if (reportData.part4OverallRatings.scoreTable.application) {
+          paragraphs.push(
+            new Paragraph({
+              text: `Application Scores: ${reportData.part4OverallRatings.scoreTable.application.join(', ')}`,
+              spacing: { after: 50 },
+            })
+          );
+        }
+      }
+      
+      // Add comment if available
+      const commentMatch = reportData.part4OverallRatings.content.match(/"Comment":\s*\[([\s\S]*?)\]/);
+      if (commentMatch) {
+        paragraphs.push(
+          new Paragraph({
+            text: 'Comments:',
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 100, after: 100 },
+          })
+        );
+        paragraphs.push(
+          new Paragraph({
+            text: commentMatch[1].replace(/"/g, '').trim(),
+            spacing: { after: 400 },
+          })
+        );
+      }
+    }
+
+    // Part 5: Recommendations
+    if (reportData.part5Recommendation?.content) {
+      paragraphs.push(
+        new Paragraph({
+          text: 'Recommendations',
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 200, after: 200 },
+        })
+      );
+      
+      if (reportData.part5Recommendation.recommendations) {
+        reportData.part5Recommendation.recommendations.forEach((rec: string) => {
+          paragraphs.push(
+            new Paragraph({
+              text: `• ${rec}`,
+              spacing: { after: 50 },
+            })
+          );
+        });
+      } else {
+        paragraphs.push(
+          new Paragraph({
+            text: reportData.part5Recommendation.content || '',
+            spacing: { after: 400 },
+          })
+        );
+      }
+    }
+
+    return paragraphs;
+  };
+
+  // Handle downloading assessor data
+  const handleDownloadAssessorData = async (stat: AssessorStats, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent opening the modal when clicking download
+    
+    if (stat.scores.length === 0) {
+      setError('No assessments available to download');
+      return;
+    }
+
+    setDownloading(stat.assessor.id);
+    setError(null);
+
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      // Download reports for all assessments
+      for (let i = 0; i < stat.scores.length; i++) {
+        const score = stat.scores[i];
+        
+        try {
+          // Call the API to generate report
+          const response = await fetch(
+            'http://localhost:3000/api/report-structures/generate-from-assessment-center',
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                assessmentCenterId: score.assessmentCenter.id,
+                participantId: score.participant.id,
+              }),
+            }
+          );
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Failed to generate report for ${score.participant.name}`);
+          }
+
+          const data = await response.json();
+          
+          if (!data.success || !data.data) {
+            throw new Error(data.message || 'Failed to generate report');
+          }
+
+          // Create DOCX document from report data
+          const reportContent = data.data.reportContent;
+          const paragraphs = formatReportContent(reportContent);
+
+          // Add header information
+          const doc = new Document({
+            sections: [
+              {
+                children: [
+                  new Paragraph({
+                    text: data.data.reportStructure?.reportName || 'Assessment Report',
+                    heading: HeadingLevel.TITLE,
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 400 },
+                  }),
+                  new Paragraph({
+                    text: `Participant: ${data.data.participant?.name || score.participant.name}`,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    text: `Assessment Center: ${data.data.assessmentCenter?.name || score.assessmentCenter.name}`,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    text: `Assessor: ${stat.assessor.name}`,
+                    spacing: { after: 400 },
+                  }),
+                  ...paragraphs,
+                ],
+              },
+            ],
+          });
+
+          // Generate and download the document
+          const blob = await Packer.toBlob(doc);
+          const fileName = `${data.data.participant?.name || score.participant.name}_${data.data.assessmentCenter?.name || score.assessmentCenter.name}_${new Date().toISOString().split('T')[0]}.docx`.replace(/\s+/g, '_');
+          saveAs(blob, fileName);
+
+          // Add a small delay between downloads to avoid browser blocking
+          if (i < stat.scores.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } catch (err) {
+          console.error(`Error downloading report for ${score.participant.name}:`, err);
+          setError(err instanceof Error ? err.message : `Failed to download report for ${score.participant.name}`);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to download assessor reports');
+    } finally {
+      setDownloading(null);
+    }
   };
 
   return (
@@ -484,6 +847,73 @@ const AssessorsPage = () => {
                     }}>
                       Not Assessed assessment- {stat.notAssessed}
                     </div>
+
+                    {/* Download Button */}
+                    <button
+                      onClick={(e) => handleDownloadAssessorData(stat, e)}
+                      disabled={downloading === stat.assessor.id || stat.scores.length === 0}
+                      style={{
+                        padding: '8px 16px',
+                        background: downloading === stat.assessor.id || stat.scores.length === 0 ? '#9ca3af' : '#3b82f6',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: downloading === stat.assessor.id || stat.scores.length === 0 ? 'not-allowed' : 'pointer',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'background-color 0.2s',
+                        opacity: downloading === stat.assessor.id || stat.scores.length === 0 ? 0.6 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (downloading !== stat.assessor.id && stat.scores.length > 0) {
+                          e.currentTarget.style.background = '#2563eb';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (downloading !== stat.assessor.id && stat.scores.length > 0) {
+                          e.currentTarget.style.background = '#3b82f6';
+                        }
+                      }}
+                    >
+                      {downloading === stat.assessor.id ? (
+                        <>
+                          <svg 
+                            width="16" 
+                            height="16" 
+                            viewBox="0 0 16 16" 
+                            fill="none" 
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="spin-animation"
+                          >
+                            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="2" strokeDasharray="43.98" strokeDashoffset="11" fill="none" />
+                          </svg>
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <svg 
+                            width="16" 
+                            height="16" 
+                            viewBox="0 0 16 16" 
+                            fill="none" 
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path 
+                              d="M8 11L4 7H6V3H10V7H12L8 11Z" 
+                              fill="currentColor"
+                            />
+                            <path 
+                              d="M2 13H14V14H2V13Z" 
+                              fill="currentColor"
+                            />
+                          </svg>
+                          Download
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               ))

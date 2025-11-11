@@ -81,7 +81,7 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
       const loadAssessmentCenter = async () => {
         try {
           console.log('Fetching assessment center:', editId);
-          const response = await fetch(`https://api.breakfreeacademy.in/api/assessment-centers/${editId}`, {
+          const response = await fetch(`http://localhost:3000/api/assessment-centers/${editId}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
@@ -318,7 +318,7 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
         displayInstructions: formData.displayInstructions || 'Please complete the assessment activities.',
         competencyIds: formData.competencyIds || [],
         reportTemplateName: formData.reportTemplateName || 'Default Report',
-        reportTemplateType: formData.reportTemplateType || 'TEMPLATE1',
+        reportTemplateType: formData.reportTemplateType || '', // Template ID (string) - required field
         activities: transformedActivities,
         assignments: formData.assignments || [],
       };
@@ -346,8 +346,8 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
       }
       
       const url = editId
-        ? `https://api.breakfreeacademy.in/api/assessment-centers/${editId}`
-        : 'https://api.breakfreeacademy.in/api/assessment-centers';
+        ? `http://localhost:3000/api/assessment-centers/${editId}`
+        : 'http://localhost:3000/api/assessment-centers';
       const method = editId ? 'PATCH' : 'POST';
 
       console.log("📡 [Assessment Center] Making API call to:", url);

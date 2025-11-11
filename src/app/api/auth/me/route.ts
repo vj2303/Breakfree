@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     // Make request to backend API with the token
-    const response = await fetch('https://api.breakfreeacademy.in/api/auth/me', {
+    const response = await fetch('http://localhost:3000/api/auth/me', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

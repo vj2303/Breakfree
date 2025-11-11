@@ -104,9 +104,9 @@ const SelectContentStep: React.FC = () => {
       try {
         let url = "";
         if (type === "case-study") {
-          url = "https://api.breakfreeacademy.in/api/case-studies?page=1&limit=10";
+          url = "http://localhost:3000/api/case-studies?page=1&limit=10";
         } else if (type === "inbox-activity") {
-          url = "https://api.breakfreeacademy.in/api/inbox-activities?page=1&limit=10";
+          url = "http://localhost:3000/api/inbox-activities?page=1&limit=10";
         } else {
           setContentOptions((prev) => ({ ...prev, [type]: [] }));
           fetchingTypes.current.delete(type);
@@ -161,8 +161,8 @@ const SelectContentStep: React.FC = () => {
   //   try {
   //     setLoading(true);
   //     const endpoint = activityType === 'case-study'
-  //       ? `https://api.breakfreeacademy.in/api/case-studies/${activityId}`
-  //       : `https://api.breakfreeacademy.in/api/inbox-activities/${activityId}`;
+  //       ? `http://localhost:3000/api/case-studies/${activityId}`
+  //       : `http://localhost:3000/api/inbox-activities/${activityId}`;
 
   //     const response = await fetch(endpoint, {
   //       headers: {
