@@ -82,7 +82,39 @@ interface EditScoreData {
   status: 'DRAFT' | 'SUBMITTED' | 'FINALIZED';
 }
 
-const AssessorsPage = () => {
+interface Group {
+  id: string;
+  name: string;
+  admin: string;
+  adminEmail: string;
+  members: string[];
+  participantIds?: string[];
+}
+
+interface GroupWithAssessorMarks extends Group {
+  assessorMarks: {
+    assessorId: string;
+    assessorName: string;
+    assessorEmail: string;
+    participantId: string;
+    participantName: string;
+    scores: Score[];
+    totalAssessments: number;
+    completedAssessments: number;
+  }[];
+}
+
+const HomePage = () => {
+  const [activeTab, setActiveTab] = useState<'groups' | 'assessors'>('groups');
+  
+  // Groups tab state
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [groupsWithMarks, setGroupsWithMarks] = useState<GroupWithAssessorMarks[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [groupsError, setGroupsError] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<GroupWithAssessorMarks | null>(null);
+  
+  // Assessors tab state
   const [assessorStats, setAssessorStats] = useState<AssessorStats[]>([]);
   const [filteredStats, setFilteredStats] = useState<AssessorStats[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
@@ -107,6 +139,44 @@ const AssessorsPage = () => {
     }
     return '';
   };
+
+  // Fetch groups from API
+  const fetchGroups = useCallback(async () => {
+    setGroupsLoading(true);
+    setGroupsError(null);
+    try {
+      const token = getAuthToken();
+      const res = await fetch('https://api.breakfreeacademy.in/api/groups?page=1&limit=100&search=', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const result = await res.json();
+      if (result.success && result.data && result.data.groups) {
+        setGroups(result.data.groups);
+        // For now, create mock assessor marks data (UI only)
+        const groupsWithMockMarks: GroupWithAssessorMarks[] = result.data.groups.map((group: Group) => ({
+          ...group,
+          assessorMarks: [] // Will be populated with actual data later
+        }));
+        setGroupsWithMarks(groupsWithMockMarks);
+      } else {
+        setGroupsError(result.message || 'Failed to fetch groups');
+      }
+    } catch (err) {
+      console.error('Error fetching groups:', err);
+      setGroupsError('Error fetching groups');
+    } finally {
+      setGroupsLoading(false);
+    }
+  }, []);
+
+  // Fetch groups when tab is active
+  useEffect(() => {
+    if (activeTab === 'groups') {
+      fetchGroups();
+    }
+  }, [activeTab, fetchGroups]);
 
   // Fetch scores from API and group by assessor
   const fetchAssessorScores = useCallback(async (page = 1, limit = 10) => {
@@ -199,10 +269,12 @@ const AssessorsPage = () => {
     }
   }, [searchTerm, assessorStats]);
 
-  // Fetch data on mount
+  // Fetch assessor scores when assessors tab is active
   useEffect(() => {
-    fetchAssessorScores(pagination.currentPage, pagination.itemsPerPage);
-  }, [fetchAssessorScores]);
+    if (activeTab === 'assessors') {
+      fetchAssessorScores(pagination.currentPage, pagination.itemsPerPage);
+    }
+  }, [activeTab, fetchAssessorScores, pagination.currentPage, pagination.itemsPerPage]);
 
   // Handle pagination
   const handlePageChange = (newPage: number) => {
@@ -646,54 +718,92 @@ const AssessorsPage = () => {
           color: '#1a1a1a',
           margin: 0
         }}>
-          Assessors
+          {activeTab === 'groups' ? 'Groups' : 'Assessors'}
         </h1>
         
-        {/* Search Bar */}
-        <div style={{ 
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center'
-        }}>
-          <svg 
-            width="20" 
-            height="20" 
-            viewBox="0 0 20 20" 
-            fill="none" 
-            xmlns="http://www.w3.org/2000/svg"
-            style={{ 
-              position: 'absolute', 
-              left: '12px', 
-              zIndex: 1,
-              color: '#6b7280'
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setActiveTab('groups')}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '20px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 500,
+              background: activeTab === 'groups' ? '#374151' : '#f3f4f6',
+              color: activeTab === 'groups' ? '#ffffff' : '#1a1a1a',
+              transition: 'all 0.2s'
             }}
           >
-            <path 
-              d="M9 3C5.686 3 3 5.686 3 9C3 12.314 5.686 15 9 15C10.039 15 11.008 14.694 11.817 14.175L15.293 17.651C15.488 17.846 15.744 17.943 16 17.943C16.256 17.943 16.512 17.846 16.707 17.651C17.098 17.26 17.098 16.627 16.707 16.236L13.231 12.76C13.75 11.951 14.056 10.982 14.056 9.943C14.056 6.629 11.37 3.943 8.056 3.943H9V3ZM9 5C10.657 5 12 6.343 12 8C12 9.657 10.657 11 9 11C7.343 11 6 9.657 6 8C6 6.343 7.343 5 9 5Z" 
-              fill="currentColor"
-            />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search by Assessor name"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            Groups
+          </button>
+          <button
+            onClick={() => setActiveTab('assessors')}
             style={{
-              padding: '12px 12px 12px 40px',
-              fontSize: '16px',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              width: '300px',
-              outline: 'none',
-              background: '#ffffff',
-              color: '#000'
+              padding: '10px 20px',
+              borderRadius: '20px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 500,
+              background: activeTab === 'assessors' ? '#374151' : '#f3f4f6',
+              color: activeTab === 'assessors' ? '#ffffff' : '#1a1a1a',
+              transition: 'all 0.2s'
             }}
-          />
+          >
+            Assessors
+          </button>
         </div>
+        
+        {/* Search Bar - Only show for Assessors tab */}
+        {activeTab === 'assessors' && (
+          <div style={{ 
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            <svg 
+              width="20" 
+              height="20" 
+              viewBox="0 0 20 20" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ 
+                position: 'absolute', 
+                left: '12px', 
+                zIndex: 1,
+                color: '#6b7280'
+              }}
+            >
+              <path 
+                d="M9 3C5.686 3 3 5.686 3 9C3 12.314 5.686 15 9 15C10.039 15 11.008 14.694 11.817 14.175L15.293 17.651C15.488 17.846 15.744 17.943 16 17.943C16.256 17.943 16.512 17.846 16.707 17.651C17.098 17.26 17.098 16.627 16.707 16.236L13.231 12.76C13.75 11.951 14.056 10.982 14.056 9.943C14.056 6.629 11.37 3.943 8.056 3.943H9V3ZM9 5C10.657 5 12 6.343 12 8C12 9.657 10.657 11 9 11C7.343 11 6 9.657 6 8C6 6.343 7.343 5 9 5Z" 
+                fill="currentColor"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by Assessor name"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                padding: '12px 12px 12px 40px',
+                fontSize: '16px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                width: '300px',
+                outline: 'none',
+                background: '#ffffff',
+                color: '#000'
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Error State */}
-      {error && (
+      {(error || groupsError) && (
         <div style={{
           padding: '16px',
           background: '#fee2e2',
@@ -704,9 +814,12 @@ const AssessorsPage = () => {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <span>{error}</span>
+          <span>{error || groupsError}</span>
           <button
-            onClick={() => setError(null)}
+            onClick={() => {
+              setError(null);
+              setGroupsError(null);
+            }}
             style={{
               background: 'none',
               border: 'none',
@@ -721,8 +834,147 @@ const AssessorsPage = () => {
         </div>
       )}
 
-      {/* Loading State */}
-      {loading ? (
+      {/* Groups Tab Content */}
+      {activeTab === 'groups' && (
+        <>
+          {groupsLoading ? (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '48px',
+              color: '#6b7280'
+            }}>
+              Loading groups...
+            </div>
+          ) : (
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', 
+              gap: '24px',
+              marginBottom: '24px'
+            }}>
+              {groupsWithMarks.length === 0 ? (
+                <div style={{
+                  padding: '48px',
+                  textAlign: 'center',
+                  background: '#ffffff',
+                  borderRadius: '8px',
+                  color: '#6b7280',
+                  gridColumn: '1 / -1'
+                }}>
+                  No groups found
+                </div>
+              ) : (
+                groupsWithMarks.map((group) => (
+                  <div
+                    key={group.id}
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb',
+                      padding: '24px',
+                      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                      cursor: 'pointer',
+                      transition: 'box-shadow 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = '0 4px 6px 0 rgba(0, 0, 0, 0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)';
+                    }}
+                    onClick={() => setSelectedGroup(group)}
+                  >
+                    <h3 style={{
+                      fontSize: '20px',
+                      fontWeight: 600,
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      {group.name}
+                    </h3>
+                    <p style={{
+                      fontSize: '14px',
+                      color: '#6b7280',
+                      margin: '0 0 8px 0'
+                    }}>
+                      Group Admin: <span style={{ fontWeight: 500, color: '#1a1a1a' }}>{group.admin}</span>
+                    </p>
+                    <p style={{
+                      fontSize: '14px',
+                      color: '#6b7280',
+                      margin: '0 0 16px 0'
+                    }}>
+                      No. of Members: <span style={{ fontWeight: 500, color: '#1a1a1a' }}>
+                        {(group.members?.length ?? group.participantIds?.length ?? 0)}
+                      </span>
+                    </p>
+                    
+                    {/* Assessor Marks Summary */}
+                    <div style={{
+                      padding: '12px',
+                      background: '#f9fafb',
+                      borderRadius: '6px',
+                      marginTop: '16px'
+                    }}>
+                      <p style={{
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: '#1a1a1a',
+                        margin: '0 0 8px 0'
+                      }}>
+                        Assessor Marks:
+                      </p>
+                      {group.assessorMarks.length === 0 ? (
+                        <p style={{
+                          fontSize: '12px',
+                          color: '#6b7280',
+                          margin: 0,
+                          fontStyle: 'italic'
+                        }}>
+                          No assessor marks available
+                        </p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {group.assessorMarks.map((mark, idx) => (
+                            <div key={idx} style={{
+                              padding: '8px',
+                              background: '#ffffff',
+                              borderRadius: '4px',
+                              border: '1px solid #e5e7eb'
+                            }}>
+                              <p style={{
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                color: '#1a1a1a',
+                                margin: '0 0 4px 0'
+                              }}>
+                                {mark.assessorName}
+                              </p>
+                              <p style={{
+                                fontSize: '11px',
+                                color: '#6b7280',
+                                margin: 0
+                              }}>
+                                Completed: {mark.completedAssessments} / {mark.totalAssessments}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Assessors Tab Content */}
+      {activeTab === 'assessors' && (
+        <>
+          {/* Loading State */}
+          {loading ? (
         <div style={{ 
           textAlign: 'center', 
           padding: '48px',
@@ -982,7 +1234,169 @@ const AssessorsPage = () => {
               </button>
             </div>
           )}
+          </>
+        )}
         </>
+      )}
+
+      {/* View Group Details Modal */}
+      {selectedGroup && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }} onClick={() => setSelectedGroup(null)}>
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '900px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 700,
+                color: '#1a1a1a',
+                margin: 0
+              }}>
+                {selectedGroup.name} - Assessor Marks
+              </h2>
+              <button
+                onClick={() => setSelectedGroup(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  color: '#6b7280',
+                  cursor: 'pointer',
+                  padding: '0',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: '#6b7280' }}>
+                Group Admin: <span style={{ fontWeight: 500, color: '#1a1a1a' }}>{selectedGroup.admin}</span>
+              </p>
+              <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: '#6b7280' }}>
+                Admin Email: <span style={{ fontWeight: 500, color: '#1a1a1a' }}>{selectedGroup.adminEmail}</span>
+              </p>
+              <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
+                Total Members: <span style={{ fontWeight: 500, color: '#1a1a1a' }}>
+                  {(selectedGroup.members?.length ?? selectedGroup.participantIds?.length ?? 0)}
+                </span>
+              </p>
+            </div>
+
+            <div style={{ marginTop: '24px' }}>
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                color: '#1a1a1a',
+                marginBottom: '16px'
+              }}>
+                Assessor Marks by Group
+              </h3>
+              {selectedGroup.assessorMarks.length === 0 ? (
+                <p style={{ color: '#6b7280', textAlign: 'center', padding: '24px' }}>
+                  No assessor marks available for this group
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {selectedGroup.assessorMarks.map((mark, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '16px',
+                        background: '#f9fafb'
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'start',
+                        marginBottom: '12px'
+                      }}>
+                        <div>
+                          <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: '#1a1a1a' }}>
+                            Assessor: {mark.assessorName}
+                          </p>
+                          <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: '#6b7280' }}>
+                            Email: {mark.assessorEmail}
+                          </p>
+                          <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
+                            Participant: {mark.participantName}
+                          </p>
+                        </div>
+                        <div style={{
+                          padding: '8px 16px',
+                          background: mark.completedAssessments === mark.totalAssessments ? '#d1fae5' : '#dbeafe',
+                          borderRadius: '20px',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: mark.completedAssessments === mark.totalAssessments ? '#065f46' : '#1e40af'
+                        }}>
+                          {mark.completedAssessments} / {mark.totalAssessments} Completed
+                        </div>
+                      </div>
+                      {mark.scores.length > 0 && (
+                        <div style={{ marginTop: '12px' }}>
+                          <p style={{ fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
+                            Assessment Scores:
+                          </p>
+                          {mark.scores.map((score) => (
+                            <div key={score.id} style={{
+                              padding: '8px',
+                              background: '#ffffff',
+                              borderRadius: '4px',
+                              marginBottom: '8px',
+                              fontSize: '12px',
+                              color: '#6b7280'
+                            }}>
+                              <span style={{ fontWeight: 500 }}>Status: </span>
+                              <span style={{
+                                color: score.status === 'SUBMITTED' || score.status === 'FINALIZED' ? '#065f46' : '#1e40af',
+                                fontWeight: 500
+                              }}>
+                                {score.status}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* View Assessor Assessments Modal */}
@@ -1399,4 +1813,4 @@ const AssessorsPage = () => {
   );
 };
 
-export default AssessorsPage;
+export default HomePage;

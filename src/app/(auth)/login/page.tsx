@@ -51,11 +51,20 @@ export default function Login() {
         email: formData.email, 
         password: formData.password 
       })
+
       
       if (result.success) {
         showSuccess('Login successful! Redirecting...')
         setTimeout(() => {
-          router.push('/dashboard')
+          if(result.data?.user?.role === 'ADMIN') {
+            router.push('/admin/dashboard')
+          } else if(result.data?.user?.role === 'PARTICIPANT') {
+            router.push('/participant/dashboard')
+          } else if(result.data?.user?.role === 'ASSESSOR') {
+            router.push('/assessor/dashboard')
+          } else {
+            router.push('/dashboard')
+          }
         }, 1000)
       } else {
         showError(result.message || 'Login failed. Please check your credentials.')
@@ -76,11 +85,11 @@ export default function Login() {
     router.push('/forgot-password')
   }
 
-  useEffect(() => {
-    if (user && !loading) {
-      router.push('/dashboard')
-    }
-  }, [user, loading, router])
+  // useEffect(() => {
+  //   if (user && !loading) {
+  //     router.push('/dashboard')
+  //   }
+  // }, [user, loading, router])
 
   // Show loading spinner while checking authentication
   if (loading) {
