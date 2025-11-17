@@ -57,7 +57,7 @@ export default function Login() {
         showSuccess('Login successful! Redirecting...')
         setTimeout(() => {
           if(result.data?.user?.role === 'ADMIN') {
-            router.push('/admin/dashboard')
+            router.push('/dashboard')
           } else if(result.data?.user?.role === 'PARTICIPANT') {
             router.push('/participant/dashboard')
           } else if(result.data?.user?.role === 'ASSESSOR') {

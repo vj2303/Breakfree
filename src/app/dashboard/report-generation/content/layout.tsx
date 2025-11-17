@@ -30,7 +30,13 @@ export default function ContentLayout({ children }: { children: React.ReactNode 
             return (
               <button
                 key={tab.label}
-                onClick={() => router.push(tab.path)}
+                onClick={() => {
+                  // Set flag to prevent auto-redirect when clicking tabs
+                  if (tab.path === '/dashboard/report-generation/content/assessment-center') {
+                    sessionStorage.setItem('assessment-center-auto-redirect', 'false');
+                  }
+                  router.push(tab.path);
+                }}
                 className={`px-8 py-3 rounded-full border text-base font-semibold transition-all duration-150 ${isActive ? 'bg-[#425375] text-white border-transparent' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-100'}`}
                 style={{ outline: 'none' }}
               >

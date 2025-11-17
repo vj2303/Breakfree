@@ -1,16 +1,27 @@
 'use client'
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import AssessmentCenterStepper from './AssessmentCenterStepper';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
+
+// LocalStorage keys for persistence (must match the ones in create/page.tsx)
+const STORAGE_KEYS = {
+  FORM_DATA: 'assessment-center-form-data',
+  CURRENT_STEP: 'assessment-center-current-step',
+  EDIT_ID: 'assessment-center-edit-id',
+  IS_ACTIVE: 'assessment-center-is-active',
+};
 
 export default function AssessmentCenterPage() {
   const [showStepper, setShowStepper] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCheckingPersistence, setIsCheckingPersistence] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
+  const hasRedirectedRef = useRef(false);
   const { assessmentCenters, assessmentCentersLoading, fetchAssessmentCenters, deleteAssessmentCenter, token } = useAuth();
 
   // Wrap fetchAssessmentCenters in useCallback to stabilize its reference
@@ -23,6 +34,72 @@ export default function AssessmentCenterPage() {
       stableFetchAssessmentCenters();
     }
   }, [token, assessmentCenters, stableFetchAssessmentCenters]);
+
+  // Check for persisted data and redirect to create/edit page if found
+  // Only redirect if user navigated here directly (not from clicking a tab)
+  useEffect(() => {
+    // Only check once
+    if (hasRedirectedRef.current) {
+      setIsCheckingPersistence(false);
+      return;
+    }
+    
+    // Don't redirect if we're already on the create page
+    if (pathname?.includes('/assessment-center/create')) {
+      hasRedirectedRef.current = true;
+      setIsCheckingPersistence(false);
+      return;
+    }
+    
+    // Check if user came from clicking a tab (referrer check)
+    // If they explicitly navigated here, don't auto-redirect
+    const shouldAutoRedirect = typeof window !== 'undefined' 
+      ? sessionStorage.getItem('assessment-center-auto-redirect') !== 'false'
+      : true;
+    
+    if (!shouldAutoRedirect) {
+      // User explicitly navigated here, clear the flag and don't redirect
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('assessment-center-auto-redirect');
+      }
+      hasRedirectedRef.current = true;
+      setIsCheckingPersistence(false);
+      return;
+    }
+    
+    try {
+      const isActive = localStorage.getItem(STORAGE_KEYS.IS_ACTIVE);
+      const editId = localStorage.getItem(STORAGE_KEYS.EDIT_ID);
+      const formData = localStorage.getItem(STORAGE_KEYS.FORM_DATA);
+      
+      // If there's persisted data, redirect to create/edit page
+      if (isActive === 'true' && formData) {
+        console.log('🔄 [Assessment Center] Found persisted data, redirecting to create/edit page...');
+        console.log('🔄 [Assessment Center] Edit ID:', editId);
+        
+        hasRedirectedRef.current = true;
+        
+        if (editId) {
+          // Redirect to edit page
+          const editUrl = `/dashboard/report-generation/content/assessment-center/create?edit=${editId}`;
+          console.log('🔄 [Assessment Center] Redirecting to edit page:', editUrl);
+          router.replace(editUrl);
+        } else {
+          // Redirect to create page
+          const createUrl = '/dashboard/report-generation/content/assessment-center/create';
+          console.log('🔄 [Assessment Center] Redirecting to create page:', createUrl);
+          router.replace(createUrl);
+        }
+        setIsCheckingPersistence(false);
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking persisted data:', error);
+    }
+    
+    hasRedirectedRef.current = true;
+    setIsCheckingPersistence(false);
+  }, [router, pathname]);
 
   // Handle edit assessment center
   const handleEdit = (centerId: string) => {
@@ -68,6 +145,18 @@ export default function AssessmentCenterPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeDropdown]);
+
+  // Show loading while checking for persisted data
+  if (isCheckingPersistence) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (showStepper) {
     return <AssessmentCenterStepper onBack={() => setShowStepper(false)} />;

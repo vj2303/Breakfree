@@ -63,6 +63,7 @@ const CompetencyFramework = () => {
   };
 
   const openRubricModal = (competency: Competency) => {
+    console.log('Open rubric modal for competency:', competency);
     setActiveCompetency(competency);
     setShowRubricModal(true);
   };
