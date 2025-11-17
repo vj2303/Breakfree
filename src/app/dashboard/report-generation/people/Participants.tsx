@@ -72,7 +72,7 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
       setLoading(true);
       setError(null);
       
-      const url = new URL('https://api.breakfreeacademy.in/api/participants');
+      const url = new URL('http://localhost:3001/api/participants');
       url.searchParams.append('page', page.toString());
       url.searchParams.append('limit', limit.toString());
       url.searchParams.append('search', search);
@@ -151,7 +151,7 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
 
       console.log('🚀 Creating participant with data:', participantData);
 
-      const response = await fetch('https://api.breakfreeacademy.in/api/participants', {
+      const response = await fetch('http://localhost:3001/api/participants', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -197,7 +197,7 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
       setIsSubmitting(true);
       setError(null);
 
-      const response = await fetch(`https://api.breakfreeacademy.in/api/participants/${id}`, {
+      const response = await fetch(`http://localhost:3001/api/participants/${id}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -230,7 +230,7 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
     try {
       setError(null);
 
-      const response = await fetch(`https://api.breakfreeacademy.in/api/participants/${id}`, {
+      const response = await fetch(`http://localhost:3001/api/participants/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -373,7 +373,7 @@ const ParticipantsComponent: React.FC<ParticipantsComponentProps> = (props) => {
     setIsSendingEmail(true);
     setEmailStatus(null);
     try {
-      const response = await fetch('https://api.breakfreeacademy.in/api/participants/send-bulk-login-credentials', {
+      const response = await fetch('http://localhost:3001/api/participants/send-bulk-login-credentials', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,

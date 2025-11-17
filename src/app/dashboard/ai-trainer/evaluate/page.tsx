@@ -124,7 +124,7 @@ const Page = () => {
     try {
       const res = await axios({
         method: 'post',
-        url: 'https://api.breakfreeacademy.in/api/document-evaluation/evaluate',
+        url: 'http://localhost:3001/api/document-evaluation/evaluate',
         data: formData,
         headers: {
           "Content-Type": "multipart/form-data",

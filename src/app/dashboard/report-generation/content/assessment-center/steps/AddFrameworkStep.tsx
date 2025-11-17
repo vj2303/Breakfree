@@ -30,7 +30,7 @@ const CompetencyFramework = () => {
   if (!context) {
     throw new Error('CompetencyFramework must be used within AssessmentFormContext');
   }
-  const { formData } = context;
+  const { formData, updateFormData } = context;
   // competencyLibraryList is dynamically added to formData in SelectCompetenciesStep
   const competencies: Competency[] = (formData.selectedCompetenciesData || []).map((comp: {id: string, name: string}) => {
     const competencyLibraryList = (formData as { competencyLibraryList?: CompetencyLibraryItem[] }).competencyLibraryList || [];
@@ -38,7 +38,7 @@ const CompetencyFramework = () => {
     return {
       id: comp.id,
       name: comp.name,
-      subCompetencies: Array.isArray(full?.subCompetencyNames) ? full.subCompetencyNames : [],
+      subCompetencies: Array.isArray(full?.subCompetencyNames) ? (full as CompetencyLibraryItem).subCompetencyNames || [] : [],
     };
   });
 
@@ -47,7 +47,25 @@ const CompetencyFramework = () => {
   const [showRubricModal, setShowRubricModal] = useState(false);
   const [activeCompetency, setActiveCompetency] = useState<Competency | null>(null);
   const [selectedSubCompetency, setSelectedSubCompetency] = useState<string>('');
-  const [scoreState, setScoreState] = useState<ScoreState>({});
+  
+  // Initialize scoreState from formData if it exists
+  const [scoreState, setScoreState] = useState<ScoreState>(() => {
+    const savedDescriptors = formData.descriptors || {};
+    // Convert descriptors format to scoreState format
+    const initialState: ScoreState = {};
+    Object.keys(savedDescriptors).forEach(competencyId => {
+      initialState[competencyId] = {};
+      Object.keys(savedDescriptors[competencyId]).forEach(subCompetency => {
+        const descriptor = savedDescriptors[competencyId][subCompetency];
+        initialState[competencyId][subCompetency] = {
+          score1: descriptor.score1 || '',
+          score2: descriptor.score2 || '',
+          score3: descriptor.score3 || '',
+        };
+      });
+    });
+    return initialState;
+  });
 
   const toggleCompetencyExpansion = (id: string) => {
     setExpandedCompetencies(prev => ({
@@ -223,13 +241,34 @@ const CompetencyFramework = () => {
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button
-                onClick={() => setShowScoreModal(false)}
+                onClick={() => {
+                  setShowScoreModal(false);
+                  setSelectedSubCompetency('');
+                }}
                 className="px-4 py-2 text-black border border-gray-300 rounded-md hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
-                onClick={() => setShowScoreModal(false)}
+                onClick={() => {
+                  if (activeCompetency) {
+                    // Save descriptors to formData
+                    const currentDescriptors = formData.descriptors || {};
+                    const updatedDescriptors = {
+                      ...currentDescriptors,
+                      [activeCompetency.id]: {
+                        ...(currentDescriptors[activeCompetency.id] || {}),
+                        ...(scoreState[activeCompetency.id] || {}),
+                      },
+                    };
+                    
+                    // Update formData with descriptors
+                    updateFormData('descriptors', updatedDescriptors);
+                    console.log('💾 [Add Framework] Descriptors saved to formData:', updatedDescriptors);
+                  }
+                  setShowScoreModal(false);
+                  setSelectedSubCompetency('');
+                }}
                 className="px-4 py-2 bg-slate-800 text-white rounded-md hover:bg-slate-700"
               >
                 Save

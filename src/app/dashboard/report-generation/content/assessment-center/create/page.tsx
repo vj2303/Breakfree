@@ -90,6 +90,7 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
       activities: [],
       assignments: [],
       document: null,
+      descriptors: {},
     };
   })();
 
@@ -205,7 +206,7 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
       const loadAssessmentCenter = async () => {
         try {
           console.log('Fetching assessment center:', editId);
-          const response = await fetch(`https://api.breakfreeacademy.in/api/assessment-centers/${editId}`, {
+          const response = await fetch(`http://localhost:3001/api/assessment-centers/${editId}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
@@ -267,6 +268,7 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
                 activities: mappedActivities,
                 assignments: mappedAssignments,
                 document: null,
+                descriptors: data.descriptors || {},
               };
               
               console.log('=== FORM DATA MAPPING DEBUG ===');
@@ -544,6 +546,7 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
         reportTemplateType: formData.reportTemplateType || '', // Template ID (string) - required field
         activities: transformedActivities,
         assignments: formData.assignments || [],
+        descriptors: formData.descriptors || {}, // Include descriptors in payload
       };
 
       console.log("[Assessment Center] ========== ACTIVITY TRANSFORMATION DEBUG ==========");
@@ -564,13 +567,14 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
       form.append('reportTemplateType', payload.reportTemplateType);
       form.append('activities', JSON.stringify(payload.activities));
       form.append('assignments', JSON.stringify(payload.assignments));
+      form.append('descriptors', JSON.stringify(payload.descriptors)); // Include descriptors
       if (formData.document) {
         form.append('document', formData.document);
       }
       
       const url = editId
-        ? `https://api.breakfreeacademy.in/api/assessment-centers/${editId}`
-        : 'https://api.breakfreeacademy.in/api/assessment-centers';
+        ? `http://localhost:3001/api/assessment-centers/${editId}`
+        : 'http://localhost:3001/api/assessment-centers';
       const method = editId ? 'PATCH' : 'POST';
 
       console.log("📡 [Assessment Center] Making API call to:", url);

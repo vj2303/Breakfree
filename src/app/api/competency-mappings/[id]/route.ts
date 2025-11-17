@@ -18,7 +18,7 @@ export async function DELETE(
     }
 
     const response = await fetch(
-      `https://api.breakfreeacademy.in/api/competency-mappings/${id}`,
+      `http://localhost:3001/api/competency-mappings/${id}`,
       {
         method: 'DELETE',
         headers: {

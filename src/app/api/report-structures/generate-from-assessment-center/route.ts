@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     // Forward the request to the backend API
     const response = await fetch(
-      'https://api.breakfreeacademy.in/api/report-structures/generate-from-assessment-center',
+      'http://localhost:3001/api/report-structures/generate-from-assessment-center',
       {
         method: 'POST',
         headers: {

@@ -146,7 +146,7 @@ const HomePage = () => {
     setGroupsError(null);
     try {
       const token = getAuthToken();
-      const res = await fetch('https://api.breakfreeacademy.in/api/groups?page=1&limit=100&search=', {
+      const res = await fetch('http://localhost:3001/api/groups?page=1&limit=100&search=', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -183,7 +183,7 @@ const HomePage = () => {
     setLoading(true);
     setError(null);
     try {
-      const url = new URL('https://api.breakfreeacademy.in/api/assessors/admin/scores');
+      const url = new URL('http://localhost:3001/api/assessors/admin/scores');
       url.searchParams.append('page', page.toString());
       url.searchParams.append('limit', limit.toString());
       url.searchParams.append('assessorId', '');
@@ -302,7 +302,7 @@ const HomePage = () => {
     setSaving(true);
     try {
       const response = await fetch(
-        `https://api.breakfreeacademy.in/api/assessors/admin/scores/${selectedScore.id}`,
+        `http://localhost:3001/api/assessors/admin/scores/${selectedScore.id}`,
         {
           method: 'PATCH',
           headers: {
@@ -622,7 +622,7 @@ const HomePage = () => {
         try {
           // Call the API to generate report
           const response = await fetch(
-            'https://api.breakfreeacademy.in/api/report-structures/generate-from-assessment-center',
+            'http://localhost:3001/api/report-structures/generate-from-assessment-center',
             {
               method: 'POST',
               headers: {

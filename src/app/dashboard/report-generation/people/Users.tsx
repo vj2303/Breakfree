@@ -58,7 +58,7 @@ const UsersComponent: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const url = new URL('https://api.breakfreeacademy.in/api/assessors');
+      const url = new URL('http://localhost:3001/api/assessors');
       url.searchParams.append('page', page.toString());
       url.searchParams.append('limit', pagination.itemsPerPage.toString());
       url.searchParams.append('search', search);
@@ -94,7 +94,7 @@ const UsersComponent: React.FC = () => {
     try {
       let response, data;
       if (isEdit && editingAssessorId) {
-        response = await fetch(`https://api.breakfreeacademy.in/api/assessors/${editingAssessorId}`, {
+        response = await fetch(`http://localhost:3001/api/assessors/${editingAssessorId}`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${getAuthToken()}`,
@@ -107,7 +107,7 @@ const UsersComponent: React.FC = () => {
           throw new Error(data.message || 'Failed to update assessor');
         }
       } else {
-        response = await fetch('https://api.breakfreeacademy.in/api/assessors', {
+        response = await fetch('http://localhost:3001/api/assessors', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${getAuthToken()}`,
@@ -137,7 +137,7 @@ const UsersComponent: React.FC = () => {
     setIsSendingEmail(true);
     setEmailStatus(null);
     try {
-      const response = await fetch('https://api.breakfreeacademy.in/api/assessors/send-bulk-login-credentials', {
+      const response = await fetch('http://localhost:3001/api/assessors/send-bulk-login-credentials', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -219,7 +219,7 @@ const UsersComponent: React.FC = () => {
     setError(null);
     setIsSubmitting(true);
     try {
-      const response = await fetch(`https://api.breakfreeacademy.in/api/assessors/${id}`, {
+      const response = await fetch(`http://localhost:3001/api/assessors/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,

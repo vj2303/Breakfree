@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 // API Configuration
-const API_BASE_URL = 'https://api.breakfreeacademy.in/api';
+const API_BASE_URL = 'http://localhost:3001/api';
 
 // Interface definitions based on API response
 interface CompetencyLibrary {

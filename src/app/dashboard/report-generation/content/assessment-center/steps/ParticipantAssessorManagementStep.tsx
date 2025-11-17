@@ -3,8 +3,8 @@ import { useAssessmentForm } from '../create/context';
 import { useAuth } from '../../../../../../context/AuthContext';
 import Select, { StylesConfig, GroupBase, MultiValue } from 'react-select';
 
-const GROUPS_API = 'https://api.breakfreeacademy.in/api/groups?page=1&limit=10&search=';
-const ASSESSORS_API = 'https://api.breakfreeacademy.in/api/assessors?page=1&limit=10&search=';
+const GROUPS_API = 'http://localhost:3001/api/groups?page=1&limit=10&search=';
+const ASSESSORS_API = 'http://localhost:3001/api/assessors?page=1&limit=10&search=';
 
 // Define types
 interface Participant {

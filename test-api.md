@@ -7,7 +7,7 @@ Replace `YOUR_TOKEN` with your actual Bearer token from localStorage.
 ### Test 1: POST with Template ID (New Format)
 
 ```bash
-curl -X POST 'https://api.breakfreeacademy.in/api/assessment-centers' \
+curl -X POST 'http://localhost:3001/api/assessment-centers' \
   --header 'Authorization: Bearer YOUR_TOKEN' \
   --header 'Content-Type: application/json' \
   --data '{
@@ -26,7 +26,7 @@ curl -X POST 'https://api.breakfreeacademy.in/api/assessment-centers' \
 ### Test 2: POST with Old Enum Format (Should fail if backend updated)
 
 ```bash
-curl -X POST 'https://api.breakfreeacademy.in/api/assessment-centers' \
+curl -X POST 'http://localhost:3001/api/assessment-centers' \
   --header 'Authorization: Bearer YOUR_TOKEN' \
   --header 'Content-Type: application/json' \
   --data '{
