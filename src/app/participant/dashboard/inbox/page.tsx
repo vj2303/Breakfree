@@ -20,7 +20,7 @@ const steps = [
 const InboxPageWithSearchParams = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { token, assignments } = useAuth();
+  const { token, assignments, fetchAssignments } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [assignmentData, setAssignmentData] = useState<unknown>(null);
   const [activityData, setActivityData] = useState<InboxActivityData | undefined>(undefined);
@@ -63,13 +63,6 @@ const InboxPageWithSearchParams = () => {
     }
   }, [assignmentId, assignments, router]);
 
-  const stepContent = [
-    <OverviewStep key="overview" activityData={activityData} />, 
-    <ScenarioStep key="scenario" activityData={activityData} />, 
-    <OrganizationChartStep key="orgchart" activityData={activityData} />, 
-    <TaskStep key="task" activityData={activityData} submissionData={submissionData} setSubmissionData={setSubmissionData} />
-  ];
-
   const handleNext = () => {
     if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
   };
@@ -78,9 +71,50 @@ const InboxPageWithSearchParams = () => {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
+  const handleSaveDraft = async () => {
+    if (!token || !assignmentData || !activityData) {
+      alert('Missing required data for saving draft');
+      return;
+    }
+
+    try {
+      const submissionPayload = {
+        participantId: assignments?.participant?.id || '',
+        assessmentCenterId: (assignmentData as { assessmentCenter: { id: string } }).assessmentCenter.id,
+        activityId: activityData.activityId,
+        activityType: 'INBOX_ACTIVITY' as const,
+        submissionType: submissionData.submissionType || 'TEXT',
+        notes: submissionData.notes,
+        textContent: submissionData.textContent,
+        file: submissionData.file,
+        isDraft: true,
+      };
+
+      const response = await AssignmentSubmissionApi.submitAssignment(token, submissionPayload);
+      
+      if (response.success) {
+        alert('Draft saved successfully!');
+        // Refresh assignments to get updated submission status
+        if (fetchAssignments) {
+          await fetchAssignments();
+        }
+      } else {
+        alert(`Failed to save draft: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      alert('An error occurred while saving the draft');
+    }
+  };
+
   const handleSubmit = async () => {
     if (!token || !assignmentData || !activityData) {
       alert('Missing required data for submission');
+      return;
+    }
+
+    if (!submissionData.textContent?.trim()) {
+      alert('Please enter email content before submitting');
       return;
     }
 
@@ -91,10 +125,11 @@ const InboxPageWithSearchParams = () => {
         assessmentCenterId: (assignmentData as { assessmentCenter: { id: string } }).assessmentCenter.id,
         activityId: activityData.activityId,
         activityType: 'INBOX_ACTIVITY' as const,
-        submissionType: submissionData.submissionType,
+        submissionType: submissionData.submissionType || 'TEXT',
         notes: submissionData.notes,
         textContent: submissionData.textContent,
         file: submissionData.file,
+        isDraft: false,
       };
 
       const response = await AssignmentSubmissionApi.submitAssignment(token, submissionPayload);
@@ -112,6 +147,20 @@ const InboxPageWithSearchParams = () => {
       setSubmitting(false);
     }
   };
+
+  const stepContent = [
+    <OverviewStep key="overview" activityData={activityData} />, 
+    <ScenarioStep key="scenario" activityData={activityData} />, 
+    <OrganizationChartStep key="orgchart" activityData={activityData} />, 
+    <TaskStep 
+      key="task" 
+      activityData={activityData} 
+      submissionData={submissionData} 
+      setSubmissionData={setSubmissionData}
+      onSaveDraft={handleSaveDraft}
+      onSubmit={handleSubmit}
+    />
+  ];
 
   if (loading) {
     return (
@@ -201,16 +250,9 @@ const InboxPageWithSearchParams = () => {
             {currentStep === 0 ? 'Start' : 'Next'}
           </button>
         ) : (
-          <button
-            className="px-6 py-2 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            onClick={handleSubmit}
-            disabled={submitting}
-          >
-            {submitting && (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            )}
-            {submitting ? 'Submitting...' : 'Submit'}
-          </button>
+          <div className="text-sm text-gray-600">
+            <p>Use the buttons in the Task step to save draft or submit your response.</p>
+          </div>
         )}
       </div>
     </div>

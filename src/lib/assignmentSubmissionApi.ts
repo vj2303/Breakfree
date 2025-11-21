@@ -13,6 +13,7 @@ export interface SubmissionData {
   notes?: string;
   textContent?: string;
   file?: File;
+  isDraft?: boolean;
 }
 
 export interface SubmissionResponse {
@@ -53,6 +54,10 @@ export class AssignmentSubmissionApi {
       
       if (submissionData.file) {
         formData.append('file', submissionData.file);
+      }
+
+      if (submissionData.isDraft !== undefined) {
+        formData.append('isDraft', submissionData.isDraft.toString());
       }
 
       const response = await fetch(`${API_BASE_URL}/assignments/submit`, {
