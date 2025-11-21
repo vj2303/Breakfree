@@ -34,8 +34,17 @@ const CaseStudyPageWithSearchParams = () => {
   }>({
     submissionType: 'TEXT'
   });
+  const [allActivities, setAllActivities] = useState<Array<{
+    activityId: string;
+    activityType: string;
+    displayOrder: number;
+    competency?: { competencyName: string };
+    activityDetail?: { name: string };
+    isSubmitted: boolean;
+  }>>([]);
 
   const assignmentId = searchParams.get('assignmentId');
+  const activityId = searchParams.get('activityId');
 
   const stepContent = [
     <OverviewStep key="overview" activityData={activityData} />, 
@@ -52,12 +61,32 @@ const CaseStudyPageWithSearchParams = () => {
       
       if (assignment) {
         setAssignmentData(assignment);
-        // Find the first CASE_STUDY activity
-        const caseStudyActivity = (assignment as unknown as { activities: unknown[] }).activities.find(
-          (activity: unknown) => (activity as { activityType: string }).activityType === 'CASE_STUDY'
-        ) as ActivityData | undefined;
-        if (caseStudyActivity) {
-          setActivityData(caseStudyActivity);
+        const activitiesList = (assignment as unknown as { activities: unknown[] }).activities || [];
+        setAllActivities(activitiesList as Array<{
+          activityId: string;
+          activityType: string;
+          displayOrder: number;
+          competency?: { competencyName: string };
+          activityDetail?: { name: string };
+          isSubmitted: boolean;
+        }>);
+        
+        // If activityId is provided, find that specific activity
+        if (activityId) {
+          const selectedActivity = activitiesList.find(
+            (activity: unknown) => (activity as { activityId: string }).activityId === activityId
+          ) as ActivityData | undefined;
+          if (selectedActivity && selectedActivity.activityType === 'CASE_STUDY') {
+            setActivityData(selectedActivity);
+          }
+        } else {
+          // Otherwise, find the first CASE_STUDY activity
+          const caseStudyActivity = activitiesList.find(
+            (activity: unknown) => (activity as { activityType: string }).activityType === 'CASE_STUDY'
+          ) as ActivityData | undefined;
+          if (caseStudyActivity) {
+            setActivityData(caseStudyActivity);
+          }
         }
         setLoading(false);
       } else {
@@ -68,7 +97,7 @@ const CaseStudyPageWithSearchParams = () => {
       setLoading(false);
       router.push('/participant/dashboard');
     }
-  }, [assignmentId, assignments, router]);
+  }, [assignmentId, activityId, assignments, router]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
@@ -154,6 +183,41 @@ const CaseStudyPageWithSearchParams = () => {
         <div className="text-gray-600 text-sm mb-4">
           <strong>Competency:</strong> {activityData.competency?.competencyName || 'N/A'}
         </div>
+        
+        {/* Activity Selector - Show all activities if there are multiple */}
+        {allActivities.length > 1 && (
+          <div className="mb-4 border-b border-gray-200">
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {allActivities
+                .sort((a, b) => a.displayOrder - b.displayOrder)
+                .map((activity) => {
+                  const isActive = activity.activityId === activityData?.activityId;
+                  const activityTypeLabel = activity.activityType === 'CASE_STUDY' ? 'Case Study' : 'Inbox Activity';
+                  
+                  return (
+                    <button
+                      key={activity.activityId}
+                      onClick={() => {
+                        if (activity.activityType === 'CASE_STUDY') {
+                          router.push(`/participant/dashboard/case-study?assignmentId=${assignmentId}&activityId=${activity.activityId}`);
+                        } else {
+                          router.push(`/participant/dashboard/inbox?assignmentId=${assignmentId}&activityId=${activity.activityId}`);
+                        }
+                      }}
+                      className={`px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                        isActive
+                          ? 'bg-white border-t border-l border-r border-gray-300 text-blue-600'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {activity.activityDetail?.name || activityTypeLabel} {activity.isSubmitted && '✓'}
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+        
         {/* Stepper */}
         <div className="flex items-center gap-6 mb-2">
           {steps.map((step, idx) => (
