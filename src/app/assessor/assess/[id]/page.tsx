@@ -165,45 +165,83 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
     );
   }
 
-  const ParticipantCard = ({ participant }: { participant: { participant: { id: string; name: string; email: string; designation: string; managerName: string; createdAt: string; updatedAt: string }; activities: { activityId: string; activityType: string; displayOrder: number; competency: { id: string; competencyName: string; subCompetencyNames: string[]; createdAt: string; updatedAt: string }; activityDetail: { id: string; name: string; description: string }; submission: unknown }[]; assessorScore: unknown; submissionCount: number; totalActivities: number } }) => (
-    <div className="bg-slate-600 text-white rounded-lg p-4 mb-4">
-      <div className="mb-3">
-        <h4 className="font-semibold text-lg">{participant.participant.name}</h4>
-        <p className="text-slate-300 text-sm">{participant.participant.email}</p>
-        <p className="text-slate-300 text-xs">{participant.participant.designation}</p>
-        <p className="text-slate-300 text-xs">Manager: {participant.participant.managerName}</p>
-      </div>
-      
-      <div className="space-y-2">
-        <div className="text-sm font-medium mb-2">Activities ({participant.submissionCount}/{participant.totalActivities})</div>
-        {participant.activities.map((activity) => (
-          <div key={activity.activityId} className="flex items-center justify-between bg-slate-500 bg-opacity-50 rounded p-2">
-            <div className="flex-1">
-              <span className="text-sm">{activity.activityDetail.name}</span>
-              <p className="text-xs text-slate-300 mt-1">{activity.activityDetail.description}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className={`text-xs px-2 py-1 rounded ${
-                  activity.submission ? 'bg-green-600' : 'bg-yellow-600'
-                }`}>
-                  {activity.submission ? 'Submitted' : 'Pending'}
-                </span>
-                <span className="text-xs text-slate-300">
-                  {activity.competency.competencyName}
-                </span>
-              </div>
-            </div>
-            <button
-              className="flex items-center gap-1 text-sm text-slate-200 hover:text-white transition-colors"
-              onClick={() => router.push(`/assessor/assess/${id}/score/${participant.participant.id}`)}
-            >
-              Score Assessment
-              <ChevronRight size={14} />
-            </button>
+  const ParticipantCard = ({ participant, assessmentCenterId }: { participant: { participant: { id: string; name: string; email: string; designation: string; managerName: string; createdAt: string; updatedAt: string }; activities: { activityId: string; activityType: string; displayOrder: number; competency: { id: string; competencyName: string; subCompetencyNames: string[]; createdAt: string; updatedAt: string }; activityDetail: { id: string; name: string; description: string }; submission: unknown }[]; assessorScore: unknown; submissionCount: number; totalActivities: number }; assessmentCenterId?: string }) => {
+    const allSubmissions = participant.activities.flatMap(a => {
+      const subs = (a as any).allSubmissions || [];
+      return subs.length > 0 ? subs : (a.submission ? [a.submission] : []);
+    });
+    const totalSubmissions = allSubmissions.length;
+    const progressPercentage = participant.totalActivities > 0 
+      ? Math.round((participant.submissionCount / participant.totalActivities) * 100) 
+      : 0;
+    
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h4 className="font-semibold text-xl text-gray-900 mb-1">{participant.participant.name}</h4>
+            <p className="text-gray-600 text-sm mb-1">{participant.participant.email}</p>
+            <p className="text-gray-500 text-sm">{participant.participant.designation}</p>
+            {participant.participant.managerName && (
+              <p className="text-gray-500 text-xs mt-1">Manager: {participant.participant.managerName}</p>
+            )}
           </div>
-        ))}
+          <div className="text-right ml-4">
+            <div className="text-2xl font-bold text-blue-600">{progressPercentage}%</div>
+            <div className="text-xs text-gray-500">Complete</div>
+          </div>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="text-gray-700 font-medium">Progress</span>
+            <span className="text-gray-600">
+              {participant.submissionCount} of {participant.totalActivities} activities
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3">
+            <div 
+              className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Activity Summary */}
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-gray-600">Total Activities:</span>
+              <span className="ml-2 font-semibold text-gray-900">{participant.totalActivities}</span>
+            </div>
+            <div>
+              <span className="text-gray-600">Submitted:</span>
+              <span className="ml-2 font-semibold text-green-600">{participant.submissionCount}</span>
+            </div>
+            {totalSubmissions > participant.submissionCount && (
+              <div className="col-span-2">
+                <span className="text-gray-600">Total Submissions:</span>
+                <span className="ml-2 font-semibold text-blue-600">{totalSubmissions}</span>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Evaluate Button */}
+        <button
+          className="w-full flex items-center justify-center gap-2 text-sm bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
+          onClick={() => {
+            const url = `/assessor/assess/${id}/score/${participant.participant.id}${assessmentCenterId ? `?assessmentCenterId=${assessmentCenterId}` : ''}`;
+            router.push(url);
+          }}
+        >
+          <FileText size={18} />
+          Evaluate Assessment
+        </button>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -292,9 +330,13 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Group Members ({groupDetails.data.assignment?.participants?.length || 0})</h3>
             
             {groupDetails.data.assignment?.participants && groupDetails.data.assignment.participants.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {groupDetails.data.assignment.participants.map((participant) => (
-                  <ParticipantCard key={participant.participant.id} participant={participant} />
+                  <ParticipantCard 
+                    key={participant.participant.id} 
+                    participant={participant}
+                    assessmentCenterId={groupDetails.data.assignment?.assessmentCenter?.id}
+                  />
                 ))}
               </div>
             ) : (

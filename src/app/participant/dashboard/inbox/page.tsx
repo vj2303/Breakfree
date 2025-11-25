@@ -9,6 +9,7 @@ import OverviewStep from './OverviewStep';
 import ScenarioStep from './ScenarioStep';
 import OrganizationChartStep from './OrganizationChartStep';
 import TaskStep from './TaskStep';
+import GmailInbox from './GmailInbox';
 
 const steps = [
   'Overview and Instructions',
@@ -181,14 +182,23 @@ const InboxPageWithSearchParams = () => {
     <OverviewStep key="overview" activityData={activityData} />, 
     <ScenarioStep key="scenario" activityData={activityData} />, 
     <OrganizationChartStep key="orgchart" activityData={activityData} />, 
-    <TaskStep 
-      key="task" 
-      activityData={activityData} 
-      submissionData={submissionData} 
-      setSubmissionData={setSubmissionData}
-      onSaveDraft={handleSaveDraft}
-      onSubmit={handleSubmit}
-    />
+    currentStep === 3 ? (
+      <GmailInbox 
+        key="gmail-inbox"
+        activityData={activityData}
+        assignmentData={assignmentData}
+        onRefresh={fetchAssignments}
+      />
+    ) : (
+      <TaskStep 
+        key="task" 
+        activityData={activityData} 
+        submissionData={submissionData} 
+        setSubmissionData={setSubmissionData}
+        onSaveDraft={handleSaveDraft}
+        onSubmit={handleSubmit}
+      />
+    )
   ];
 
   if (loading) {

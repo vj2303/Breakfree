@@ -13,6 +13,7 @@ export interface SubmissionData {
   notes?: string;
   textContent?: string;
   file?: File;
+  parentSubmissionId?: string; // For threading replies
   isDraft?: boolean;
 }
 
@@ -58,6 +59,10 @@ export class AssignmentSubmissionApi {
 
       if (submissionData.isDraft !== undefined) {
         formData.append('isDraft', submissionData.isDraft.toString());
+      }
+
+      if (submissionData.parentSubmissionId) {
+        formData.append('parentSubmissionId', submissionData.parentSubmissionId);
       }
 
       const response = await fetch(`${API_BASE_URL}/assignments/submit`, {
