@@ -108,6 +108,45 @@ interface EvaluationResponse {
   };
 }
 
+interface AssessorScore {
+  status?: 'DRAFT' | 'SUBMITTED' | 'FINALIZED';
+  competencyScores?: Record<string, Record<string, number>>;
+  overallComments?: string;
+}
+
+interface ActivityWithSubmissions {
+  activityId: string;
+  activityType: string;
+  displayOrder: number;
+  competency?: {
+    id: string;
+    competencyName: string;
+    subCompetencyNames: string[];
+    createdAt: string;
+    updatedAt: string;
+  };
+  activityDetail: {
+    id: string;
+    name: string;
+    description: string;
+    instructions: string;
+    videoUrl?: string;
+  };
+  submission: unknown;
+  allSubmissions?: Array<{
+    id: string;
+    parentSubmissionId?: string;
+    textContent?: string;
+    submissionType?: string;
+    submissionStatus?: string;
+    submittedAt?: string;
+    createdAt?: string;
+    notes?: string;
+    fileUrl?: string;
+    fileName?: string;
+  }>;
+}
+
 const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
   const { participantId } = React.use(params);
   const router = useRouter();
@@ -115,7 +154,6 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
   const [participantDetails, setParticipantDetails] = useState<ParticipantDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('videos');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationData, setEvaluationData] = useState<EvaluationResponse | null>(null);
@@ -124,7 +162,7 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
   const [competencyScores, setCompetencyScores] = useState<Record<string, Record<string, Record<string, number>>>>({}); // assignmentId -> competencyId -> subCompetency -> score
   const [activityCompetencyScores, setActivityCompetencyScores] = useState<Record<string, Record<string, Record<string, number>>>>({}); // activityId -> competencyId -> subCompetency -> score
   const [isSubmittingScore, setIsSubmittingScore] = useState(false);
-  const [scoreStatus, setScoreStatus] = useState<Record<string, 'DRAFT' | 'SUBMITTED'>>({}); // assignmentId -> status
+  const [scoreStatus, setScoreStatus] = useState<Record<string, 'DRAFT' | 'SUBMITTED' | 'FINALIZED'>>({}); // assignmentId -> status
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
   const [assessmentCenterId, setAssessmentCenterId] = useState<string | null>(null);
@@ -179,17 +217,18 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
     if (participantDetails?.data.assignments) {
       const initialScores: Record<string, Record<string, Record<string, number>>> = {};
       const initialActivityScores: Record<string, Record<string, Record<string, number>>> = {};
-      const initialStatus: Record<string, 'DRAFT' | 'SUBMITTED'> = {};
+      const initialStatus: Record<string, 'DRAFT' | 'SUBMITTED' | 'FINALIZED'> = {};
       
       // Initialize scores for each assignment
       participantDetails.data.assignments.forEach(assignment => {
         const assignmentId = assignment.assignmentId;
         initialScores[assignmentId] = {};
-        initialStatus[assignmentId] = (assignment.assessorScore as any)?.status || 'DRAFT';
+        const assessorScore = assignment.assessorScore as AssessorScore | null;
+        initialStatus[assignmentId] = assessorScore?.status || 'DRAFT';
         
         // Load existing scores if available
-        if (assignment.assessorScore) {
-          const existingScores = (assignment.assessorScore as any).competencyScores || {};
+        if (assessorScore) {
+          const existingScores = assessorScore.competencyScores || {};
           Object.keys(existingScores).forEach(competencyId => {
             initialScores[assignmentId][competencyId] = {};
             Object.keys(existingScores[competencyId]).forEach(subComp => {
@@ -197,10 +236,10 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
             });
           });
           // Load existing comments
-          if ((assignment.assessorScore as any).overallComments) {
+          if (assessorScore.overallComments) {
             setComments(prev => ({
               ...prev,
-              [assignmentId]: (assignment.assessorScore as any).overallComments
+              [assignmentId]: assessorScore.overallComments || ''
             }));
           }
         }
@@ -817,7 +856,8 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
                     {selectedAssignment.activities
                       .sort((a, b) => a.displayOrder - b.displayOrder)
                       .map((activity) => {
-                        const allSubmissions = (activity as any).allSubmissions || [];
+                        const activityWithSubs = activity as ActivityWithSubmissions;
+                        const allSubmissions = activityWithSubs.allSubmissions || [];
                         const hasSubmissions = allSubmissions.length > 0 || Boolean(activity.submission);
                         const isSelected = selectedActivityId === activity.activityId;
                         
@@ -851,15 +891,25 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
               
               if (!selectedActivity) return null;
               
-              const allSubmissions = (selectedActivity as any).allSubmissions || [];
-              const sortedSubmissions = [...allSubmissions].sort((a: any, b: any) => 
+              const selectedActivityWithSubs = selectedActivity as ActivityWithSubmissions;
+              const allSubmissions = selectedActivityWithSubs.allSubmissions || [];
+              
+              interface Submission {
+                id: string;
+                parentSubmissionId?: string;
+                createdAt?: string;
+                submittedAt?: string;
+                replies?: Submission[];
+              }
+              
+              const sortedSubmissions = [...allSubmissions].sort((a: Submission, b: Submission) => 
                 new Date(a.createdAt || a.submittedAt || 0).getTime() - new Date(b.createdAt || b.submittedAt || 0).getTime()
               );
 
               // Build thread hierarchy
-              const buildThread = (submissions: any[]): any[] => {
-                const submissionMap = new Map();
-                const rootSubmissions: any[] = [];
+              const buildThread = (submissions: Submission[]): Submission[] => {
+                const submissionMap = new Map<string, Submission>();
+                const rootSubmissions: Submission[] = [];
 
                 submissions.forEach(sub => {
                   submissionMap.set(sub.id, sub);
@@ -871,7 +921,7 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
                   }
                 });
 
-                const addChildren = (parent: any): any => {
+                const addChildren = (parent: Submission): Submission => {
                   const children = submissions.filter(s => s.parentSubmissionId === parent.id);
                   return {
                     ...parent,
@@ -955,8 +1005,15 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
                       {selectedActivity.activityType === 'INBOX_ACTIVITY' ? (
                         /* Email Thread View */
                         <div className="space-y-3">
-                          {threadStructure.map((thread: any, threadIdx: number) => {
-                            const renderSubmission = (sub: any, depth: number = 0) => {
+                          {threadStructure.map((thread: Submission) => {
+                            interface EmailSubmission extends Submission {
+                              notes?: string;
+                              textContent?: string;
+                              submissionStatus?: string;
+                              fileName?: string;
+                            }
+                            
+                            const renderSubmission = (sub: EmailSubmission, depth: number = 0) => {
                               try {
                                 const notes = sub.notes ? JSON.parse(sub.notes) : {};
                                 const subject = notes.subject || 'Email Reply';
@@ -980,7 +1037,7 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
                                           {sub.submissionStatus || 'SUBMITTED'}
                                         </span>
                                         <p className="text-xs text-gray-500 mt-1">
-                                          {new Date(sub.submittedAt || sub.createdAt).toLocaleString()}
+                                          {new Date(sub.submittedAt || sub.createdAt || Date.now()).toLocaleString()}
                                         </p>
                             </div>
                           </div>
@@ -995,12 +1052,12 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
                                     )}
                                     {thread.replies && thread.replies.length > 0 && (
                                       <div className="mt-3">
-                                        {thread.replies.map((reply: any) => renderSubmission(reply, depth + 1))}
+                                        {thread.replies.map((reply: EmailSubmission) => renderSubmission(reply, depth + 1))}
                                       </div>
                                     )}
                                   </div>
                                 );
-                              } catch (error) {
+                              } catch {
                                 return (
                                   <div key={sub.id} className={`bg-white border border-gray-200 rounded-lg p-4 ${depth > 0 ? 'ml-8' : ''}`}>
                                     <div className="flex justify-between items-start mb-2">
@@ -1026,7 +1083,7 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
                   ) : (
                         /* Case Study or Other Activity Types */
                         <div className="space-y-3">
-                          {sortedSubmissions.map((sub: any) => (
+                          {sortedSubmissions.map((sub: Submission & { submissionType?: string; submissionStatus?: string; fileUrl?: string; fileName?: string; fileSize?: number; textContent?: string; notes?: string }) => (
                             <div key={sub.id} className="bg-white border border-gray-200 rounded-lg p-4">
                               <div className="flex justify-between items-start mb-2">
                                 <div>
@@ -1042,7 +1099,7 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
                                     {sub.submissionStatus || 'SUBMITTED'}
                                   </span>
                                   <p className="text-xs text-gray-500 mt-1">
-                                    {new Date(sub.submittedAt || sub.createdAt).toLocaleString()}
+                                    {new Date(sub.submittedAt || sub.createdAt || Date.now()).toLocaleString()}
                                   </p>
                                 </div>
                               </div>

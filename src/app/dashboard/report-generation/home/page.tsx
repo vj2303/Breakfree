@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
+import { Document, Packer, Paragraph, HeadingLevel, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 
 interface Assessor {
@@ -108,7 +108,7 @@ const HomePage = () => {
   const [activeTab, setActiveTab] = useState<'groups' | 'assessors'>('groups');
   
   // Groups tab state
-  const [groups, setGroups] = useState<Group[]>([]);
+  const [, setGroups] = useState<Group[]>([]);
   const [groupsWithMarks, setGroupsWithMarks] = useState<GroupWithAssessorMarks[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState<string | null>(null);
@@ -342,7 +342,16 @@ const HomePage = () => {
   };
 
   // Format report content for DOCX
-  const formatReportContent = (reportData: any): Paragraph[] => {
+  interface ReportData {
+    reportCover?: { content?: string };
+    part1Introduction?: { content?: string };
+    part2Analysis?: { content?: string };
+    part3Comments?: { content?: string };
+    part4OverallRatings?: { content?: string; scoreTable?: { readiness?: string[]; application?: string[] } };
+    part5Recommendation?: { content?: string; recommendations?: string[] };
+  }
+  
+  const formatReportContent = (reportData: ReportData): Paragraph[] => {
     const paragraphs: Paragraph[] = [];
 
     // Report Cover
@@ -413,14 +422,14 @@ const HomePage = () => {
               );
               
               if (Array.isArray(stepData[key])) {
-                stepData[key].forEach((item: any) => {
+                stepData[key].forEach((item: unknown) => {
                   if (typeof item === 'string') {
                     paragraphs.push(new Paragraph({ text: `• ${item}`, spacing: { after: 50 } }));
-                  } else if (typeof item === 'object') {
+                  } else if (typeof item === 'object' && item !== null) {
                     Object.keys(item).forEach((prop) => {
                       paragraphs.push(
                         new Paragraph({
-                          text: `${prop}: ${item[prop]}`,
+                          text: `${prop}: ${(item as Record<string, unknown>)[prop]}`,
                           spacing: { after: 50 },
                         })
                       );
@@ -440,7 +449,7 @@ const HomePage = () => {
             });
           }
         });
-      } catch (e) {
+      } catch {
         paragraphs.push(
           new Paragraph({
             text: reportData.part2Analysis.content || '',
@@ -498,7 +507,7 @@ const HomePage = () => {
             );
           });
         }
-      } catch (e) {
+      } catch {
         paragraphs.push(
           new Paragraph({
             text: reportData.part3Comments.content || '',
@@ -598,8 +607,8 @@ const HomePage = () => {
   };
 
   // Handle downloading assessor data
-  const handleDownloadAssessorData = async (stat: AssessorStats, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent opening the modal when clicking download
+  const handleDownloadAssessorData = async (stat: AssessorStats, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent opening the modal when clicking download
     
     if (stat.scores.length === 0) {
       setError('No assessments available to download');

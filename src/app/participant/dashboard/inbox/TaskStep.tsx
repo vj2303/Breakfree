@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { InboxActivityData, EmailContent } from './types';
 import RichTextEditor from '@/components/RichTextEditor';
-import { useAuth } from '@/context/AuthContext';
 
 interface TaskStepProps {
   activityData?: InboxActivityData;
@@ -28,7 +27,6 @@ const TaskStep: React.FC<TaskStepProps> = ({
   onSaveDraft,
   onSubmit 
 }) => {
-  const { user } = useAuth();
   const [fileInputKey, setFileInputKey] = useState(0);
   const [emailContent, setEmailContent] = useState('');
   const [replyTo, setReplyTo] = useState('');
@@ -36,11 +34,21 @@ const TaskStep: React.FC<TaskStepProps> = ({
   const [replyCc, setReplyCc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
-  const [existingSubmission, setExistingSubmission] = useState<any>(null);
+  interface SubmissionData {
+    id?: string;
+    textContent?: string;
+    submissionType?: string;
+    submissionStatus?: string;
+    submittedAt?: string;
+    createdAt?: string;
+    fileName?: string;
+  }
+  
+  const [existingSubmission, setExistingSubmission] = useState<SubmissionData | null>(null);
 
-  const contents = activityData?.activityDetail?.contents || [];
+  const contents = useMemo(() => activityData?.activityDetail?.contents || [], [activityData?.activityDetail?.contents]);
   const isSubmitted = activityData?.isSubmitted || false;
-  const submission = activityData?.submission as any;
+  const submission = activityData?.submission as SubmissionData | undefined;
 
   // Load existing submission/draft
   useEffect(() => {
@@ -48,13 +56,14 @@ const TaskStep: React.FC<TaskStepProps> = ({
       setExistingSubmission(submission);
       if (submission.textContent) {
         setEmailContent(submission.textContent);
-        setSubmissionData(prev => ({
-          ...prev,
+        setSubmissionData({
+          ...submissionData,
           textContent: submission.textContent,
-          submissionType: submission.submissionType || 'TEXT'
-        }));
+          submissionType: (submission.submissionType as 'TEXT' | 'DOCUMENT' | 'VIDEO') || 'TEXT'
+        });
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submission]);
 
   // Pre-fill reply fields from the first email
@@ -67,7 +76,8 @@ const TaskStep: React.FC<TaskStepProps> = ({
         setReplyCc(firstEmail.cc.join(', '));
       }
     }
-  }, [contents, existingSubmission]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contents.length, existingSubmission]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -310,7 +320,7 @@ const TaskStep: React.FC<TaskStepProps> = ({
         {!canEdit && existingSubmission && (
           <div className="pt-4 border-t">
             <p className="text-sm text-gray-600">
-              <strong>Submitted on:</strong> {new Date(existingSubmission.submittedAt || existingSubmission.createdAt).toLocaleString()}
+              <strong>Submitted on:</strong> {new Date(existingSubmission.submittedAt || existingSubmission.createdAt || Date.now()).toLocaleString()}
             </p>
             {existingSubmission.fileName && (
               <p className="text-sm text-gray-600 mt-1">

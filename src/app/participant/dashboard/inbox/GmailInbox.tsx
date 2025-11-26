@@ -1,14 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { InboxActivityData, EmailContent } from './types';
 import RichTextEditor from '@/components/RichTextEditor';
 import { useAuth } from '@/context/AuthContext';
 import { AssignmentSubmissionApi } from '@/lib/assignmentSubmissionApi';
 
+interface AssignmentData {
+  assessmentCenter: {
+    id: string;
+    name?: string;
+    displayName?: string;
+  };
+}
+
 interface GmailInboxProps {
   activityData?: InboxActivityData;
-  assignmentData: any;
+  assignmentData: AssignmentData;
   onRefresh?: () => void;
 }
 
@@ -55,47 +63,66 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
 
-  const contents = activityData?.activityDetail?.contents || [];
-  const existingSubmission = activityData?.submission as any;
+  interface SubmissionData {
+    id?: string;
+    parentSubmissionId?: string;
+    notes?: string;
+    textContent?: string;
+    submittedAt?: string;
+    createdAt?: string;
+    submissionStatus?: string;
+    fileUrl?: string;
+    fileName?: string;
+  }
+  const existingSubmission = activityData?.submission as SubmissionData | undefined;
 
   // Load existing submissions from activityData
+  interface ActivityDataWithSubmissions extends InboxActivityData {
+    allSubmissions?: SubmissionData[];
+  }
+  
+  const contents = useMemo(() => activityData?.activityDetail?.contents || [], [activityData?.activityDetail?.contents]);
+  
   useEffect(() => {
     // Check if activityData has allSubmissions (from updated API)
-    const allSubmissions = (activityData as any)?.allSubmissions || [];
+    const activityWithSubs = activityData as ActivityDataWithSubmissions | undefined;
+    const allSubmissions = activityWithSubs?.allSubmissions || [];
     
     if (allSubmissions.length > 0) {
-      const threadSubmissions: SubmissionThread[] = allSubmissions.map((sub: any) => {
-        try {
-          const notes = sub.notes ? JSON.parse(sub.notes) : {};
-          return {
-            id: sub.id,
-            parentId: sub.parentSubmissionId || notes.parentSubmissionId || undefined,
-            subject: notes.subject || `Re: ${contents[0]?.subject || ''}`,
-            from: assignments?.participant?.email || '',
-            to: notes.to ? (Array.isArray(notes.to) ? notes.to : notes.to.split(',').map((e: string) => e.trim())) : contents[0]?.to || [],
-            cc: notes.cc ? (Array.isArray(notes.cc) ? notes.cc : notes.cc.split(',').map((e: string) => e.trim())) : contents[0]?.cc || [],
-            content: sub.textContent || '',
-            date: new Date(sub.submittedAt || sub.createdAt),
-            status: sub.submissionStatus || 'SUBMITTED',
-            fileUrl: sub.fileUrl,
-            fileName: sub.fileName,
-          };
-        } catch (error) {
-          return {
-            id: sub.id,
-            parentId: sub.parentSubmissionId || undefined,
-            subject: `Re: ${contents[0]?.subject || ''}`,
-            from: assignments?.participant?.email || '',
-            to: contents[0]?.to || [],
-            cc: contents[0]?.cc || [],
-            content: sub.textContent || '',
-            date: new Date(sub.submittedAt || sub.createdAt),
-            status: sub.submissionStatus || 'SUBMITTED',
-            fileUrl: sub.fileUrl,
-            fileName: sub.fileName,
-          };
-        }
-      });
+      const threadSubmissions: SubmissionThread[] = allSubmissions
+        .filter((sub: SubmissionData) => sub.id) // Filter out submissions without id
+        .map((sub: SubmissionData) => {
+          try {
+            const notes = sub.notes ? JSON.parse(sub.notes) : {};
+            return {
+              id: sub.id!,
+              parentId: sub.parentSubmissionId || notes.parentSubmissionId || undefined,
+              subject: notes.subject || `Re: ${contents[0]?.subject || ''}`,
+              from: assignments?.participant?.email || '',
+              to: notes.to ? (Array.isArray(notes.to) ? notes.to : notes.to.split(',').map((e: string) => e.trim())) : contents[0]?.to || [],
+              cc: notes.cc ? (Array.isArray(notes.cc) ? notes.cc : notes.cc.split(',').map((e: string) => e.trim())) : contents[0]?.cc || [],
+              content: sub.textContent || '',
+              date: new Date(sub.submittedAt || sub.createdAt || Date.now()),
+              status: (sub.submissionStatus || 'SUBMITTED') as 'DRAFT' | 'SUBMITTED',
+              fileUrl: sub.fileUrl,
+              fileName: sub.fileName,
+            };
+          } catch {
+            return {
+              id: sub.id!,
+              parentId: sub.parentSubmissionId || undefined,
+              subject: `Re: ${contents[0]?.subject || ''}`,
+              from: assignments?.participant?.email || '',
+              to: contents[0]?.to || [],
+              cc: contents[0]?.cc || [],
+              content: sub.textContent || '',
+              date: new Date(sub.submittedAt || sub.createdAt || Date.now()),
+              status: (sub.submissionStatus || 'SUBMITTED') as 'DRAFT' | 'SUBMITTED',
+              fileUrl: sub.fileUrl,
+              fileName: sub.fileName,
+            };
+          }
+        });
       setSubmissions(threadSubmissions);
     } else if (existingSubmission) {
       // Fallback to single submission for backward compatibility
@@ -103,36 +130,36 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
         const notes = existingSubmission.notes ? JSON.parse(existingSubmission.notes) : {};
         const submission: SubmissionThread = {
           id: existingSubmission.id || '1',
-          parentId: (existingSubmission as any).parentSubmissionId || notes.parentSubmissionId || undefined,
+          parentId: existingSubmission.parentSubmissionId || notes.parentSubmissionId || undefined,
           subject: notes.subject || composeData.subject || `Re: ${contents[0]?.subject || ''}`,
           from: assignments?.participant?.email || '',
           to: notes.to ? (Array.isArray(notes.to) ? notes.to : notes.to.split(',').map((e: string) => e.trim())) : contents[0]?.to || [],
           cc: notes.cc ? (Array.isArray(notes.cc) ? notes.cc : notes.cc.split(',').map((e: string) => e.trim())) : contents[0]?.cc || [],
           content: existingSubmission.textContent || '',
-          date: new Date(existingSubmission.submittedAt || existingSubmission.createdAt),
-          status: existingSubmission.submissionStatus || 'SUBMITTED',
+          date: new Date(existingSubmission.submittedAt || existingSubmission.createdAt || Date.now()),
+          status: (existingSubmission.submissionStatus || 'SUBMITTED') as 'DRAFT' | 'SUBMITTED',
           fileUrl: existingSubmission.fileUrl,
           fileName: existingSubmission.fileName,
         };
         setSubmissions([submission]);
-      } catch (error) {
+      } catch {
         const submission: SubmissionThread = {
           id: existingSubmission.id || '1',
-          parentId: (existingSubmission as any).parentSubmissionId || undefined,
+          parentId: existingSubmission.parentSubmissionId || undefined,
           subject: `Re: ${contents[0]?.subject || ''}`,
           from: assignments?.participant?.email || '',
           to: contents[0]?.to || [],
           cc: contents[0]?.cc || [],
           content: existingSubmission.textContent || '',
-          date: new Date(existingSubmission.submittedAt || existingSubmission.createdAt),
-          status: existingSubmission.submissionStatus || 'SUBMITTED',
+          date: new Date(existingSubmission.submittedAt || existingSubmission.createdAt || Date.now()),
+          status: (existingSubmission.submissionStatus || 'SUBMITTED') as 'DRAFT' | 'SUBMITTED',
           fileUrl: existingSubmission.fileUrl,
           fileName: existingSubmission.fileName,
         };
         setSubmissions([submission]);
       }
     }
-  }, [existingSubmission, activityData, contents, assignments]);
+  }, [existingSubmission, activityData, contents, assignments, composeData.subject]);
 
   // Build thread hierarchy from submissions - returns flat list sorted by date
   const buildThreadHierarchy = (submissions: SubmissionThread[]): SubmissionThread[] => {
@@ -507,7 +534,7 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
               </div>
 
               {/* Replies - Render with indentation based on parentId */}
-              {selectedThread.replies.map((reply, index) => {
+              {selectedThread.replies.map((reply) => {
                 // Calculate depth based on parent chain
                 const getDepth = (submission: SubmissionThread): number => {
                   if (!submission.parentId) return 0;

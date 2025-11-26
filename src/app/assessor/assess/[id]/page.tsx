@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { FileText, ChevronRight, Loader2, ArrowLeft } from 'lucide-react';
+import { FileText, Loader2, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
@@ -165,9 +165,9 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
     );
   }
 
-  const ParticipantCard = ({ participant, assessmentCenterId }: { participant: { participant: { id: string; name: string; email: string; designation: string; managerName: string; createdAt: string; updatedAt: string }; activities: { activityId: string; activityType: string; displayOrder: number; competency: { id: string; competencyName: string; subCompetencyNames: string[]; createdAt: string; updatedAt: string }; activityDetail: { id: string; name: string; description: string }; submission: unknown }[]; assessorScore: unknown; submissionCount: number; totalActivities: number }; assessmentCenterId?: string }) => {
+  const ParticipantCard = ({ participant, assessmentCenterId }: { participant: { participant: { id: string; name: string; email: string; designation: string; managerName: string; createdAt: string; updatedAt: string }; activities: { activityId: string; activityType: string; displayOrder: number; competency: { id: string; competencyName: string; subCompetencyNames: string[]; createdAt: string; updatedAt: string }; activityDetail: { id: string; name: string; description: string }; submission: unknown; allSubmissions?: unknown[] }[]; assessorScore: unknown; submissionCount: number; totalActivities: number }; assessmentCenterId?: string }) => {
     const allSubmissions = participant.activities.flatMap(a => {
-      const subs = (a as any).allSubmissions || [];
+      const subs = a.allSubmissions || [];
       return subs.length > 0 ? subs : (a.submission ? [a.submission] : []);
     });
     const totalSubmissions = allSubmissions.length;

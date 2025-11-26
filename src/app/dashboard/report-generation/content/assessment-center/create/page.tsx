@@ -762,7 +762,7 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
       )}
       
       {/* Debug Form Data Display - Temporary */}
-      {editId && (
+      {/* {editId && (
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h3 className="font-semibold text-blue-800 mb-2">Debug: Form Data (Edit Mode)</h3>
           <div className="text-sm text-blue-700 space-y-1">
@@ -778,7 +778,7 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
             <p><strong>Assignments:</strong> {formData.assignments.length} items</p>
           </div>
         </div>
-      )}
+      )} */}
       {stepComponents[currentStep]}
     </AssessmentCenterLayout>
   );

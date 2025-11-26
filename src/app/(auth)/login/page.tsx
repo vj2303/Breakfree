@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -9,7 +9,7 @@ import { showError, showSuccess } from '@/utils/toast'
 
 export default function Login() {
   const router = useRouter()
-  const { login, user, loading } = useAuth()
+  const { login, loading } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')

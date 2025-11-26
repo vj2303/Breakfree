@@ -26,7 +26,6 @@ const InboxPageWithSearchParams = () => {
   const [assignmentData, setAssignmentData] = useState<unknown>(null);
   const [activityData, setActivityData] = useState<InboxActivityData | undefined>(undefined);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [submissionData, setSubmissionData] = useState<{
     textContent?: string;
     notes?: string;
@@ -148,7 +147,6 @@ const InboxPageWithSearchParams = () => {
       return;
     }
 
-    setSubmitting(true);
     try {
       const submissionPayload = {
         participantId: assignments?.participant?.id || '',
@@ -173,8 +171,6 @@ const InboxPageWithSearchParams = () => {
     } catch (error) {
       console.error('Error submitting assignment:', error);
       alert('An error occurred while submitting the assignment');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -186,7 +182,7 @@ const InboxPageWithSearchParams = () => {
       <GmailInbox 
         key="gmail-inbox"
         activityData={activityData}
-        assignmentData={assignmentData}
+        assignmentData={assignmentData as { assessmentCenter: { id: string; name?: string; displayName?: string } }}
         onRefresh={fetchAssignments}
       />
     ) : (
