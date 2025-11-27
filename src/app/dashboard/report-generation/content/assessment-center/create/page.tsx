@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import AssessmentCenterLayout from "../AssessmentCenterLayout";
 import SelectContentStep from "../steps/SelectContentStep";
 import SelectCompetenciesStep from "../steps/SelectCompetenciesStep";
@@ -23,6 +23,14 @@ const stepTitles = [
   "Participant and assessor management",
 ];
 
+// LocalStorage keys for persistence
+const STORAGE_KEYS = {
+  FORM_DATA: 'assessment-center-form-data',
+  CURRENT_STEP: 'assessment-center-current-step',
+  EDIT_ID: 'assessment-center-edit-id',
+  IS_ACTIVE: 'assessment-center-is-active',
+};
+
 // Define interfaces for type safety
 interface Activity {
   activityType?: string;
@@ -39,19 +47,111 @@ interface Activity {
 // }
 
 const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: string }> = ({ children, editId }) => {
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    description: '',
-    displayName: '',
-    displayInstructions: '',
-    competencyIds: [],
-    selectedCompetenciesData: [],
-    reportTemplateName: '',
-    reportTemplateType: '',
-    activities: [],
-    assignments: [],
-    document: null,
-  });
+  // Helper function to load persisted form data
+  const loadPersistedFormData = (): FormData | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const persisted = localStorage.getItem(STORAGE_KEYS.FORM_DATA);
+      if (persisted) {
+        const parsed = JSON.parse(persisted);
+        // Convert document back to null (can't persist File objects)
+        return { ...parsed, document: null };
+      }
+    } catch (error) {
+      console.error('Error loading persisted form data:', error);
+    }
+    return null;
+  };
+
+  // Initialize form data - load persisted data first, then API will update if needed
+  const initialFormData = (() => {
+    // Try to load persisted data first (works for both create and edit mode)
+    const persisted = loadPersistedFormData();
+    const persistedEditId = typeof window !== 'undefined' 
+      ? localStorage.getItem(STORAGE_KEYS.EDIT_ID) 
+      : null;
+    
+    // If we have persisted data and it matches the current editId (or both are create mode)
+    if (persisted && (!editId || persistedEditId === editId)) {
+      console.log('📦 [Assessment Center] Loading persisted form data on initialization');
+      return persisted;
+    }
+    
+    // Otherwise, return empty form data
+    return {
+      name: '',
+      description: '',
+      displayName: '',
+      displayInstructions: '',
+      competencyIds: [],
+      selectedCompetenciesData: [],
+      reportTemplateName: '',
+      reportTemplateType: '',
+      activities: [],
+      assignments: [],
+      document: null,
+      descriptors: {},
+    };
+  })();
+
+  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [isLoading, setIsLoading] = useState(false);
+  const { token } = useAuth();
+  
+  // Refs to prevent infinite loops
+  const isInitializingRef = useRef(true);
+  const lastPersistedDataRef = useRef<string | null>(null);
+  const skipPersistenceRef = useRef(false);
+  const hasLoadedApiDataRef = useRef(false);
+  const apiLoadInProgressRef = useRef(false);
+
+  // Persist form data to localStorage whenever it changes (but not during initial API load)
+  useEffect(() => {
+    // Skip persistence during initialization
+    if (isInitializingRef.current) {
+      isInitializingRef.current = false;
+      return;
+    }
+
+    // Don't persist if API load is in progress
+    if (apiLoadInProgressRef.current) {
+      return;
+    }
+
+    // Don't persist if we're in edit mode and still loading from API
+    if (editId && isLoading) {
+      return;
+    }
+
+    // Don't persist if explicitly skipped (e.g., during API data load)
+    if (skipPersistenceRef.current) {
+      return;
+    }
+
+    // Persist form data (excluding document file which can't be serialized)
+    try {
+      const dataToPersist = {
+        ...formData,
+        document: null, // Don't persist File objects
+      };
+      const dataString = JSON.stringify(dataToPersist);
+      
+      // Only persist if data actually changed
+      if (lastPersistedDataRef.current === dataString) {
+        return;
+      }
+      
+      localStorage.setItem(STORAGE_KEYS.FORM_DATA, dataString);
+      localStorage.setItem(STORAGE_KEYS.IS_ACTIVE, 'true');
+      if (editId) {
+        localStorage.setItem(STORAGE_KEYS.EDIT_ID, editId);
+      }
+      lastPersistedDataRef.current = dataString;
+      console.log('💾 [Assessment Center] Form data persisted to localStorage');
+    } catch (error) {
+      console.error('Error persisting form data:', error);
+    }
+  }, [formData, editId, isLoading]);
 
   // Debug form data changes
   useEffect(() => {
@@ -69,19 +169,44 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
       document: formData.document ? 'Has document' : 'No document'
     });
   }, [formData]);
-  const [isLoading, setIsLoading] = useState(false);
-  const { token } = useAuth();
 
-  // Load data for edit mode
+  // Load data for edit mode (API data will override persisted data if available)
+  // BUT: Skip API call if persisted step > 1 (user has unsaved changes)
   useEffect(() => {
+    // Prevent multiple API calls
+    if (hasLoadedApiDataRef.current || apiLoadInProgressRef.current) {
+      return;
+    }
+
     console.log('useEffect triggered - editId:', editId, 'token:', !!token);
-    if (editId && token) {
-      console.log('Loading assessment center data for edit...');
+    
+    // Check if there's persisted step data > 1 - if so, don't load from API
+    if (editId && typeof window !== 'undefined') {
+      const persistedStep = localStorage.getItem(STORAGE_KEYS.CURRENT_STEP);
+      const persistedEditId = localStorage.getItem(STORAGE_KEYS.EDIT_ID);
+      const persistedFormData = localStorage.getItem(STORAGE_KEYS.FORM_DATA);
+      
+      // If we have persisted step > 1 and it matches the current editId, skip API call
+      if (persistedStep !== null && persistedEditId === editId && persistedFormData) {
+        const stepNumber = parseInt(persistedStep, 10);
+        if (stepNumber > 1) {
+          console.log('📦 [Assessment Center] Persisted step > 1 found, skipping API call to preserve user changes');
+          console.log('📦 [Assessment Center] Persisted step:', stepNumber);
+          hasLoadedApiDataRef.current = true;
+          setIsLoading(false);
+          return;
+        }
+      }
+    }
+    
+    if (editId && token && !hasLoadedApiDataRef.current) {
+      console.log('Loading assessment center data for edit from API...');
+      apiLoadInProgressRef.current = true;
       setIsLoading(true);
       const loadAssessmentCenter = async () => {
         try {
           console.log('Fetching assessment center:', editId);
-          const response = await fetch(`https://api.breakfreeacademy.in/api/assessment-centers/${editId}`, {
+          const response = await fetch(`http://localhost:3001/api/assessment-centers/${editId}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
@@ -143,6 +268,7 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
                 activities: mappedActivities,
                 assignments: mappedAssignments,
                 document: null,
+                descriptors: data.descriptors || {},
               };
               
               console.log('=== FORM DATA MAPPING DEBUG ===');
@@ -181,20 +307,62 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
               console.log('- activities count:', newFormData.activities.length);
               console.log('- assignments count:', newFormData.assignments.length);
               
+              // Skip persistence during API load to prevent loops
+              skipPersistenceRef.current = true;
+              apiLoadInProgressRef.current = true;
               setFormData(newFormData);
               console.log('Form data set successfully');
+              hasLoadedApiDataRef.current = true;
+              
+              // Persist the loaded edit data after a short delay
+              setTimeout(() => {
+                try {
+                  const dataToPersist = {
+                    ...newFormData,
+                    document: null,
+                  };
+                  const dataString = JSON.stringify(dataToPersist);
+                  localStorage.setItem(STORAGE_KEYS.FORM_DATA, dataString);
+                  localStorage.setItem(STORAGE_KEYS.IS_ACTIVE, 'true');
+                  localStorage.setItem(STORAGE_KEYS.EDIT_ID, editId);
+                  lastPersistedDataRef.current = dataString;
+                  console.log('💾 [Assessment Center] Edit data persisted to localStorage');
+                  skipPersistenceRef.current = false;
+                  apiLoadInProgressRef.current = false;
+                } catch (error) {
+                  console.error('Error persisting edit data:', error);
+                  skipPersistenceRef.current = false;
+                  apiLoadInProgressRef.current = false;
+                }
+              }, 100);
             }
           } else {
             console.error('Failed to fetch assessment center:', response.status, response.statusText);
+            // If API fails, keep the persisted data that was loaded initially
+            console.log('⚠️ [Assessment Center] API load failed, keeping persisted data');
+            hasLoadedApiDataRef.current = true;
           }
         } catch (error) {
           console.error('Error loading assessment center for edit:', error);
+          // If API fails, keep the persisted data that was loaded initially
+          console.log('⚠️ [Assessment Center] API load error, keeping persisted data');
+          hasLoadedApiDataRef.current = true;
         } finally {
           setIsLoading(false);
+          apiLoadInProgressRef.current = false;
         }
       };
       
       loadAssessmentCenter();
+    } else if (editId && !token && !hasLoadedApiDataRef.current) {
+      // If we have editId but no token, keep persisted data if it matches
+      const persistedEditId = typeof window !== 'undefined' 
+        ? localStorage.getItem(STORAGE_KEYS.EDIT_ID) 
+        : null;
+      if (persistedEditId === editId) {
+        console.log('📦 [Assessment Center] No token but persisted data matches editId, using persisted data');
+        hasLoadedApiDataRef.current = true;
+      }
     }
   }, [editId, token]);
 
@@ -216,9 +384,13 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
     console.log('=== END FORM DATA DEBUG ===');
   }, [formData]);
 
-  const updateFormData = (field: string, value: unknown) => {
+  const updateFormData = React.useCallback((field: string, value: unknown) => {
     console.log('updateFormData called with field:', field, 'value:', value);
     setFormData(prev => {
+      // Only update if value actually changed
+      if (prev[field as keyof FormData] === value) {
+        return prev;
+      }
       const updated = { ...prev, [field]: value } as FormData;
       try {
         const payloadPreview = buildPayloadPreview(updated);
@@ -229,7 +401,7 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
       }
       return updated;
     });
-  };
+  }, []);
 
   return (
     <AssessmentFormContext.Provider value={{ formData, updateFormData, isLoading }}>
@@ -239,13 +411,66 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
 };
 
 const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
-  const [currentStep, setCurrentStep] = useState(0);
+  // Load persisted current step
+  const loadPersistedStep = (): number => {
+    if (typeof window === 'undefined') return 0;
+    try {
+      const persisted = localStorage.getItem(STORAGE_KEYS.CURRENT_STEP);
+      if (persisted !== null) {
+        const step = parseInt(persisted, 10);
+        // Validate step is within bounds
+        if (step >= 0 && step < stepTitles.length) {
+          return step;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading persisted step:', error);
+    }
+    return 0;
+  };
+
+  const [currentStep, setCurrentStep] = useState(() => {
+    // Load persisted step if it exists (works for both create and edit mode)
+    // Check if persisted editId matches current editId
+    if (editId) {
+      const persistedEditId = typeof window !== 'undefined' 
+        ? localStorage.getItem(STORAGE_KEYS.EDIT_ID) 
+        : null;
+      // Only load persisted step if it matches the current editId
+      if (persistedEditId === editId) {
+        const persistedStep = loadPersistedStep();
+        console.log('📦 [Assessment Center] Loading persisted step for edit:', persistedStep);
+        return persistedStep;
+      }
+      return 0;
+    }
+    return loadPersistedStep();
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const { formData, isLoading } = useAssessmentForm();
   const { token } = useAuth();
   const router = useRouter();
+  
+  // Ref to track last persisted step to prevent unnecessary writes
+  const lastPersistedStepRef = useRef<number | null>(null);
+
+  // Persist current step whenever it changes
+  useEffect(() => {
+    // Only persist if step actually changed
+    if (lastPersistedStepRef.current === currentStep) {
+      return;
+    }
+    
+    try {
+      localStorage.setItem(STORAGE_KEYS.CURRENT_STEP, currentStep.toString());
+      lastPersistedStepRef.current = currentStep;
+      console.log('💾 [Assessment Center] Current step persisted:', currentStep);
+    } catch (error) {
+      console.error('Error persisting current step:', error);
+    }
+  }, [currentStep]);
 
   // Handler for final submit
   const handleSubmit = async () => {
@@ -321,6 +546,7 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
         reportTemplateType: formData.reportTemplateType || '', // Template ID (string) - required field
         activities: transformedActivities,
         assignments: formData.assignments || [],
+        descriptors: formData.descriptors || {}, // Include descriptors in payload
       };
 
       console.log("[Assessment Center] ========== ACTIVITY TRANSFORMATION DEBUG ==========");
@@ -341,13 +567,14 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
       form.append('reportTemplateType', payload.reportTemplateType);
       form.append('activities', JSON.stringify(payload.activities));
       form.append('assignments', JSON.stringify(payload.assignments));
+      form.append('descriptors', JSON.stringify(payload.descriptors)); // Include descriptors
       if (formData.document) {
         form.append('document', formData.document);
       }
       
       const url = editId
-        ? `https://api.breakfreeacademy.in/api/assessment-centers/${editId}`
-        : 'https://api.breakfreeacademy.in/api/assessment-centers';
+        ? `http://localhost:3001/api/assessment-centers/${editId}`
+        : 'http://localhost:3001/api/assessment-centers';
       const method = editId ? 'PATCH' : 'POST';
 
       console.log("📡 [Assessment Center] Making API call to:", url);
@@ -379,6 +606,17 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
 
       console.log("✅ [Assessment Center] API call successful! Response status:", res.status);
       setSuccess(true);
+
+      // Clear persisted data on successful submit
+      try {
+        localStorage.removeItem(STORAGE_KEYS.FORM_DATA);
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_STEP);
+        localStorage.removeItem(STORAGE_KEYS.EDIT_ID);
+        localStorage.removeItem(STORAGE_KEYS.IS_ACTIVE);
+        console.log('🗑️ [Assessment Center] Persisted data cleared after successful submit');
+      } catch (error) {
+        console.error('Error clearing persisted data:', error);
+      }
 
       // Redirect back to the main assessment center page after successful create/update
       console.log("🔄 [Assessment Center] Redirecting to main page in 2 seconds...");
@@ -418,7 +656,7 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
     console.log(`🔥 [Assessment Center] Current step index: ${currentStep}, Total steps: ${stepComponents.length}`);
 
     // Simple alert to test if function is called
-    alert(`Save button clicked! Current step: ${currentStep + 1}/${stepComponents.length}`);
+    // alert(`Save button clicked! Current step: ${currentStep + 1}/${stepComponents.length}`);
 
     console.log(`🔥 [Assessment Center] Button clicked on Step ${currentStep + 1} (${stepTitles[currentStep]})`);
     console.log(`🔥 [Assessment Center] Is final step? ${currentStep >= stepComponents.length - 1}`);
@@ -478,10 +716,21 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
           console.log(`[Assessment Center] Navigating to step ${next + 1}. Current payload preview:`, buildPayloadPreview(formData));
         } catch {}
         setCurrentStep(next);
+        // Step persistence is handled by the useEffect above
       }}
       onSave={() => {
         console.log('🖱️ ========== BUTTON CLICK DETECTED IN PROPS ==========');
         handleSave();
+      }}
+      showCancelButton={true}
+      onCancel={() => {
+        console.log('🖱️ ========== CANCEL BUTTON CLICKED IN PROPS ==========');
+        localStorage.removeItem(STORAGE_KEYS.FORM_DATA);
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_STEP);
+        localStorage.removeItem(STORAGE_KEYS.EDIT_ID);
+        localStorage.removeItem(STORAGE_KEYS.IS_ACTIVE);
+        console.log('🗑️ [Assessment Center] Persisted data cleared after successful submit');
+        router.push('/dashboard/report-generation/content/assessment-center');
       }}
       showSaveButton={!loading}
       saveButtonText={currentStep === stepComponents.length - 1 ? "Finish" : "Save and Next"}
@@ -513,7 +762,7 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
       )}
       
       {/* Debug Form Data Display - Temporary */}
-      {editId && (
+      {/* {editId && (
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h3 className="font-semibold text-blue-800 mb-2">Debug: Form Data (Edit Mode)</h3>
           <div className="text-sm text-blue-700 space-y-1">
@@ -529,7 +778,7 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
             <p><strong>Assignments:</strong> {formData.assignments.length} items</p>
           </div>
         </div>
-      )}
+      )} */}
       {stepComponents[currentStep]}
     </AssessmentCenterLayout>
   );

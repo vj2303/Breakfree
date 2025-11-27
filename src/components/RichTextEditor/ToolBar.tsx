@@ -165,7 +165,7 @@ export default function ToolBar({ editor }: ToolBarProps) {
   ];
 
   return (
-    <div className="border rounded-md p-1.5 mb-1 bg-[#ffffff] space-x-1 sticky top-10 z-50">
+    <div className="border rounded-md p-1.5 mb-1 bg-[#ffffff] text-black space-x-1 sticky top-10 z-50">
       {Options.map((option, i) => (
         <Toggle
           key={i}

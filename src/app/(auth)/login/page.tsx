@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -9,7 +9,7 @@ import { showError, showSuccess } from '@/utils/toast'
 
 export default function Login() {
   const router = useRouter()
-  const { login, user, loading } = useAuth()
+  const { login, loading } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -51,11 +51,20 @@ export default function Login() {
         email: formData.email, 
         password: formData.password 
       })
+
       
       if (result.success) {
         showSuccess('Login successful! Redirecting...')
         setTimeout(() => {
-          router.push('/dashboard')
+          if(result.data?.user?.role === 'ADMIN') {
+            router.push('/dashboard')
+          } else if(result.data?.user?.role === 'PARTICIPANT') {
+            router.push('/participant/dashboard')
+          } else if(result.data?.user?.role === 'ASSESSOR') {
+            router.push('/assessor/dashboard')
+          } else {
+            router.push('/dashboard')
+          }
         }, 1000)
       } else {
         showError(result.message || 'Login failed. Please check your credentials.')
@@ -76,11 +85,11 @@ export default function Login() {
     router.push('/forgot-password')
   }
 
-  useEffect(() => {
-    if (user && !loading) {
-      router.push('/dashboard')
-    }
-  }, [user, loading, router])
+  // useEffect(() => {
+  //   if (user && !loading) {
+  //     router.push('/dashboard')
+  //   }
+  // }, [user, loading, router])
 
   // Show loading spinner while checking authentication
   if (loading) {

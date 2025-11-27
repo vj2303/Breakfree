@@ -9,6 +9,7 @@ import OverviewStep from './OverviewStep';
 import ScenarioStep from './ScenarioStep';
 import OrganizationChartStep from './OrganizationChartStep';
 import TaskStep from './TaskStep';
+import GmailInbox from './GmailInbox';
 
 const steps = [
   'Overview and Instructions',
@@ -20,12 +21,11 @@ const steps = [
 const InboxPageWithSearchParams = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { token, assignments } = useAuth();
+  const { token, assignments, fetchAssignments } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [assignmentData, setAssignmentData] = useState<unknown>(null);
   const [activityData, setActivityData] = useState<InboxActivityData | undefined>(undefined);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [submissionData, setSubmissionData] = useState<{
     textContent?: string;
     notes?: string;
@@ -34,8 +34,17 @@ const InboxPageWithSearchParams = () => {
   }>({
     submissionType: 'TEXT'
   });
+  const [allActivities, setAllActivities] = useState<Array<{
+    activityId: string;
+    activityType: string;
+    displayOrder: number;
+    competency?: { competencyName: string };
+    activityDetail?: { name: string };
+    isSubmitted: boolean;
+  }>>([]);
 
   const assignmentId = searchParams.get('assignmentId');
+  const activityId = searchParams.get('activityId');
 
   useEffect(() => {
     if (assignmentId && assignments?.assignments) {
@@ -45,12 +54,32 @@ const InboxPageWithSearchParams = () => {
       
       if (assignment) {
         setAssignmentData(assignment);
-        // Find the first INBOX_ACTIVITY activity
-        const inboxActivity = (assignment as unknown as { activities: unknown[] }).activities.find(
-          (activity: unknown) => (activity as { activityType: string }).activityType === 'INBOX_ACTIVITY'
-        ) as InboxActivityData | undefined;
-        if (inboxActivity) {
-          setActivityData(inboxActivity);
+        const activitiesList = (assignment as unknown as { activities: unknown[] }).activities || [];
+        setAllActivities(activitiesList as Array<{
+          activityId: string;
+          activityType: string;
+          displayOrder: number;
+          competency?: { competencyName: string };
+          activityDetail?: { name: string };
+          isSubmitted: boolean;
+        }>);
+        
+        // If activityId is provided, find that specific activity
+        if (activityId) {
+          const selectedActivity = activitiesList.find(
+            (activity: unknown) => (activity as { activityId: string }).activityId === activityId
+          ) as InboxActivityData | undefined;
+          if (selectedActivity && selectedActivity.activityType === 'INBOX_ACTIVITY') {
+            setActivityData(selectedActivity);
+          }
+        } else {
+          // Otherwise, find the first INBOX_ACTIVITY activity
+          const inboxActivity = activitiesList.find(
+            (activity: unknown) => (activity as { activityType: string }).activityType === 'INBOX_ACTIVITY'
+          ) as InboxActivityData | undefined;
+          if (inboxActivity) {
+            setActivityData(inboxActivity);
+          }
         }
         setLoading(false);
       } else {
@@ -61,14 +90,7 @@ const InboxPageWithSearchParams = () => {
       setLoading(false);
       router.push('/participant/dashboard');
     }
-  }, [assignmentId, assignments, router]);
-
-  const stepContent = [
-    <OverviewStep key="overview" activityData={activityData} />, 
-    <ScenarioStep key="scenario" activityData={activityData} />, 
-    <OrganizationChartStep key="orgchart" activityData={activityData} />, 
-    <TaskStep key="task" activityData={activityData} submissionData={submissionData} setSubmissionData={setSubmissionData} />
-  ];
+  }, [assignmentId, activityId, assignments, router]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
@@ -78,23 +100,64 @@ const InboxPageWithSearchParams = () => {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
-  const handleSubmit = async () => {
+  const handleSaveDraft = async () => {
     if (!token || !assignmentData || !activityData) {
-      alert('Missing required data for submission');
+      alert('Missing required data for saving draft');
       return;
     }
 
-    setSubmitting(true);
     try {
       const submissionPayload = {
         participantId: assignments?.participant?.id || '',
         assessmentCenterId: (assignmentData as { assessmentCenter: { id: string } }).assessmentCenter.id,
         activityId: activityData.activityId,
         activityType: 'INBOX_ACTIVITY' as const,
-        submissionType: submissionData.submissionType,
+        submissionType: submissionData.submissionType || 'TEXT',
         notes: submissionData.notes,
         textContent: submissionData.textContent,
         file: submissionData.file,
+        isDraft: true,
+      };
+
+      const response = await AssignmentSubmissionApi.submitAssignment(token, submissionPayload);
+      
+      if (response.success) {
+        alert('Draft saved successfully!');
+        // Refresh assignments to get updated submission status
+        if (fetchAssignments) {
+          await fetchAssignments();
+        }
+      } else {
+        alert(`Failed to save draft: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      alert('An error occurred while saving the draft');
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!token || !assignmentData || !activityData) {
+      alert('Missing required data for submission');
+      return;
+    }
+
+    if (!submissionData.textContent?.trim()) {
+      alert('Please enter email content before submitting');
+      return;
+    }
+
+    try {
+      const submissionPayload = {
+        participantId: assignments?.participant?.id || '',
+        assessmentCenterId: (assignmentData as { assessmentCenter: { id: string } }).assessmentCenter.id,
+        activityId: activityData.activityId,
+        activityType: 'INBOX_ACTIVITY' as const,
+        submissionType: submissionData.submissionType || 'TEXT',
+        notes: submissionData.notes,
+        textContent: submissionData.textContent,
+        file: submissionData.file,
+        isDraft: false,
       };
 
       const response = await AssignmentSubmissionApi.submitAssignment(token, submissionPayload);
@@ -108,10 +171,31 @@ const InboxPageWithSearchParams = () => {
     } catch (error) {
       console.error('Error submitting assignment:', error);
       alert('An error occurred while submitting the assignment');
-    } finally {
-      setSubmitting(false);
     }
   };
+
+  const stepContent = [
+    <OverviewStep key="overview" activityData={activityData} />, 
+    <ScenarioStep key="scenario" activityData={activityData} />, 
+    <OrganizationChartStep key="orgchart" activityData={activityData} />, 
+    currentStep === 3 ? (
+      <GmailInbox 
+        key="gmail-inbox"
+        activityData={activityData}
+        assignmentData={assignmentData as { assessmentCenter: { id: string; name?: string; displayName?: string } }}
+        onRefresh={fetchAssignments}
+      />
+    ) : (
+      <TaskStep 
+        key="task" 
+        activityData={activityData} 
+        submissionData={submissionData} 
+        setSubmissionData={setSubmissionData}
+        onSaveDraft={handleSaveDraft}
+        onSubmit={handleSubmit}
+      />
+    )
+  ];
 
   if (loading) {
     return (
@@ -154,6 +238,41 @@ const InboxPageWithSearchParams = () => {
         <div className="text-gray-600 text-sm mb-4">
           <strong>Competency:</strong> {activityData.competency?.competencyName || 'N/A'}
         </div>
+        
+        {/* Activity Selector - Show all activities if there are multiple */}
+        {allActivities.length > 1 && (
+          <div className="mb-4 border-b border-gray-200">
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {allActivities
+                .sort((a, b) => a.displayOrder - b.displayOrder)
+                .map((activity) => {
+                  const isActive = activity.activityId === activityData?.activityId;
+                  const activityTypeLabel = activity.activityType === 'CASE_STUDY' ? 'Case Study' : 'Inbox Activity';
+                  
+                  return (
+                    <button
+                      key={activity.activityId}
+                      onClick={() => {
+                        if (activity.activityType === 'CASE_STUDY') {
+                          router.push(`/participant/dashboard/case-study?assignmentId=${assignmentId}&activityId=${activity.activityId}`);
+                        } else {
+                          router.push(`/participant/dashboard/inbox?assignmentId=${assignmentId}&activityId=${activity.activityId}`);
+                        }
+                      }}
+                      className={`px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                        isActive
+                          ? 'bg-white border-t border-l border-r border-gray-300 text-blue-600'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {activity.activityDetail?.name || activityTypeLabel} {activity.isSubmitted && '✓'}
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+        
         {/* Stepper */}
         <div className="flex items-center gap-6 mb-2">
           {steps.map((step, idx) => (
@@ -201,16 +320,9 @@ const InboxPageWithSearchParams = () => {
             {currentStep === 0 ? 'Start' : 'Next'}
           </button>
         ) : (
-          <button
-            className="px-6 py-2 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            onClick={handleSubmit}
-            disabled={submitting}
-          >
-            {submitting && (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            )}
-            {submitting ? 'Submitting...' : 'Submit'}
-          </button>
+          <div className="text-sm text-gray-600">
+            <p>Use the buttons in the Task step to save draft or submit your response.</p>
+          </div>
         )}
       </div>
     </div>

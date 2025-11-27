@@ -2,7 +2,7 @@
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://your-production-domain.com/api' 
-  : 'https://api.breakfreeacademy.in/api';
+  : 'http://localhost:3001/api';
 
 export interface SubmissionData {
   participantId: string;
@@ -13,6 +13,8 @@ export interface SubmissionData {
   notes?: string;
   textContent?: string;
   file?: File;
+  parentSubmissionId?: string; // For threading replies
+  isDraft?: boolean;
 }
 
 export interface SubmissionResponse {
@@ -53,6 +55,14 @@ export class AssignmentSubmissionApi {
       
       if (submissionData.file) {
         formData.append('file', submissionData.file);
+      }
+
+      if (submissionData.isDraft !== undefined) {
+        formData.append('isDraft', submissionData.isDraft.toString());
+      }
+
+      if (submissionData.parentSubmissionId) {
+        formData.append('parentSubmissionId', submissionData.parentSubmissionId);
       }
 
       const response = await fetch(`${API_BASE_URL}/assignments/submit`, {

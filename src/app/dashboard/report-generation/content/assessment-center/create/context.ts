@@ -27,6 +27,18 @@ export interface GroupAssignment {
   participants: AssignmentParticipant[];
 }
 
+export interface CompetencyDescriptor {
+  score1: string;
+  score2: string;
+  score3: string;
+}
+
+export interface Descriptors {
+  [competencyId: string]: {
+    [subCompetency: string]: CompetencyDescriptor;
+  };
+}
+
 export interface FormData {
   name: string;
   description: string;
@@ -39,6 +51,7 @@ export interface FormData {
   activities: Activity[];
   assignments: GroupAssignment[]; // Updated to use GroupAssignment
   document: File | null;
+  descriptors?: Descriptors; // Descriptors for competencies
 }
 
 export interface AssessmentFormContextType {

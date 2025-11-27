@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
     const notes = formData.get('notes') as string;
     const textContent = formData.get('textContent') as string;
     const file = formData.get('file') as File | null;
+    const isDraft = formData.get('isDraft') === 'true';
 
     // Validate required fields
     if (!participantId || !assessmentCenterId || !activityId || !activityType || !submissionType) {
@@ -41,25 +42,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate submission type specific requirements
-    if (submissionType === 'TEXT' && !textContent) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Text content is required for TEXT submission type' 
-        }, 
-        { status: 400 }
-      );
-    }
+    // Validate submission type specific requirements (only for non-draft submissions)
+    if (!isDraft) {
+      if (submissionType === 'TEXT' && !textContent) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'Text content is required for TEXT submission type' 
+          }, 
+          { status: 400 }
+        );
+      }
 
-    if ((submissionType === 'VIDEO' || submissionType === 'DOCUMENT') && !file) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: 'File is required for VIDEO/DOCUMENT submission type' 
-        }, 
-        { status: 400 }
-      );
+      if ((submissionType === 'VIDEO' || submissionType === 'DOCUMENT') && !file) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'File is required for VIDEO/DOCUMENT submission type' 
+          }, 
+          { status: 400 }
+        );
+      }
     }
 
     // Create form data for backend API
@@ -82,8 +85,12 @@ export async function POST(request: NextRequest) {
       backendFormData.append('file', file);
     }
 
+    if (isDraft) {
+      backendFormData.append('isDraft', 'true');
+    }
+
     // Make request to backend API
-    const response = await fetch('https://api.breakfreeacademy.in/api/assignments/submit', {
+    const response = await fetch('http://localhost:3001/api/assignments/submit', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
