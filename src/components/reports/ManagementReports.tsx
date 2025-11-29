@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import AssessmentsCard from './AssessmentsCard';
 import CompetencyCard from './CompetencyCard';
 import GroupsList from './GroupsList';
@@ -55,13 +55,7 @@ const ManagementReports: React.FC<ManagementReportsProps> = ({ token }) => {
   const [competencySearch, setCompetencySearch] = useState('');
   const [participantSearch, setParticipantSearch] = useState('');
 
-  useEffect(() => {
-    if (token) {
-      fetchData();
-    }
-  }, [token]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!token) return;
 
     setLoading(true);
@@ -107,7 +101,13 @@ const ManagementReports: React.FC<ManagementReportsProps> = ({ token }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      fetchData();
+    }
+  }, [token, fetchData]);
 
   const filteredCompetencies = competencyData.filter(comp =>
     comp.competencyName.toLowerCase().includes(competencySearch.toLowerCase())

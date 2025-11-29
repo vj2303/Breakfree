@@ -134,15 +134,6 @@ interface ParticipantAssignments {
   totalSubmitted: number;
 }
 
-interface AssessorGroup {
-  assignmentId: string;
-  groupId: string;
-  groupName: string;
-  adminName: string;
-  adminEmail: string;
-  participantCount: number;
-}
-
 interface AssessorGroupsData {
   assessor: {
     id: string;

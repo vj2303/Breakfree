@@ -2,10 +2,20 @@
 
 import React from 'react';
 
+interface ParticipantData {
+  id: string;
+  userCode: string;
+  name: string;
+  email: string;
+  designation: string;
+  contactNo: string;
+  managerName: string;
+}
+
 interface GroupData {
   id: string;
   name: string;
-  participants: any[];
+  participants: ParticipantData[];
 }
 
 interface GroupsListProps {
