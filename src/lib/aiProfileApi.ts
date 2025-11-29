@@ -3,7 +3,7 @@ import { AIProfile, AIProfilesResponse } from '../app/dashboard/report-generatio
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://your-production-domain.com/api' 
-  : 'http://localhost:3001/api';
+  : 'https://api.breakfreeacademy.in/api';
 
 export interface CreateAIProfileData {
   title: string;

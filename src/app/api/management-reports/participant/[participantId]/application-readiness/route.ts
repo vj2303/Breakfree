@@ -21,7 +21,7 @@ export async function GET(
     const queryParams = new URLSearchParams();
     if (assessmentCenterId) queryParams.append('assessmentCenterId', assessmentCenterId);
 
-    const backendUrl = `http://localhost:3001/api/management-reports/participant/${params.participantId}/application-readiness?${queryParams.toString()}`;
+    const backendUrl = `https://api.breakfreeacademy.in/api/management-reports/participant/${params.participantId}/application-readiness?${queryParams.toString()}`;
 
     // Forward request to backend
     const response = await fetch(backendUrl, {
