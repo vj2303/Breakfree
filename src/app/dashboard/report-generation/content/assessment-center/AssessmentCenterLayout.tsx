@@ -113,12 +113,12 @@ const AssessmentCenterLayout: React.FC<AssessmentCenterLayoutProps> = ({
           {steps.map((step, index) => (
             <React.Fragment key={step.id}>
               <div
-                className={`flex items-center gap-3 cursor-pointer ${
+                className={`flex  items-center gap-6 cursor-pointer ${
                   step.active ? 'opacity-100' : step.completed ? 'opacity-80' : 'opacity-50'
                 }`}
                 onClick={() => handleStepClick(index)}
               >
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                <div className={`w-6 h-5 rounded-full flex items-center justify-center ${
                   step.completed
                     ? 'bg-green-500 text-white'
                     : step.active
@@ -131,14 +131,14 @@ const AssessmentCenterLayout: React.FC<AssessmentCenterLayoutProps> = ({
                     <span className="text-xs font-medium">{index + 1}</span>
                   )}
                 </div>
-                <span className={`text-sm font-medium ${
+                <span className={`text-sm w-[70px] font-medium ${
                   step.active ? 'text-black' : 'text-gray-600'
                 }`}>
                   {step.title}
                 </span>
               </div>
               {index < steps.length - 1 && (
-                <div className="flex-1 mx-4">
+                <div className="w-[100px] mx-4">
                   <div className="h-px bg-gray-200 relative">
                     <div
                       className={`h-px transition-all duration-300 ${

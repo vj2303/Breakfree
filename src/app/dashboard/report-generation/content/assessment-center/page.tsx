@@ -183,16 +183,13 @@ export default function AssessmentCenterPage() {
               assessmentCenters.assessmentCenters.map(center => (
                 <div 
                   key={center.id} 
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 hover:border-blue-300 relative overflow-hidden group"
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 hover:border-grey-300 relative overflow-hidden group"
                 >
-                  {/* Gradient accent bar */}
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                  
                   <div className="p-6">
                     {/* Header with title and menu */}
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1 pr-2">
-                        <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                        <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 transition-colors">
                           {center.name || 'Untitled Assessment Center'}
                         </h2>
                         {center.description && (
@@ -224,7 +221,7 @@ export default function AssessmentCenterPage() {
                               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                             >
                               <Edit className="w-4 h-4" />
-                              Edit Assessment Center
+                              Edit
                             </button>
                             <button
                               onClick={(e) => {
@@ -243,7 +240,7 @@ export default function AssessmentCenterPage() {
                     </div>
                     
                     {/* Instructions */}
-                    {center.displayInstructions && (
+                    {/* {center.displayInstructions && (
                       <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
                         <p className="text-xs font-semibold text-blue-900 mb-1.5 flex items-center gap-1">
                           <FileText className="w-3.5 h-3.5" />
@@ -254,7 +251,7 @@ export default function AssessmentCenterPage() {
                           dangerouslySetInnerHTML={{ __html: center.displayInstructions }}
                         />
                       </div>
-                    )}
+                    )} */}
                     
                     {/* Metadata */}
                     <div className="space-y-3 mb-4">

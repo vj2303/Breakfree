@@ -736,12 +736,6 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
       saveButtonText={currentStep === stepComponents.length - 1 ? "Finish" : "Save and Next"}
       isEditMode={!!editId}
     >
-      {/* Debug info */}
-      <div className="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded text-sm">
-        <strong>DEBUG:</strong> Current Step: {currentStep + 1}/{stepComponents.length} ({stepTitles[currentStep]})
-        | Button: {currentStep === stepComponents.length - 1 ? "Finish" : "Save and Next"}
-        | Total Steps: {stepComponents.length}
-      </div>
 
       {error && <div className="mb-4 p-3 bg-red-100 text-red-800 rounded">{error}</div>}
       {success && (
