@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   LineChart,
   Line,
@@ -46,13 +46,7 @@ const ApplicationReadinessGraph: React.FC<ApplicationReadinessGraphProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (token && participantId) {
-      fetchData();
-    }
-  }, [token, participantId]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!token) return;
 
     setLoading(true);
@@ -80,7 +74,13 @@ const ApplicationReadinessGraph: React.FC<ApplicationReadinessGraphProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, participantId]);
+
+  useEffect(() => {
+    if (token && participantId) {
+      fetchData();
+    }
+  }, [token, participantId, fetchData]);
 
   // Prepare data for table
   const tableData = data.map((comp) => ({
@@ -202,7 +202,7 @@ const ApplicationReadinessGraph: React.FC<ApplicationReadinessGraphProps> = ({
                     Participant Name
                   </th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                    Assessor's Name
+                    Assessor&apos;s Name
                   </th>
                   {data.map((comp) => (
                     <th

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { participantId: string } }
+  { params }: { params: Promise<{ participantId: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -14,6 +14,9 @@ export async function GET(
       );
     }
 
+    // Await the params since they're now a Promise in Next.js 15
+    const { participantId } = await params;
+
     const { searchParams } = new URL(request.url);
     const assessmentCenterId = searchParams.get('assessmentCenterId') || '';
 
@@ -21,7 +24,7 @@ export async function GET(
     const queryParams = new URLSearchParams();
     if (assessmentCenterId) queryParams.append('assessmentCenterId', assessmentCenterId);
 
-    const backendUrl = `https://api.breakfreeacademy.in/api/management-reports/participant/${params.participantId}/pre-post-assessment?${queryParams.toString()}`;
+    const backendUrl = `https://api.breakfreeacademy.in/api/management-reports/participant/${participantId}/pre-post-assessment?${queryParams.toString()}`;
 
     // Forward request to backend
     const response = await fetch(backendUrl, {
