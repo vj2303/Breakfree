@@ -19,8 +19,18 @@ export async function GET(
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
+    // Get assessmentCenterId from query params if provided
+    const { searchParams } = new URL(request.url);
+    const assessmentCenterId = searchParams.get('assessmentCenterId');
+    
+    // Build URL with query params
+    let backendUrl = `http://localhost:3001/api/assessors/${assessorId}/groups/${groupId}`;
+    if (assessmentCenterId) {
+      backendUrl += `?assessmentCenterId=${assessmentCenterId}`;
+    }
+
     // Forward the request to the external API
-    const response = await fetch(`http://localhost:3001/api/assessors/${assessorId}/groups/${groupId}`, {
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

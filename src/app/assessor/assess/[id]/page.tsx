@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { FileText, Loader2, ArrowLeft } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 interface AssessmentDetailProps {
@@ -79,6 +79,8 @@ interface GroupDetails {
         assessorScore: unknown;
         submissionCount: number;
         totalActivities: number;
+        attemptStatus?: string;
+        hasAttempted?: boolean;
       }>;
       competencies: Array<{
         id: string;
@@ -95,10 +97,14 @@ interface GroupDetails {
 const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
   const { id } = React.use(params); // This is the groupId
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { assessorId, token } = useAuth();
   const [groupDetails, setGroupDetails] = useState<GroupDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Get assessmentCenterId from URL query params synchronously
+  const assessmentCenterId = searchParams.get('assessmentCenterId');
 
   useEffect(() => {
     const fetchGroupDetails = async () => {
@@ -110,7 +116,14 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
 
       try {
         setLoading(true);
-        const response = await fetch(`/api/assessors/${assessorId}/groups/${id}`, {
+        // Include assessmentCenterId in query if available
+        const url = assessmentCenterId 
+          ? `/api/assessors/${assessorId}/groups/${id}?assessmentCenterId=${assessmentCenterId}`
+          : `/api/assessors/${assessorId}/groups/${id}`;
+        
+        console.log('Fetching group details with URL:', url);
+        
+        const response = await fetch(url, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -134,7 +147,7 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
     };
 
     fetchGroupDetails();
-  }, [assessorId, token, id]);
+  }, [assessorId, token, id, assessmentCenterId]);
 
   if (loading) {
     return (
@@ -165,7 +178,7 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
     );
   }
 
-  const ParticipantCard = ({ participant, assessmentCenterId }: { participant: { participant: { id: string; name: string; email: string; designation: string; managerName: string; createdAt: string; updatedAt: string }; activities: { activityId: string; activityType: string; displayOrder: number; competency: { id: string; competencyName: string; subCompetencyNames: string[]; createdAt: string; updatedAt: string }; activityDetail: { id: string; name: string; description: string }; submission: unknown; allSubmissions?: unknown[] }[]; assessorScore: unknown; submissionCount: number; totalActivities: number }; assessmentCenterId?: string }) => {
+  const ParticipantCard = ({ participant, assessmentCenterId }: { participant: { participant: { id: string; name: string; email: string; designation: string; managerName: string; createdAt: string; updatedAt: string }; activities: { activityId: string; activityType: string; displayOrder: number; competency: { id: string; competencyName: string; subCompetencyNames: string[]; createdAt: string; updatedAt: string }; activityDetail: { id: string; name: string; description: string }; submission: unknown; allSubmissions?: unknown[] }[]; assessorScore: unknown; submissionCount: number; totalActivities: number; attemptStatus?: string; hasAttempted?: boolean }; assessmentCenterId?: string }) => {
     const allSubmissions = participant.activities.flatMap(a => {
       const subs = a.allSubmissions || [];
       return subs.length > 0 ? subs : (a.submission ? [a.submission] : []);
@@ -177,6 +190,22 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
     
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+         <div className="text-right mb-4 w-[fit-content]">
+            {/* Attempt Status Badge */}
+            {participant.attemptStatus && (
+              <div className={`mt-2 px-2 py-1 rounded-full text-xs font-medium ${
+                participant.attemptStatus === 'completed' 
+                  ? 'bg-green-100 text-green-700'
+                  : participant.attemptStatus === 'in_progress'
+                  ? 'bg-yellow-100 text-yellow-700'
+                  : 'bg-gray-100 text-gray-700'
+              }`}>
+                {participant.attemptStatus === 'completed' ? 'Completed' :
+                 participant.attemptStatus === 'in_progress' ? 'In Progress' :
+                 'Not Attempted'}
+              </div>
+            )}
+          </div>
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <h4 className="font-semibold text-xl text-gray-900 mb-1">{participant.participant.name}</h4>
@@ -186,10 +215,7 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
               <p className="text-gray-500 text-xs mt-1">Manager: {participant.participant.managerName}</p>
             )}
           </div>
-          <div className="text-right ml-4">
-            <div className="text-2xl font-bold text-blue-600">{progressPercentage}%</div>
-            <div className="text-xs text-gray-500">Complete</div>
-          </div>
+         
         </div>
         
         {/* Progress Bar */}
@@ -358,4 +384,19 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
   );
 };
 
-export default AssessmentDetail;
+const AssessmentDetailWithSearchParams = ({ params }: AssessmentDetailProps) => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <AssessmentDetail params={params} />
+    </Suspense>
+  );
+};
+
+export default AssessmentDetailWithSearchParams;
