@@ -351,6 +351,7 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
         status: status
       };
 
+      // POST will auto-create or auto-update existing scores
       const response = await fetch('/api/assessors/scores', {
         method: 'POST',
         headers: {

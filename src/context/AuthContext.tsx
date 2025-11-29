@@ -154,7 +154,20 @@ interface AssessorGroupsData {
     createdAt: string;
     updatedAt: string;
   };
-  groups: AssessorGroup[];
+  groups: Array<{
+    groupId: string;
+    groupName: string;
+    adminName: string;
+    adminEmail: string;
+    assessmentCenters: Array<{
+      assignmentId: string;
+      assessmentCenterId: string;
+      assessmentCenterName: string;
+      assessmentCenterDescription: string;
+      participantCount: number;
+    }>;
+    totalParticipantCount: number;
+  }>;
 }
 
 interface Competency {
