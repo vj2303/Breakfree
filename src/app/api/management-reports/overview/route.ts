@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Forward request to backend
-    const response = await fetch('http://localhost:3001/api/management-reports/overview', {
+    const response = await fetch('https://api.breakfreeacademy.in/api/management-reports/overview', {
       method: 'GET',
       headers: {
         'Authorization': authHeader,

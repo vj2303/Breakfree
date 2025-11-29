@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     queryParams.append('assessmentCenterId', assessmentCenterId);
     queryParams.append('status', status);
 
-    const backendUrl = `http://localhost:3001/api/assessors/admin/scores?${queryParams.toString()}`;
+    const backendUrl = `https://api.breakfreeacademy.in/api/assessors/admin/scores?${queryParams.toString()}`;
     
     console.log('🔍 [API] Fetching assessor scores from:', backendUrl);
     console.log('🔍 [API] Auth header present:', !!authHeader);
