@@ -14,7 +14,7 @@ export default function ReportsPage() {
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-4">
-            <button
+            {/* <button
               onClick={() => setActiveTab('participants')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 activeTab === 'participants'
@@ -23,7 +23,7 @@ export default function ReportsPage() {
               }`}
             >
               Participants Reports
-            </button>
+            </button> */}
             <button
               onClick={() => setActiveTab('management')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
