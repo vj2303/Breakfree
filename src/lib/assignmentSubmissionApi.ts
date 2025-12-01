@@ -1,7 +1,7 @@
 // assignmentSubmissionApi.ts
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-production-domain.com/api' 
+  ? 'https://api.breakfreeacademy.in/api' 
   : 'https://api.breakfreeacademy.in/api';
 
 export interface SubmissionData {
