@@ -21,7 +21,7 @@ export default function AssessorLayout({ children }: { children: React.ReactNode
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar selected={selected} />
-      <main className="flex-1 p-10">{children}</main>
+      <main className="flex-1 p-6">{children}</main>
     </div>
   )
 }

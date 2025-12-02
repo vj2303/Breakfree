@@ -63,8 +63,8 @@ export default function AssessorPlatform() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading assessor assignments...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-gray-700 mx-auto mb-3" />
+          <p className="text-sm text-gray-600">Loading assessor assignments...</p>
         </div>
       </div>
     );
@@ -73,23 +73,23 @@ export default function AssessorPlatform() {
   const groups: GroupData[] = assessorGroups?.groups || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           {viewState !== 'groups' && (
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4"
+              className="flex items-center gap-1.5 text-gray-600 hover:text-black mb-3 text-sm"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={16} />
               Back
             </button>
           )}
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-semibold text-black mb-1.5">
             Welcome {assessorGroups?.assessor?.name || user?.firstName || 'Assessor'}
           </h1>
-          <p className="text-gray-500 mb-6">
+          <p className="text-sm text-gray-600 mb-0">
             {viewState === 'groups' && 'Select a group to view assessment centers and participants.'}
             {viewState === 'assessmentCenters' && `Assessment Centers in ${selectedGroup?.groupName}`}
             {viewState === 'participants' && `Participants in ${selectedGroup?.groupName} - ${selectedAssessmentCenter?.assessmentCenterName}`}
@@ -99,36 +99,36 @@ export default function AssessorPlatform() {
         {/* Groups View */}
         {viewState === 'groups' && (
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Groups</h2>
+            <h2 className="text-base font-semibold text-black mb-4">Groups</h2>
             {groups.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {groups.map((group) => (
                   <div
                     key={group.groupId}
-                    className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 cursor-pointer"
                     onClick={() => handleGroupClick(group)}
                   >
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{group.groupName}</h3>
-                        <div className="space-y-1 text-sm text-gray-600">
+                        <h3 className="text-base font-semibold text-black mb-1.5">{group.groupName}</h3>
+                        <div className="space-y-0.5 text-xs text-gray-600">
                           <p>
-                            <span className="text-gray-500">Admin:</span> {group.adminName}
+                            <span className="text-gray-500">Admin:</span> <span className="text-black">{group.adminName}</span>
                           </p>
                           <p>
-                            <span className="text-gray-500">Email:</span> {group.adminEmail}
+                            <span className="text-gray-500">Email:</span> <span className="text-gray-700">{group.adminEmail}</span>
                           </p>
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
+                      <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 pt-4 border-t border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <ClipboardList size={16} />
+                    <div className="flex items-center gap-3 text-xs text-gray-600 pt-3 border-t border-gray-200">
+                      <div className="flex items-center gap-1.5">
+                        <ClipboardList size={14} />
                         <span>{group.assessmentCenters.length} assessment{group.assessmentCenters.length !== 1 ? 's' : ''}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Users size={16} />
+                      <div className="flex items-center gap-1.5">
+                        <Users size={14} />
                         <span>{group.totalParticipantCount} participant{group.totalParticipantCount !== 1 ? 's' : ''}</span>
                       </div>
                     </div>
@@ -136,8 +136,8 @@ export default function AssessorPlatform() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-                <p className="text-gray-500 text-lg">No groups assigned to you yet.</p>
+              <div className="text-center py-8 bg-white rounded-lg border border-gray-200 shadow-sm">
+                <p className="text-sm text-gray-600">No groups assigned to you yet.</p>
               </div>
             )}
           </div>
@@ -146,38 +146,38 @@ export default function AssessorPlatform() {
         {/* Assessment Centers View */}
         {viewState === 'assessmentCenters' && selectedGroup && (
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+            <h2 className="text-base font-semibold text-black mb-4">
               Assessment Centers in {selectedGroup.groupName}
             </h2>
             {selectedGroup.assessmentCenters.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {selectedGroup.assessmentCenters.map((assessmentCenter) => (
                   <div
                     key={`${assessmentCenter.assessmentCenterId}-${selectedGroup.groupId}`}
-                    className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 cursor-pointer"
                     onClick={() => handleAssessmentCenterClick(assessmentCenter)}
                   >
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        <h3 className="text-base font-semibold text-black mb-1.5">
                           {assessmentCenter.assessmentCenterName}
                         </h3>
-                        <p className="text-sm text-gray-600 line-clamp-2">
+                        <p className="text-xs text-gray-600 line-clamp-2">
                           {assessmentCenter.assessmentCenterDescription || 'No description available'}
                         </p>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
+                      <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600 pt-4 border-t border-gray-200">
-                      <Users size={16} />
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600 pt-3 border-t border-gray-200">
+                      <Users size={14} />
                       <span>{assessmentCenter.participantCount} participant{assessmentCenter.participantCount !== 1 ? 's' : ''}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-                <p className="text-gray-500 text-lg">No assessment centers found in this group.</p>
+              <div className="text-center py-8 bg-white rounded-lg border border-gray-200 shadow-sm">
+                <p className="text-sm text-gray-600">No assessment centers found in this group.</p>
               </div>
             )}
           </div>
@@ -185,8 +185,8 @@ export default function AssessorPlatform() {
 
         {/* Participants View - This will be handled by the [id]/page.tsx route */}
         {viewState === 'participants' && (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-            <p className="text-gray-500 text-lg">Loading participants...</p>
+          <div className="text-center py-8 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <p className="text-sm text-gray-600">Loading participants...</p>
           </div>
         )}
       </div>

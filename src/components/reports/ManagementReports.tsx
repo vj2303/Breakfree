@@ -55,36 +55,10 @@ const ManagementReports: React.FC<ManagementReportsProps> = ({ token }) => {
   const [competencySearch, setCompetencySearch] = useState('');
   const [participantSearch, setParticipantSearch] = useState('');
 
-  const fetchData = useCallback(async () => {
+  const fetchGroups = useCallback(async () => {
     if (!token) return;
 
-    setLoading(true);
-    setError(null);
-
     try {
-      // Fetch overview data
-      const overviewRes = await fetch('/api/management-reports/overview', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (overviewRes.ok) {
-        const overviewResult = await overviewRes.json();
-        setOverviewData(overviewResult.data);
-      }
-
-      // Fetch competency data
-      const competencyRes = await fetch('/api/management-reports/competencies', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (competencyRes.ok) {
-        const competencyResult = await competencyRes.json();
-        setCompetencyData(competencyResult.data || []);
-      }
-
-      // Fetch groups data
       const groupsRes = await fetch('/api/management-reports/groups', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -96,6 +70,47 @@ const ManagementReports: React.FC<ManagementReportsProps> = ({ token }) => {
         setGroups(groupsList);
       }
     } catch (err) {
+      console.error('Error fetching groups data:', err);
+    }
+  }, [token]);
+
+  const fetchOverviewAndCompetencies = useCallback(async (groupId?: string) => {
+    if (!token) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Build query params
+      const queryParams = new URLSearchParams();
+      if (groupId) {
+        queryParams.append('groupId', groupId);
+      }
+
+      // Fetch overview data
+      const overviewUrl = `/api/management-reports/overview${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const overviewRes = await fetch(overviewUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (overviewRes.ok) {
+        const overviewResult = await overviewRes.json();
+        setOverviewData(overviewResult.data);
+      }
+
+      // Fetch competency data
+      const competencyUrl = `/api/management-reports/competencies${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const competencyRes = await fetch(competencyUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (competencyRes.ok) {
+        const competencyResult = await competencyRes.json();
+        setCompetencyData(competencyResult.data || []);
+      }
+    } catch (err) {
       console.error('Error fetching management reports data:', err);
       setError('Failed to load data. Please try again.');
     } finally {
@@ -103,11 +118,19 @@ const ManagementReports: React.FC<ManagementReportsProps> = ({ token }) => {
     }
   }, [token]);
 
+  // Initial fetch for groups
   useEffect(() => {
     if (token) {
-      fetchData();
+      fetchGroups();
     }
-  }, [token, fetchData]);
+  }, [token, fetchGroups]);
+
+  // Fetch overview and competencies on mount and when group selection changes
+  useEffect(() => {
+    if (token) {
+      fetchOverviewAndCompetencies(selectedGroup?.id);
+    }
+  }, [token, selectedGroup?.id, fetchOverviewAndCompetencies]);
 
   const filteredCompetencies = competencyData.filter(comp =>
     comp.competencyName.toLowerCase().includes(competencySearch.toLowerCase())
@@ -135,6 +158,31 @@ const ManagementReports: React.FC<ManagementReportsProps> = ({ token }) => {
 
   return (
     <div className="space-y-6">
+      {/* Group Filter Indicator */}
+      {selectedGroup && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              <span className="text-sm font-medium text-blue-900">
+                Showing data for group: <span className="font-semibold">{selectedGroup.name}</span>
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setSelectedGroup(null);
+                setSelectedParticipant(null);
+              }}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Clear filter
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Assessments and Competency Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AssessmentsCard data={overviewData} />

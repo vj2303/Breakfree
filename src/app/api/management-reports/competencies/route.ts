@@ -14,13 +14,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const assessmentCenterId = searchParams.get('assessmentCenterId') || '';
     const search = searchParams.get('search') || '';
+    const groupId = searchParams.get('groupId') || '';
 
     // Build query string
     const queryParams = new URLSearchParams();
     if (assessmentCenterId) queryParams.append('assessmentCenterId', assessmentCenterId);
     if (search) queryParams.append('search', search);
+    if (groupId) queryParams.append('groupId', groupId);
 
-    const backendUrl = `https://api.breakfreeacademy.in/api/management-reports/competencies?${queryParams.toString()}`;
+    const backendUrl = `http://localhost:3001/api/management-reports/competencies?${queryParams.toString()}`;
 
     // Forward request to backend
     const response = await fetch(backendUrl, {

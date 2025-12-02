@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward the request to the external API
-    const response = await fetch('https://api.breakfreeacademy.in/api/assessors/scores', {
+    const response = await fetch('http://localhost:3001/api/assessors/scores', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

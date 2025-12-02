@@ -17,7 +17,7 @@ export async function PATCH(
     }
 
     // Forward the request to the external API
-    const response = await fetch(`https://api.breakfreeacademy.in/api/assessors/scores/${scoreId}`, {
+    const response = await fetch(`http://localhost:3001/api/assessors/scores/${scoreId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

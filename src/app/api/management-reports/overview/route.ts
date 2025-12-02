@@ -11,8 +11,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const groupId = searchParams.get('groupId') || '';
+    const assessmentCenterId = searchParams.get('assessmentCenterId') || '';
+
+    // Build query string
+    const queryParams = new URLSearchParams();
+    if (groupId) queryParams.append('groupId', groupId);
+    if (assessmentCenterId) queryParams.append('assessmentCenterId', assessmentCenterId);
+
+    const backendUrl = `http://localhost:3001/api/management-reports/overview${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
     // Forward request to backend
-    const response = await fetch('https://api.breakfreeacademy.in/api/management-reports/overview', {
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Authorization': authHeader,

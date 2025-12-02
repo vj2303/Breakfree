@@ -10,25 +10,43 @@ const sidebarItems = [
 export default function Sidebar({ selected }: { selected: string }) {
   const router = useRouter()
   return (
-    <aside className="w-64 bg-white shadow-lg flex flex-col p-6 min-h-screen">
-      <div className="mb-10 text-2xl font-bold text-blue-700">Assessor</div>
-      <nav className="flex flex-col gap-4 flex-1">
-        {sidebarItems.map(item => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${selected === item.href ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'}`}
-          >
-            {item.label}
-          </Link>
-        ))}
+    <aside className="w-56 bg-white border-r border-gray-200 flex flex-col justify-between min-h-screen shadow-sm">
+      <div className="pt-6">
+        <div className="mb-8 flex items-center justify-center px-4">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-black rounded flex items-center justify-center">
+              <span className="text-white text-xs font-bold">A</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-black leading-tight">ASSESSOR</span>
+              <span className="text-[10px] text-gray-600 leading-tight">PORTAL</span>
+            </div>
+          </div>
+        </div>
+        <nav className="flex flex-col gap-1 px-3">
+          {sidebarItems.map(item => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium transition-all duration-200 ${
+                selected === item.href 
+                  ? 'bg-gray-100 text-black border-l-2 border-black' 
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-black'
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
+      <div className="mb-6 px-3 border-t border-gray-200 pt-4">
         <button
           onClick={() => router.push('/assessor/login')}
-          className="mt-auto px-4 py-2 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-colors duration-200"
+          className="flex items-center gap-2 px-3 py-2.5 rounded text-sm text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 w-full text-left"
         >
           Logout
         </button>
-      </nav>
+      </div>
     </aside>
   )
 }
