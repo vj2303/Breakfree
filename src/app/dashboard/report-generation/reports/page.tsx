@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import ManagementReports from '@/components/reports/ManagementReports';
+import ParticipantReports from '@/components/reports/ParticipantReports';
 
 export default function ReportsPage() {
   const { token } = useAuth();
@@ -14,7 +15,7 @@ export default function ReportsPage() {
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-4">
-            {/* <button
+            <button
               onClick={() => setActiveTab('participants')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 activeTab === 'participants'
@@ -23,7 +24,7 @@ export default function ReportsPage() {
               }`}
             >
               Participants Reports
-            </button> */}
+            </button>
             <button
               onClick={() => setActiveTab('management')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -41,11 +42,7 @@ export default function ReportsPage() {
       {/* Content */}
       <div className="p-6">
         {activeTab === 'management' && <ManagementReports token={token} />}
-        {activeTab === 'participants' && (
-          <div className="text-center py-12 text-gray-500">
-            Participants Reports - Coming Soon
-          </div>
-        )}
+        {activeTab === 'participants' && <ParticipantReports token={token} />}
       </div>
     </div>
   );

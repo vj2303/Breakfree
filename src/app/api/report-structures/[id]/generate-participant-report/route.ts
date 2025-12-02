@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const authHeader = request.headers.get('authorization');
     
@@ -11,19 +14,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { id: reportStructureId } = await params;
     const body = await request.json();
-    const { assessmentCenterId, participantId } = body;
+    const { participantId } = body;
 
-    if (!assessmentCenterId || !participantId) {
+    if (!participantId) {
       return NextResponse.json(
-        { success: false, message: 'Missing required fields: assessmentCenterId, participantId' },
+        { success: false, message: 'Missing required field: participantId' },
         { status: 400 }
       );
     }
 
     // Forward the request to the backend API
     const response = await fetch(
-      'http://localhost:3001/api/report-structures/generate-from-assessment-center',
+      `http://localhost:3001/api/report-structures/${reportStructureId}/generate-participant-report`,
       {
         method: 'POST',
         headers: {
@@ -31,7 +35,6 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          assessmentCenterId,
           participantId,
         }),
       }
@@ -48,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error generating report:', error);
+    console.error('Error generating participant report:', error);
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
