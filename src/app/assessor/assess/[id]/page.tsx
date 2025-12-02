@@ -153,8 +153,8 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading group details...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-gray-700 mx-auto mb-3" />
+          <p className="text-sm text-gray-600">Loading group details...</p>
         </div>
       </div>
     );
@@ -163,12 +163,12 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
   if (error || !groupDetails || !groupDetails.data) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-2xl font-bold mb-4">Error Loading Group</h1>
-          <p className="text-lg text-red-600 mb-4">{error || 'Invalid group data received'}</p>
+        <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h1 className="text-xl font-semibold mb-3 text-black">Error Loading Group</h1>
+          <p className="text-sm text-red-600 mb-4">{error || 'Invalid group data received'}</p>
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+            className="flex items-center gap-2 text-gray-700 hover:text-black text-sm"
           >
             <ArrowLeft size={16} />
             Go Back
@@ -189,66 +189,65 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
       : 0;
     
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-         <div className="text-right mb-4 w-[fit-content]">
-            {/* Attempt Status Badge */}
-            {participant.attemptStatus && (
-              <div className={`mt-2 px-2 py-1 rounded-full text-xs font-medium ${
-                participant.attemptStatus === 'completed' 
-                  ? 'bg-green-100 text-green-700'
-                  : participant.attemptStatus === 'in_progress'
-                  ? 'bg-yellow-100 text-yellow-700'
-                  : 'bg-gray-100 text-gray-700'
-              }`}>
-                {participant.attemptStatus === 'completed' ? 'Completed' :
-                 participant.attemptStatus === 'in_progress' ? 'In Progress' :
-                 'Not Attempted'}
-              </div>
-            )}
-          </div>
-        <div className="flex items-start justify-between mb-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200 hover:border-gray-300">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <h4 className="font-semibold text-xl text-gray-900 mb-1">{participant.participant.name}</h4>
-            <p className="text-gray-600 text-sm mb-1">{participant.participant.email}</p>
-            <p className="text-gray-500 text-sm">{participant.participant.designation}</p>
+            <div className="flex items-center gap-2 mb-1.5">
+              <h4 className="font-semibold text-base text-black">{participant.participant.name}</h4>
+              {/* Attempt Status Badge */}
+              {participant.attemptStatus && (
+                <span className={`px-2 py-0.5 rounded text-xs font-medium border ${
+                  participant.attemptStatus === 'completed' 
+                    ? 'bg-green-50 text-green-700 border-green-200'
+                    : participant.attemptStatus === 'in_progress'
+                    ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                    : 'bg-gray-50 text-gray-700 border-gray-300'
+                }`}>
+                  {participant.attemptStatus === 'completed' ? 'Completed' :
+                   participant.attemptStatus === 'in_progress' ? 'In Progress' :
+                   'Not Attempted'}
+                </span>
+              )}
+            </div>
+            <p className="text-gray-600 text-xs mb-0.5">{participant.participant.email}</p>
+            <p className="text-gray-500 text-xs">{participant.participant.designation}</p>
             {participant.participant.managerName && (
               <p className="text-gray-500 text-xs mt-1">Manager: {participant.participant.managerName}</p>
             )}
           </div>
-         
         </div>
         
         {/* Progress Bar */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between text-sm mb-2">
+        <div className="mb-3">
+          <div className="flex items-center justify-between text-xs mb-1.5">
             <span className="text-gray-700 font-medium">Progress</span>
             <span className="text-gray-600">
               {participant.submissionCount} of {participant.totalActivities} activities
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-gray-200 rounded-full h-1.5">
             <div 
-              className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+              className="bg-gray-800 h-1.5 rounded-full transition-all duration-300"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
         </div>
 
         {/* Activity Summary */}
-        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-          <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="mb-3 p-2.5 bg-gray-50 rounded border border-gray-200">
+          <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
               <span className="text-gray-600">Total Activities:</span>
-              <span className="ml-2 font-semibold text-gray-900">{participant.totalActivities}</span>
+              <span className="ml-1.5 font-semibold text-black">{participant.totalActivities}</span>
             </div>
             <div>
               <span className="text-gray-600">Submitted:</span>
-              <span className="ml-2 font-semibold text-green-600">{participant.submissionCount}</span>
+              <span className="ml-1.5 font-semibold text-gray-700">{participant.submissionCount}</span>
             </div>
             {totalSubmissions > participant.submissionCount && (
               <div className="col-span-2">
                 <span className="text-gray-600">Total Submissions:</span>
-                <span className="ml-2 font-semibold text-blue-600">{totalSubmissions}</span>
+                <span className="ml-1.5 font-semibold text-gray-700">{totalSubmissions}</span>
               </div>
             )}
           </div>
@@ -256,13 +255,13 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
         
         {/* Evaluate Button */}
         <button
-          className="w-full flex items-center justify-center gap-2 text-sm bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
+          className="w-full flex items-center justify-center gap-2 text-xs bg-black hover:bg-gray-800 text-white px-4 py-2 rounded transition-colors font-medium"
           onClick={() => {
             const url = `/assessor/assess/${id}/score/${participant.participant.id}${assessmentCenterId ? `?assessmentCenterId=${assessmentCenterId}` : ''}`;
             router.push(url);
           }}
         >
-          <FileText size={18} />
+          <FileText size={16} />
           Evaluate Assessment
         </button>
       </div>
@@ -270,41 +269,41 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4"
+            className="flex items-center gap-1.5 text-gray-600 hover:text-black mb-3 text-sm"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={16} />
             Back to Groups
           </button>
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Assessment Details</h1>
+          <h1 className="text-2xl font-semibold text-black mb-0">Assessment Details</h1>
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-lg shadow-sm p-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           {/* Group Information */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{groupDetails.data.assignment?.group?.name || 'Unknown Group'}</h2>
-            <p className="text-gray-600 mb-2">Admin: {groupDetails.data.assignment?.group?.admin || 'N/A'}</p>
-            <p className="text-gray-600 mb-6">Email: {groupDetails.data.assignment?.group?.adminEmail || 'N/A'}</p>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-black mb-1.5">{groupDetails.data.assignment?.group?.name || 'Unknown Group'}</h2>
+            <p className="text-xs text-gray-600 mb-1">Admin: {groupDetails.data.assignment?.group?.admin || 'N/A'}</p>
+            <p className="text-xs text-gray-600 mb-4">Email: {groupDetails.data.assignment?.group?.adminEmail || 'N/A'}</p>
             
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Assessment Details</h3>
-            <p className="text-gray-700 mb-2">Assignment ID: {groupDetails.data.assignment?.id || 'N/A'}</p>
-            <p className="text-gray-700 mb-6">Participants: {groupDetails.data.assignment?.participants?.length || 0}</p>
+            <h3 className="text-base font-semibold text-black mb-3">Assessment Details</h3>
+            <p className="text-xs text-gray-700 mb-1">Assignment ID: <span className="text-black font-medium">{groupDetails.data.assignment?.id || 'N/A'}</span></p>
+            <p className="text-xs text-gray-700 mb-4">Participants: <span className="text-black font-medium">{groupDetails.data.assignment?.participants?.length || 0}</span></p>
             
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">{groupDetails.data.assignment?.assessmentCenter?.displayName || groupDetails.data.assignment?.assessmentCenter?.name || 'Assessment Center'}</h4>
-            <p className="text-gray-600 mb-6">{groupDetails.data.assignment?.assessmentCenter?.description || ''}</p>
+            <h4 className="text-base font-semibold text-black mb-2">{groupDetails.data.assignment?.assessmentCenter?.displayName || groupDetails.data.assignment?.assessmentCenter?.name || 'Assessment Center'}</h4>
+            <p className="text-sm text-gray-600 mb-4">{groupDetails.data.assignment?.assessmentCenter?.description || ''}</p>
             
             {/* Assessment Instructions */}
             {groupDetails.data.assignment?.assessmentCenter?.displayInstructions && (
-              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h5 className="font-medium text-blue-900 mb-2">Instructions</h5>
+              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded">
+                <h5 className="font-medium text-black mb-1.5 text-sm">Instructions</h5>
                 <div 
-                  className="text-blue-800 text-sm"
+                  className="text-gray-700 text-xs prose prose-sm max-w-none"
                   dangerouslySetInnerHTML={{ __html: groupDetails.data.assignment.assessmentCenter.displayInstructions }}
                 />
               </div>
@@ -312,17 +311,17 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
             
             {/* Assessor Guide */}
             {groupDetails.data.assignment?.assessmentCenter?.documentUrl && (
-              <div className="mb-8">
+              <div className="mb-6">
                 <a 
                   href={groupDetails.data.assignment.assessmentCenter.documentUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 border border-gray-300 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2 border border-gray-200 rounded p-3 hover:bg-gray-50 transition-colors"
                 >
-                  <FileText size={20} className="text-gray-600" />
+                  <FileText size={18} className="text-gray-600" />
                   <div className="text-left">
-                    <div className="font-medium text-gray-900">Assessor Guide</div>
-                    <div className="text-sm text-gray-600">Click to view document</div>
+                    <div className="font-medium text-sm text-black">Assessor Guide</div>
+                    <div className="text-xs text-gray-600">Click to view document</div>
                   </div>
                 </a>
               </div>
@@ -330,16 +329,16 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
             
             {/* Competencies */}
             {groupDetails.data.assignment?.competencies && groupDetails.data.assignment.competencies.length > 0 && (
-              <div className="mb-8">
-                <h5 className="font-medium text-gray-900 mb-3">Assessment Competencies</h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="mb-6">
+                <h5 className="font-medium text-sm text-black mb-2">Assessment Competencies</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {groupDetails.data.assignment.competencies.map((competency) => (
-                    <div key={competency.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <h6 className="font-medium text-gray-900 mb-2">{competency.competencyName}</h6>
-                      <ul className="text-sm text-gray-600 space-y-1">
+                    <div key={competency.id} className="p-3 bg-gray-50 border border-gray-200 rounded">
+                      <h6 className="font-medium text-sm text-black mb-1.5">{competency.competencyName}</h6>
+                      <ul className="text-xs text-gray-600 space-y-0.5">
                         {competency.subCompetencyNames.map((subComp, index) => (
                           <li key={index} className="flex items-center">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></span>
+                            <span className="w-1 h-1 bg-gray-600 rounded-full mr-1.5"></span>
                             {subComp}
                           </li>
                         ))}
@@ -352,11 +351,11 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
           </div>
 
           {/* Group Members */}
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Group Members ({groupDetails.data.assignment?.participants?.length || 0})</h3>
+          <div className="mb-6">
+            <h3 className="text-base font-semibold text-black mb-4">Group Members ({groupDetails.data.assignment?.participants?.length || 0})</h3>
             
             {groupDetails.data.assignment?.participants && groupDetails.data.assignment.participants.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {groupDetails.data.assignment.participants.map((participant) => (
                   <ParticipantCard 
                     key={participant.participant.id} 
@@ -366,15 +365,15 @@ const AssessmentDetail = ({ params }: AssessmentDetailProps) => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-6 text-sm text-gray-500">
                 <p>No participants found in this group.</p>
               </div>
             )}
           </div>
 
           {/* Generate Report Button */}
-          <div className="mt-8">
-            <button className="bg-slate-600 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+          <div className="mt-6">
+            <button className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
               Generate Management Report
             </button>
           </div>
@@ -389,8 +388,8 @@ const AssessmentDetailWithSearchParams = ({ params }: AssessmentDetailProps) => 
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-gray-700 mx-auto mb-3" />
+          <p className="text-sm text-gray-600">Loading...</p>
         </div>
       </div>
     }>

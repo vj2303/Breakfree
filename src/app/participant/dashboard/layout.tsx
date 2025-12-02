@@ -37,40 +37,47 @@ export default function ParticipantDashboardLayout({ children }: { children: Rea
   };
 
   return (
-    <div className="min-h-screen flex bg-[#F7F9FC] m-0 p-0">
+    <div className="min-h-screen flex bg-gray-50 m-0 p-0">
       {/* Sidebar */}
-      <aside className="w-48 bg-white border-r flex flex-col justify-between min-h-screen m-0 p-0">
-        <div className="pt-8">
-          <div className="mb-12 flex items-center justify-center px-4">
-            <Image src="/logo.png" alt="Breakfree Consulting" width={60} height={60} />
+      <aside className="w-56 bg-white border-r border-gray-200 flex flex-col justify-between min-h-screen m-0 p-0 shadow-sm">
+        <div className="pt-6">
+          <div className="mb-8 flex items-center justify-center px-4">
+            <div className="flex items-center gap-2">
+              <Image src="/logo.png" alt="Breakfree Consulting" width={48} height={48} className="rounded" />
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-black leading-tight">BREAKFREE</span>
+                <span className="text-[10px] text-gray-600 leading-tight">CONSULTING</span>
+              </div>
+            </div>
           </div>
-          <nav className="flex flex-col gap-2 px-4">
+          <nav className="flex flex-col gap-1 px-3">
             {sidebarLinks.map(link => {
               const Icon = link.icon;
+              const isActive = pathname === link.href || (link.href === '/participant/dashboard' && pathname?.startsWith('/participant/dashboard'));
               return (
                 <a
                   key={link.label}
                   href={link.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${
-                    pathname === link.href 
-                      ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600' 
-                      : 'text-gray-700 hover:bg-gray-50'
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'bg-gray-100 text-black border-l-2 border-black' 
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-black'
                   }`}
                   style={{ cursor: 'pointer' }}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-black' : 'text-gray-600'}`} />
                   {link.label}
                 </a>
               );
             })}
           </nav>
         </div>
-        <div className="mb-8 px-4">
+        <div className="mb-6 px-3 border-t border-gray-200 pt-4">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 w-full text-left"
+            className="flex items-center gap-2 px-3 py-2.5 rounded text-sm text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 w-full text-left"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-4 h-4" />
             Log Out
           </button>
         </div>
@@ -79,31 +86,29 @@ export default function ParticipantDashboardLayout({ children }: { children: Rea
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen m-0 p-0">
         {/* Navbar */}
-        <header className="w-full flex items-center justify-between px-8 py-6 bg-white shadow-sm m-0">
+        <header className="w-full flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 m-0">
           <div className="flex items-center gap-2">
-            {/* Logo (optional, already in sidebar) */}
+            <h2 className="text-sm font-medium text-gray-600">Dashboard</h2>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="text-right">
-              <div className="font-semibold text-black">{displayUser.name}</div>
+              <div className="font-medium text-sm text-black">{displayUser.name}</div>
               <div className="text-xs text-gray-500">{displayUser.email}</div>
             </div>
-            <Image
-              src={displayUser.avatar}
-              alt={displayUser.name}
-              width={40}
-              height={40}
-              className="rounded-full object-cover border"
-            />
-            <button className="ml-2">
-              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-gray-400">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+            <div className="relative">
+              <Image
+                src={displayUser.avatar}
+                alt={displayUser.name}
+                width={36}
+                height={36}
+                className="rounded-full object-cover border-2 border-gray-200"
+              />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
+            </div>
           </div>
         </header>
         {/* Page Content */}
-        <main className="flex-1 p-8 bg-[#F7F9FC] min-h-[calc(100vh-80px)] m-0">
+        <main className="flex-1 p-6 bg-gray-50 min-h-[calc(100vh-64px)] m-0">
           {children}
         </main>
       </div>
