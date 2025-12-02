@@ -35,6 +35,7 @@ const InboxPageWithSearchParams = () => {
   }>({
     submissionType: 'TEXT'
   });
+  const [submitting, setSubmitting] = useState(false);
   const [allActivities, setAllActivities] = useState<Array<{
     activityId: string;
     activityType: string;
@@ -156,21 +157,34 @@ const InboxPageWithSearchParams = () => {
       return;
     }
 
-    if (!submissionData.textContent?.trim()) {
-      alert('Please enter email content before submitting');
+    // For inbox activity, we check if there are any submissions made
+    // The actual email submissions are handled within GmailInbox
+    // This button marks the activity as complete
+    const confirmed = window.confirm('Are you sure you want to submit this assignment? Make sure you have sent all required emails.');
+    
+    if (!confirmed) {
       return;
     }
 
+    setSubmitting(true);
     try {
+      // Check if activity is already submitted
+      if (activityData.isSubmitted) {
+        alert('This assignment has already been submitted.');
+        setSubmitting(false);
+        return;
+      }
+
+      // For inbox activity, we can submit with a final confirmation
+      // The actual content is already submitted through individual emails
       const submissionPayload = {
         participantId: assignments?.participant?.id || '',
         assessmentCenterId: (assignmentData as { assessmentCenter: { id: string } }).assessmentCenter.id,
         activityId: activityData.activityId,
         activityType: 'INBOX_ACTIVITY' as const,
-        submissionType: submissionData.submissionType || 'TEXT',
-        notes: submissionData.notes,
-        textContent: submissionData.textContent,
-        file: submissionData.file,
+        submissionType: 'TEXT' as const,
+        textContent: 'Assignment completed via inbox activity',
+        notes: 'Final submission confirmation',
         isDraft: false,
       };
 
@@ -185,6 +199,8 @@ const InboxPageWithSearchParams = () => {
     } catch (error) {
       console.error('Error submitting assignment:', error);
       alert('An error occurred while submitting the assignment');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -407,12 +423,35 @@ const InboxPageWithSearchParams = () => {
               </svg>
             </button>
           ) : (
-            <div className="text-xs text-gray-600 flex items-center gap-1.5">
-              <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <p>Use the buttons in the Task step to save draft or submit your response.</p>
-            </div>
+            <button
+              className="px-4 py-2 rounded bg-black text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+              onClick={handleSubmit}
+              disabled={submitting || activityData?.isSubmitted}
+            >
+              {submitting ? (
+                <>
+                  <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Submitting...
+                </>
+              ) : activityData?.isSubmitted ? (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Submitted
+                </>
+              ) : (
+                <>
+                  Submit
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </>
+              )}
+            </button>
           )}
         </div>
       </div>
