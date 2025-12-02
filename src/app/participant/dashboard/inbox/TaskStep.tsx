@@ -133,9 +133,9 @@ const TaskStep: React.FC<TaskStepProps> = ({
   if (!activityData?.activityDetail || contents.length === 0) {
     return (
       <div>
-        <h2 className="text-2xl font-bold mb-4">Task</h2>
-        <div className="bg-white p-6 rounded-lg border text-black">
-          <p>No task content available for this activity.</p>
+        <h2 className="text-lg font-semibold mb-3 text-black">Task</h2>
+        <div className="bg-white p-4 rounded border border-gray-200 text-gray-700">
+          <p className="text-sm">No task content available for this activity.</p>
         </div>
       </div>
     );
@@ -145,30 +145,30 @@ const TaskStep: React.FC<TaskStepProps> = ({
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">Task</h2>
+      <h2 className="text-lg font-semibold mb-3 text-black">Task</h2>
       
       {/* Original Emails */}
-      <div className="bg-white p-6 rounded-lg border mb-6">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900">Inbox Emails</h3>
-        <div className="space-y-4">
+      <div className="bg-white p-4 rounded border border-gray-200 mb-4">
+        <h3 className="text-sm font-semibold mb-3 text-black">Inbox Emails</h3>
+        <div className="space-y-3">
           {contents.map((content: EmailContent) => (
-            <div key={content.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-semibold text-gray-900">{content.subject}</h4>
-                <span className="text-sm text-gray-500">{new Date(content.date).toLocaleString()}</span>
+            <div key={content.id} className="border border-gray-200 rounded p-3 bg-gray-50">
+              <div className="flex justify-between items-start mb-1.5">
+                <h4 className="font-semibold text-sm text-black">{content.subject}</h4>
+                <span className="text-xs text-gray-500">{new Date(content.date).toLocaleString()}</span>
               </div>
-              <div className="text-sm text-gray-600 mb-2 space-y-1">
-                <p><strong>From:</strong> {content.from}</p>
-                <p><strong>To:</strong> {content.to.join(', ')}</p>
+              <div className="text-xs text-gray-600 mb-1.5 space-y-0.5">
+                <p><strong className="text-black">From:</strong> {content.from}</p>
+                <p><strong className="text-black">To:</strong> {content.to.join(', ')}</p>
                 {content.cc && content.cc.length > 0 && (
-                  <p><strong>CC:</strong> {content.cc.join(', ')}</p>
+                  <p><strong className="text-black">CC:</strong> {content.cc.join(', ')}</p>
                 )}
                 {content.bcc && content.bcc.length > 0 && (
-                  <p><strong>BCC:</strong> {content.bcc.join(', ')}</p>
+                  <p><strong className="text-black">BCC:</strong> {content.bcc.join(', ')}</p>
                 )}
               </div>
               <div 
-                className="prose max-w-none text-gray-700 mt-3 p-3 bg-white rounded border"
+                className="prose prose-sm max-w-none text-sm text-gray-800 mt-2 p-2 bg-white rounded border border-gray-200"
                 dangerouslySetInnerHTML={{ __html: content.emailContent }}
               />
             </div>
@@ -177,65 +177,65 @@ const TaskStep: React.FC<TaskStepProps> = ({
       </div>
 
       {/* Email Reply Interface */}
-      <div className="bg-white p-6 rounded-lg border">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900">Compose Reply</h3>
+      <div className="bg-white p-4 rounded border border-gray-200">
+        <h3 className="text-sm font-semibold mb-3 text-black">Compose Reply</h3>
         
         {isSubmitted && existingSubmission?.submissionStatus !== 'DRAFT' && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Status:</strong> This email has been submitted and cannot be edited.
+          <div className="mb-3 p-2 bg-gray-50 border border-gray-200 rounded">
+            <p className="text-xs text-gray-700">
+              <strong className="text-black">Status:</strong> This email has been submitted and cannot be edited.
             </p>
           </div>
         )}
 
         {existingSubmission?.submissionStatus === 'DRAFT' && (
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800">
+          <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
+            <p className="text-xs text-yellow-800">
               <strong>Draft Saved:</strong> You have a saved draft. You can continue editing and submit when ready.
             </p>
           </div>
         )}
 
         {/* Email Form Fields */}
-        <div className="space-y-4 mb-4">
+        <div className="space-y-3 mb-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">To</label>
             <input
               type="text"
               value={replyTo}
               onChange={(e) => setReplyTo(e.target.value)}
               disabled={!canEdit}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-black focus:border-black disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Subject</label>
             <input
               type="text"
               value={replySubject}
               onChange={(e) => setReplySubject(e.target.value)}
               disabled={!canEdit}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-black focus:border-black disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">CC (Optional)</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">CC (Optional)</label>
             <input
               type="text"
               value={replyCc}
               onChange={(e) => setReplyCc(e.target.value)}
               disabled={!canEdit}
               placeholder="Enter email addresses separated by commas"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-black focus:border-black disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
         </div>
 
         {/* Rich Text Editor for Email Body */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+        <div className="mb-3">
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">Message</label>
           {canEdit ? (
             <RichTextEditor
               content={emailContent}
@@ -243,7 +243,7 @@ const TaskStep: React.FC<TaskStepProps> = ({
             />
           ) : (
             <div 
-              className="min-h-[200px] border rounded-md bg-gray-50 p-4"
+              className="min-h-[200px] border border-gray-200 rounded bg-gray-50 p-3"
               dangerouslySetInnerHTML={{ __html: emailContent || '<p>No content</p>' }}
             />
           )}
@@ -251,11 +251,11 @@ const TaskStep: React.FC<TaskStepProps> = ({
 
         {/* Document Upload */}
         {canEdit && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">
               Attach Document (Optional)
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+            <div className="border-2 border-dashed border-gray-300 rounded p-3">
               <input
                 key={fileInputKey}
                 type="file"
@@ -269,19 +269,19 @@ const TaskStep: React.FC<TaskStepProps> = ({
                 htmlFor="file-upload"
                 className={`cursor-pointer flex items-center gap-2 ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <svg className="h-6 w-6 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                <svg className="h-5 w-5 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                   <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <span className="text-sm text-gray-600">
+                <span className="text-xs text-gray-600">
                   {submissionData.file ? submissionData.file.name : 'Click to upload document'}
                 </span>
               </label>
               {submissionData.file && (
-                <div className="mt-2 flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                  <span className="text-sm text-gray-700">{submissionData.file.name}</span>
+                <div className="mt-2 flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200">
+                  <span className="text-xs text-gray-700">{submissionData.file.name}</span>
                   <button
                     onClick={removeFile}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                    className="text-red-600 hover:text-red-800 text-xs font-medium"
                   >
                     Remove
                   </button>
@@ -293,24 +293,24 @@ const TaskStep: React.FC<TaskStepProps> = ({
 
         {/* Action Buttons */}
         {canEdit && (
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
             <button
               onClick={handleSaveDraft}
               disabled={isSavingDraft || isSubmitting}
-              className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-1.5 rounded bg-gray-100 text-black text-sm font-medium hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               {isSavingDraft && (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700"></div>
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-black"></div>
               )}
               {isSavingDraft ? 'Saving...' : 'Save as Draft'}
             </button>
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || isSavingDraft || !emailContent.trim()}
-              className="px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-1.5 rounded bg-black text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               {isSubmitting && (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white"></div>
               )}
               {isSubmitting ? 'Submitting...' : 'Submit'}
             </button>
@@ -318,13 +318,13 @@ const TaskStep: React.FC<TaskStepProps> = ({
         )}
 
         {!canEdit && existingSubmission && (
-          <div className="pt-4 border-t">
-            <p className="text-sm text-gray-600">
-              <strong>Submitted on:</strong> {new Date(existingSubmission.submittedAt || existingSubmission.createdAt || Date.now()).toLocaleString()}
+          <div className="pt-3 border-t border-gray-200">
+            <p className="text-xs text-gray-600">
+              <strong className="text-black">Submitted on:</strong> {new Date(existingSubmission.submittedAt || existingSubmission.createdAt || Date.now()).toLocaleString()}
             </p>
             {existingSubmission.fileName && (
-              <p className="text-sm text-gray-600 mt-1">
-                <strong>Attachment:</strong> {existingSubmission.fileName}
+              <p className="text-xs text-gray-600 mt-1">
+                <strong className="text-black">Attachment:</strong> {existingSubmission.fileName}
               </p>
             )}
           </div>

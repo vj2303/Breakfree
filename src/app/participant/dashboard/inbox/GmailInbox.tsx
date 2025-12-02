@@ -207,10 +207,25 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
 
   const handleCompose = (thread?: EmailThread, replyToSubmission?: SubmissionThread) => {
     if (thread) {
+      // When replying, include original sender and allow user to add more
+      const originalTo = thread.originalEmail.from;
+      const originalCc = thread.originalEmail.cc?.join(', ') || '';
+      // If there's a reply, include its recipients too
+      const replyRecipients = replyToSubmission 
+        ? (Array.isArray(replyToSubmission.to) ? replyToSubmission.to.join(', ') : replyToSubmission.to)
+        : '';
+      const replyCc = replyToSubmission && replyToSubmission.cc
+        ? (Array.isArray(replyToSubmission.cc) ? replyToSubmission.cc.join(', ') : replyToSubmission.cc)
+        : '';
+      
+      // Combine recipients, allowing user to edit
+      const combinedTo = replyRecipients || originalTo;
+      const combinedCc = [originalCc, replyCc].filter(Boolean).join(', ');
+      
       setComposeData({
-        to: thread.originalEmail.from,
+        to: combinedTo,
         subject: `Re: ${thread.subject}`,
-        cc: thread.originalEmail.cc?.join(', ') || '',
+        cc: combinedCc,
         content: '',
         replyToThreadId: thread.id,
         parentSubmissionId: replyToSubmission?.id || null,
@@ -337,15 +352,18 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
   };
 
   return (
-    <div className="flex h-[calc(100vh-200px)] bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="flex h-[calc(100vh-300px)] bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       {/* Sidebar */}
-      <div className="w-64 border-r border-gray-200 bg-gray-50 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
+      <div className="w-56 border-r border-gray-200 bg-white flex flex-col">
+        <div className="p-3 border-b border-gray-200">
           <button
             onClick={() => setIsComposing(true)}
-            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
+            className="w-full bg-black text-white px-3 py-2 rounded text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
           >
-            + Compose
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Compose
           </button>
         </div>
         <nav className="flex-1 p-2">
@@ -354,8 +372,10 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
               setActiveView('inbox');
               setSelectedThread(null);
             }}
-            className={`w-full text-left px-4 py-2 rounded-lg mb-1 flex items-center gap-3 ${
-              activeView === 'inbox' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-100'
+            className={`w-full text-left px-3 py-2 rounded flex items-center gap-2.5 text-sm transition-colors ${
+              activeView === 'inbox' 
+                ? 'bg-gray-100 text-black font-medium' 
+                : 'text-gray-700 hover:bg-gray-50 hover:text-black'
             }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -363,7 +383,7 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
             </svg>
             Inbox
             {emailThreads.filter(t => t.unread).length > 0 && (
-              <span className="ml-auto bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+              <span className="ml-auto bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded">
                 {emailThreads.filter(t => t.unread).length}
               </span>
             )}
@@ -373,16 +393,18 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
               setActiveView('drafts');
               setSelectedThread(null);
             }}
-            className={`w-full text-left px-4 py-2 rounded-lg mb-1 flex items-center gap-3 ${
-              activeView === 'drafts' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-100'
+            className={`w-full text-left px-3 py-2 rounded flex items-center gap-2.5 text-sm transition-colors ${
+              activeView === 'drafts' 
+                ? 'bg-gray-100 text-black font-medium' 
+                : 'text-gray-700 hover:bg-gray-50 hover:text-black'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             Drafts
             {drafts.length > 0 && (
-              <span className="ml-auto bg-gray-500 text-white text-xs px-2 py-0.5 rounded-full">
+              <span className="ml-auto bg-gray-600 text-white text-xs px-1.5 py-0.5 rounded">
                 {drafts.length}
               </span>
             )}
@@ -392,8 +414,10 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
               setActiveView('sent');
               setSelectedThread(null);
             }}
-            className={`w-full text-left px-4 py-2 rounded-lg mb-1 flex items-center gap-3 ${
-              activeView === 'sent' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-100'
+            className={`w-full text-left px-3 py-2 rounded flex items-center gap-2.5 text-sm transition-colors ${
+              activeView === 'sent' 
+                ? 'bg-gray-100 text-black font-medium' 
+                : 'text-gray-700 hover:bg-gray-50 hover:text-black'
             }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -401,7 +425,7 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
             </svg>
             Sent
             {sent.length > 0 && (
-              <span className="ml-auto bg-gray-500 text-white text-xs px-2 py-0.5 rounded-full">
+              <span className="ml-auto bg-gray-600 text-white text-xs px-1.5 py-0.5 rounded">
                 {sent.length}
               </span>
             )}
@@ -413,9 +437,9 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
       <div className="flex-1 flex flex-col">
         {isComposing ? (
           /* Compose View */
-          <div className="flex-1 flex flex-col p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
+          <div className="flex-1 flex flex-col p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-black">
                 {composeData.parentSubmissionId ? 'Reply' : 'Compose'}
               </h2>
               <button
@@ -430,42 +454,47 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
                     parentSubmissionId: null,
                   });
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-black"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
-              <div className="space-y-3 mb-4">
+            <div className="flex-1 bg-white border border-gray-200 rounded p-4 flex flex-col">
+              <div className="space-y-3 mb-3">
                 <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">To</label>
                   <input
                     type="text"
-                    placeholder="To"
+                    placeholder="Enter email addresses (comma-separated)"
                     value={composeData.to}
                     onChange={(e) => setComposeData({ ...composeData, to: e.target.value })}
-                    className="w-full px-3 py-2 border-b border-gray-300 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
                   />
+                  <p className="text-xs text-gray-500 mt-0.5">You can add multiple email addresses separated by commas</p>
                 </div>
                 <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Subject</label>
                   <input
                     type="text"
                     placeholder="Subject"
                     value={composeData.subject}
                     onChange={(e) => setComposeData({ ...composeData, subject: e.target.value })}
-                    className="w-full px-3 py-2 border-b border-gray-300 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
                   />
                 </div>
                 <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">CC (optional)</label>
                   <input
                     type="text"
-                    placeholder="CC (optional)"
+                    placeholder="Enter CC email addresses (comma-separated)"
                     value={composeData.cc}
                     onChange={(e) => setComposeData({ ...composeData, cc: e.target.value })}
-                    className="w-full px-3 py-2 border-b border-gray-300 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
                   />
+                  <p className="text-xs text-gray-500 mt-0.5">You can add multiple email addresses separated by commas</p>
                 </div>
               </div>
 
@@ -476,59 +505,80 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
                 <button
                   onClick={handleSaveDraft}
                   disabled={isSavingDraft || isSubmitting}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                  className="px-4 py-1.5 bg-gray-100 text-black text-sm rounded hover:bg-gray-200 disabled:opacity-50 font-medium transition-colors"
                 >
-                  {isSavingDraft ? 'Saving...' : 'Save Draft'}
+                  {isSavingDraft ? (
+                    <span className="flex items-center gap-1.5">
+                      <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </span>
+                  ) : (
+                    'Save Draft'
+                  )}
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={isSubmitting || isSavingDraft || !composeData.content.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-1.5 bg-black text-white text-sm rounded hover:bg-gray-800 disabled:opacity-50 font-medium transition-colors"
                 >
-                  {isSubmitting ? 'Sending...' : 'Send'}
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-1.5">
+                      <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Sending...
+                    </span>
+                  ) : (
+                    'Send'
+                  )}
                 </button>
               </div>
             </div>
           </div>
         ) : selectedThread ? (
-          /* Thread View */
-          <div className="flex-1 flex flex-col">
-            <div className="p-4 border-b border-gray-200 bg-white">
+          /* Thread View - Email Detail View with scroll only for email content */
+          <div className="flex-1 flex flex-col h-full">
+            <div className="p-3 border-b border-gray-200 bg-white flex-shrink-0">
               <button
                 onClick={() => setSelectedThread(null)}
-                className="text-blue-600 hover:text-blue-800 mb-2 flex items-center gap-2"
+                className="text-gray-600 hover:text-black mb-1.5 flex items-center gap-1.5 text-sm transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 Back to {activeView}
               </button>
-              <h2 className="text-lg font-semibold text-gray-900">{selectedThread.subject}</h2>
+              <h2 className="text-base font-semibold text-black">{selectedThread.subject}</h2>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Scrollable email content area - only this section scrolls */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 min-h-0">
               {/* Original Email */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-semibold text-gray-900">{selectedThread.originalEmail.from}</p>
-                    <p className="text-sm text-gray-600">
-                      To: {selectedThread.originalEmail.to.join(', ')}
+              <div className="bg-white border border-gray-200 rounded p-3">
+                <div className="flex justify-between items-start mb-2 pb-2 border-b border-gray-200">
+                  <div className="flex-1">
+                    <p className="font-semibold text-black text-sm mb-0.5">{selectedThread.originalEmail.from}</p>
+                    <p className="text-xs text-gray-600">
+                      <span className="font-medium text-gray-700">To:</span> {selectedThread.originalEmail.to.join(', ')}
                       {selectedThread.originalEmail.cc && selectedThread.originalEmail.cc.length > 0 && (
-                        <span className="ml-2">CC: {selectedThread.originalEmail.cc.join(', ')}</span>
+                        <span className="ml-2"><span className="font-medium text-gray-700">CC:</span> {selectedThread.originalEmail.cc.join(', ')}</span>
                       )}
                     </p>
                   </div>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-xs text-gray-500 whitespace-nowrap ml-3">
                     {new Date(selectedThread.originalEmail.date).toLocaleString()}
                   </span>
                 </div>
                 <div
-                  className="prose max-w-none text-gray-700 mt-3"
+                  className="prose prose-sm max-w-none text-gray-800 mt-2"
                   dangerouslySetInnerHTML={{ __html: selectedThread.originalEmail.emailContent }}
                 />
               </div>
@@ -544,41 +594,44 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
                 const depth = getDepth(reply);
                 
                 return (
-                  <div key={reply.id} className={`bg-white border border-gray-200 rounded-lg p-4 ${depth > 0 ? 'ml-8' : ''}`}>
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-semibold text-gray-900">{reply.from}</p>
-                        <p className="text-sm text-gray-600">
-                          To: {Array.isArray(reply.to) ? reply.to.join(', ') : reply.to}
+                  <div key={reply.id} className={`bg-white border border-gray-200 rounded p-3 ${depth > 0 ? 'ml-6 border-l-2 border-l-gray-300' : ''}`}>
+                    <div className="flex justify-between items-start mb-2 pb-2 border-b border-gray-200">
+                      <div className="flex-1">
+                        <p className="font-semibold text-black text-sm mb-0.5">{reply.from}</p>
+                        <p className="text-xs text-gray-600">
+                          <span className="font-medium text-gray-700">To:</span> {Array.isArray(reply.to) ? reply.to.join(', ') : reply.to}
                           {reply.cc && reply.cc.length > 0 && (
-                            <span className="ml-2">CC: {Array.isArray(reply.cc) ? reply.cc.join(', ') : reply.cc}</span>
+                            <span className="ml-2"><span className="font-medium text-gray-700">CC:</span> {Array.isArray(reply.cc) ? reply.cc.join(', ') : reply.cc}</span>
                           )}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          reply.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                      <div className="flex items-center gap-1.5 ml-3">
+                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                          reply.status === 'DRAFT' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' : 'bg-green-50 text-green-700 border border-green-200'
                         }`}>
                           {reply.status}
                         </span>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-xs text-gray-500 whitespace-nowrap">
                           {reply.date.toLocaleString()}
                         </span>
                       </div>
                     </div>
                     <div
-                      className="prose max-w-none text-gray-700 mt-3"
+                      className="prose prose-sm max-w-none text-gray-800 mt-2"
                       dangerouslySetInnerHTML={{ __html: reply.content }}
                     />
                     {reply.fileName && (
-                      <div className="mt-2 text-sm text-blue-600">
-                        📎 {reply.fileName}
+                      <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-700 bg-gray-50 px-2 py-1 rounded inline-block border border-gray-200">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.414a2 2 0 00-2.828-2.828L9 10.172 7.586 8.586a2 2 0 10-2.828 2.828l4 4a2 2 0 002.828 0L16.828 9.828a2 2 0 000-2.828z" />
+                        </svg>
+                        {reply.fileName}
                       </div>
                     )}
                     {reply.status === 'SUBMITTED' && (
                       <button
                         onClick={() => handleCompose(selectedThread, reply)}
-                        className="mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        className="mt-2 px-3 py-1 bg-black text-white text-xs rounded hover:bg-gray-800 font-medium transition-colors"
                       >
                         Reply
                       </button>
@@ -591,7 +644,7 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
               {selectedThread.replies.length === 0 || selectedThread.replies[selectedThread.replies.length - 1].status === 'SUBMITTED' ? (
                 <button
                   onClick={() => handleCompose(selectedThread)}
-                  className="ml-8 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="ml-6 px-3 py-1.5 bg-black text-white text-sm rounded hover:bg-gray-800 font-medium transition-colors"
                 >
                   Reply
                 </button>
@@ -600,13 +653,14 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
           </div>
         ) : (
           /* Email List View */
-          <div className="flex-1 flex flex-col">
-            <div className="p-4 border-b border-gray-200 bg-white">
-              <h2 className="text-lg font-semibold text-gray-900 capitalize">{activeView}</h2>
+          <div className="flex-1 flex flex-col h-full">
+            <div className="p-3 border-b border-gray-200 bg-white flex-shrink-0">
+              <h2 className="text-sm font-semibold text-black capitalize">{activeView}</h2>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            {/* Scrollable email list - only this section scrolls */}
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 min-h-0">
               {getDisplayThreads().length === 0 ? (
-                <div className="flex items-center justify-center h-full text-gray-500">
+                <div className="flex items-center justify-center h-full text-gray-500 text-sm">
                   <p>No emails in {activeView}</p>
                 </div>
               ) : (
@@ -615,33 +669,33 @@ const GmailInbox: React.FC<GmailInboxProps> = ({ activityData, assignmentData, o
                     <div
                       key={thread.id}
                       onClick={() => setSelectedThread(thread)}
-                      className={`p-4 hover:bg-gray-50 cursor-pointer border-l-4 ${
-                        thread.unread ? 'border-blue-500 bg-blue-50' : 'border-transparent'
+                      className={`p-3 hover:bg-gray-50 cursor-pointer border-l-2 transition-colors ${
+                        thread.unread ? 'border-black bg-gray-50' : 'border-transparent hover:border-gray-300'
                       }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-1">
+                          <div className="flex items-center gap-2 mb-0.5">
                             {thread.unread && (
-                              <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                              <div className="w-1.5 h-1.5 bg-black rounded-full flex-shrink-0"></div>
                             )}
-                            <p className={`font-medium truncate ${thread.unread ? 'text-gray-900' : 'text-gray-700'}`}>
+                            <p className={`font-medium truncate text-sm ${thread.unread ? 'text-black' : 'text-gray-700'}`}>
                               {thread.subject}
                             </p>
                           </div>
-                          <p className="text-sm text-gray-600 truncate">
+                          <p className="text-xs text-gray-600 truncate">
                             {thread.participants.join(', ')}
                           </p>
-                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
                             {thread.lastMessage}
                           </p>
                         </div>
-                        <div className="ml-4 flex-shrink-0 text-sm text-gray-500">
+                        <div className="ml-3 flex-shrink-0 text-xs text-gray-500">
                           {thread.lastMessageDate.toLocaleDateString()}
                         </div>
                       </div>
                       {thread.replies.length > 0 && (
-                        <div className="mt-2 text-xs text-gray-500">
+                        <div className="mt-1.5 text-xs text-gray-500">
                           {thread.replies.length} {thread.replies.length === 1 ? 'reply' : 'replies'}
                         </div>
                       )}
