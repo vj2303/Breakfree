@@ -52,6 +52,8 @@ export interface FormData {
   assignments: GroupAssignment[]; // Updated to use GroupAssignment
   document: File | null;
   descriptors?: Descriptors; // Descriptors for competencies
+  matrix?: boolean[][]; // Matrix for Subject-Exercise mapping: rows = competencies, cols = activities
+  competencyLibraryList?: Array<{ id: string; name?: string; subCompetencyNames?: string[] }>; // Full competency library data
 }
 
 export interface AssessmentFormContextType {
