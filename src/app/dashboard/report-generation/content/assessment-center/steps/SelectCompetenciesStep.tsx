@@ -145,49 +145,86 @@ const SelectCompetenciesStep: React.FC = () => {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">Select Competencies</h2>
-      {error && <div className="mb-2 text-red-600">{error}</div>}
+      <h2 className="text-xl font-bold text-gray-900 mb-5">Select Competencies</h2>
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-          <span className="ml-2 text-gray-600">Loading competencies...</span>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-gray-900" />
+          <span className="ml-3 text-gray-600 font-medium">Loading competencies...</span>
         </div>
       ) : (
-        <div className="space-y-4">
-          {competencies.map(comp => (
-            <div key={comp.id} className="flex items-center gap-3 p-4 border rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-200">
-              <input
-                type="checkbox"
-                id={comp.id}
-                checked={selectedCompetencies.includes(comp.id)}
-                onChange={() => handleCheck(comp.id)}
-                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-              />
-              <div className="flex-1">
-                <label htmlFor={comp.id} className="font-semibold text-black text-base cursor-pointer block">
-                  {comp.competencyName}
-                </label>
-                {comp.subCompetencyNames && comp.subCompetencyNames.length > 0 && (
-                  <span className="text-gray-500 text-sm">({comp.subCompetencyNames.join(', ')})</span>
-                )}
-              </div>
-              <button
-                onClick={() => deleteCompetencyLibrary(comp.id)}
-                disabled={deletingIds.has(comp.id)}
-                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Delete competency library"
+        <div className="space-y-3">
+          {competencies.map(comp => {
+            const isChecked = selectedCompetencies.includes(comp.id);
+            return (
+              <div 
+                key={comp.id} 
+                className={`flex items-center gap-4 p-4 border rounded-lg bg-white transition-all duration-200 ${
+                  isChecked 
+                    ? 'border-gray-900 shadow-md bg-gray-50' 
+                    : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+                }`}
               >
-                {deletingIds.has(comp.id) ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-          ))}
+                <label 
+                  htmlFor={comp.id} 
+                  className="relative inline-flex items-center cursor-pointer group"
+                >
+                  <input
+                    type="checkbox"
+                    id={comp.id}
+                    checked={isChecked}
+                    onChange={() => handleCheck(comp.id)}
+                    className="sr-only peer"
+                  />
+                  <div className={`w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${
+                    isChecked
+                      ? 'bg-gray-900 border-gray-900'
+                      : 'bg-white border-gray-300 group-hover:border-gray-400'
+                  }`}>
+                    {isChecked && (
+                      <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </label>
+                <div className="flex-1">
+                  <label 
+                    htmlFor={comp.id} 
+                    className={`font-semibold text-base cursor-pointer block transition-colors ${
+                      isChecked ? 'text-gray-900' : 'text-gray-700'
+                    }`}
+                  >
+                    {comp.competencyName}
+                  </label>
+                  {comp.subCompetencyNames && comp.subCompetencyNames.length > 0 && (
+                    <span className="text-gray-500 text-sm mt-1 block">
+                      {comp.subCompetencyNames.join(', ')}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => deleteCompetencyLibrary(comp.id)}
+                  disabled={deletingIds.has(comp.id)}
+                  className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-transparent hover:border-red-200"
+                  title="Delete competency library"
+                >
+                  {deletingIds.has(comp.id) ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            );
+          })}
           {competencies.length === 0 && !loading && (
-            <div className="text-center py-8 text-gray-500">
-              No competency libraries found.
+            <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-gray-500 font-medium">No competency libraries found.</p>
             </div>
           )}
         </div>

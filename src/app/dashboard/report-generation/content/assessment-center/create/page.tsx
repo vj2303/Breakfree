@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect, useRef, Suspense } from "react";
+import { Check, X } from "lucide-react";
 import AssessmentCenterLayout from "../AssessmentCenterLayout";
 import SelectContentStep from "../steps/SelectContentStep";
 import SelectCompetenciesStep from "../steps/SelectCompetenciesStep";
@@ -699,10 +700,11 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
   // Show loading state when fetching data for edit
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading assessment center data...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading assessment center data...</p>
+          <p className="text-gray-400 text-sm mt-2">Please wait</p>
         </div>
       </div>
     );
@@ -736,18 +738,51 @@ const CreateAssessmentCenterContent = ({ editId }: { editId?: string }) => {
       saveButtonText={currentStep === stepComponents.length - 1 ? "Finish" : "Save and Next"}
       isEditMode={!!editId}
     >
+      {/* Modern Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">!</span>
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-red-800">Error</p>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+            </div>
+            <button
+              onClick={() => setError('')}
+              className="flex-shrink-0 text-red-500 hover:text-red-700"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
-      {error && <div className="mb-4 p-3 bg-red-100 text-red-800 rounded">{error}</div>}
+      {/* Modern Success Message */}
       {success && (
-        <div className="mb-4 p-4 bg-green-100 text-green-800 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold">Assessment Center {editId ? 'updated' : 'created'} successfully!</p>
-              <p className="text-sm">Redirecting back to main page in 2 seconds...</p>
+        <div className="mb-4 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="flex-shrink-0">
+                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+              </div>
+              <div>
+                <p className="font-semibold text-green-800">
+                  Assessment Center {editId ? 'updated' : 'created'} successfully!
+                </p>
+                <p className="text-sm text-green-700 mt-1">
+                  Redirecting back to main page in 2 seconds...
+                </p>
+              </div>
             </div>
             <button
               onClick={() => router.push('/dashboard/report-generation/content/assessment-center')}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+              className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm"
             >
               Go Back Now
             </button>

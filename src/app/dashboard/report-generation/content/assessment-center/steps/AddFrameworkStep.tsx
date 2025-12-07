@@ -207,7 +207,7 @@ const CompetencyFramework = () => {
         ) : (
           <div>
             {/* Tabs */}
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
               {activitiesWithCompetencies.map((item, activityIdx) => {
                 const activityId = getActivityId(item.activity, activityIdx);
                 const activityName = getActivityDisplayName(item.activity);
@@ -219,13 +219,13 @@ const CompetencyFramework = () => {
                     onClick={() => setActiveTab(activityId)}
                     className={`px-5 py-2 rounded-full transition-all duration-200 whitespace-nowrap flex items-center gap-2 ${
                       isActive 
-                        ? 'bg-gray-700 text-white shadow-sm' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-gray-900 text-white shadow-md' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
                     }`}
                   >
                     <span className="text-sm font-medium">{activityName}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                      isActive ? 'bg-gray-600' : 'bg-gray-300'
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                      isActive ? 'bg-gray-700' : 'bg-gray-300'
                     }`}>
                       {item.competencies.length}
                     </span>

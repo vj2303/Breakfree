@@ -176,17 +176,17 @@ const SubjectExerciseMatrixStep: React.FC = () => {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-6">
-        <h2 className="text-2xl font-bold text-black">Subject - Exercise Matrix</h2>
-        <span className="text-black text-lg font-bold">?</span>
+      <div className="flex items-center gap-2 mb-5">
+        <h2 className="text-xl font-bold text-gray-900">Subject - Exercise Matrix</h2>
+        <span className="text-gray-400 text-sm cursor-help" title="Map competencies to activities">?</span>
       </div>
-      <div className="bg-white rounded-2xl overflow-x-auto">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto shadow-sm">
         <table className="min-w-full border-separate border-spacing-0">
           <thead>
-            <tr className="bg-gray-50">
-              <th className="px-6 py-4 text-left text-base font-semibold text-black border-b">Competencies</th>
+            <tr className="bg-gradient-to-r from-gray-50 to-gray-100">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 border-b border-gray-200">Competencies</th>
               {activities.map((activity: RenderActivity, idx: number) => (
-                <th key={idx} className="px-6 py-4 text-center text-base font-semibold text-black border-b">
+                <th key={idx} className="px-6 py-4 text-center text-sm font-semibold text-gray-900 border-b border-gray-200">
                   {activity.label}
                 </th>
               ))}
@@ -195,14 +195,14 @@ const SubjectExerciseMatrixStep: React.FC = () => {
           <tbody>
             {/* Competency Rows */}
             {finalCompetencies.map((comp: Competency, rowIdx: number) => (
-              <tr key={comp.id}>
-                <td className="px-6 py-4 font-bold text-black border-b">{comp.name}</td>
+              <tr key={comp.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 font-semibold text-gray-900 border-b border-gray-200">{comp.name}</td>
                 {activities.map((activity: RenderActivity, colIdx: number) => {
                   const isOn = matrix[rowIdx]?.[colIdx] || false;
                   return (
-                    <td key={colIdx} className="px-6 py-4 border-b text-center align-top">
+                    <td key={colIdx} className="px-6 py-4 border-b border-gray-200 text-center align-top">
                       <div className="flex flex-col items-center justify-center">
-                        <label className="relative inline-flex items-center cursor-pointer mb-2">
+                        <label className="relative inline-flex items-center cursor-pointer group">
                           <input
                             type="checkbox"
                             checked={isOn}
@@ -210,10 +210,15 @@ const SubjectExerciseMatrixStep: React.FC = () => {
                             className="sr-only peer"
                             aria-label={`Toggle ${comp.name} for ${activityTypeLabel(activity.activityType)}`}
                           />
-                          <div className="w-10 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-2 peer-focus:ring-blue-300 transition-all duration-300 ease-in-out"></div>
-                          <div className="absolute left-1 top-1 w-4 h-4 bg-white border border-gray-300 rounded-full transition-all duration-300 ease-in-out peer-checked:translate-x-4 peer-checked:border-blue-600 shadow-sm"></div>
+                          <div className={`w-11 h-6 rounded-full transition-all duration-300 ease-in-out shadow-inner ${
+                            isOn 
+                              ? 'bg-gray-900' 
+                              : 'bg-gray-200 group-hover:bg-gray-300'
+                          }`}></div>
+                          <div className={`absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-all duration-300 ease-in-out shadow-md ${
+                            isOn ? 'translate-x-5' : 'translate-x-0'
+                          }`}></div>
                         </label>
-                        {/* No subcompetencies or score input here */}
                       </div>
                     </td>
                   );
