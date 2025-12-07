@@ -15,11 +15,15 @@ export interface Activity {
   displayInstructions: string;
 }
 
-// Updated Assignment interface to match the required structure
+// Updated Assignment interface to support multiple assessors per activity
+export interface ActivityAssignment {
+  activityId: string;
+  assessorIds: string[]; // Multiple assessors per activity
+}
+
 export interface AssignmentParticipant {
   participantId: string;
-  activityIds: string[];
-  assessorId: string; // Changed from assessorIds array to single assessorId
+  activities: ActivityAssignment[]; // Array of activity assignments with assessors
 }
 
 export interface GroupAssignment {

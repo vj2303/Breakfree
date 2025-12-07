@@ -28,11 +28,15 @@ interface Assessor {
   email: string;
 }
 
-// Updated interfaces to match the required structure
+// Updated interfaces to support multiple assessors per activity
+interface ActivityAssignment {
+  activityId: string;
+  assessorIds: string[]; // Multiple assessors per activity
+}
+
 interface AssignmentParticipant {
   participantId: string;
-  activityIds: string[];
-  assessorId: string; // Single assessor ID instead of array
+  activities: ActivityAssignment[]; // Array of activity assignments
 }
 
 interface GroupAssignment {
@@ -140,7 +144,40 @@ const ParticipantAssessorManagementStep: React.FC = () => {
   const { formData, updateFormData } = context;
   const [groups, setGroups] = useState<Group[]>([]);
   const [assessors, setAssessors] = useState<Assessor[]>([]);
-  const [assignments, setAssignments] = useState<GroupAssignment[]>((formData.assignments as unknown as GroupAssignment[]) || []);
+  
+  // Convert old format to new format if needed
+  const convertToNewFormat = (oldAssignments: any[]): GroupAssignment[] => {
+    return oldAssignments.map((assignment) => {
+      const participants = assignment.participants.map((p: any) => {
+        // Check if it's old format (has activityIds and assessorId)
+        if (p.activityIds && Array.isArray(p.activityIds) && p.assessorId) {
+          // Convert old format to new format
+          const activities: ActivityAssignment[] = p.activityIds.map((activityId: string) => ({
+            activityId,
+            assessorIds: p.assessorId ? [p.assessorId] : []
+          }));
+          return {
+            participantId: p.participantId,
+            activities
+          };
+        }
+        // Already in new format or empty
+        return {
+          participantId: p.participantId,
+          activities: p.activities || []
+        };
+      });
+      return {
+        groupId: assignment.groupId,
+        participants
+      };
+    });
+  };
+  
+  const [assignments, setAssignments] = useState<GroupAssignment[]>(() => {
+    const rawAssignments = (formData.assignments as unknown as GroupAssignment[]) || [];
+    return convertToNewFormat(rawAssignments);
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -215,11 +252,11 @@ const ParticipantAssessorManagementStep: React.FC = () => {
     });
   };
 
-  const handleAssignmentChange = (
+  const handleActivityAssessorsChange = (
     groupId: string,
     participantId: string,
-    field: keyof AssignmentParticipant,
-    value: string | string[]
+    activityId: string,
+    assessorIds: string[]
   ) => {
     setAssignments(prev => {
       const groupIdx = prev.findIndex((g) => g.groupId === groupId);
@@ -229,14 +266,8 @@ const ParticipantAssessorManagementStep: React.FC = () => {
         // Create new group assignment
         const newParticipant: AssignmentParticipant = {
           participantId,
-          activityIds: [],
-          assessorId: '',
+          activities: [{ activityId, assessorIds }],
         };
-        if (field === 'activityIds') {
-          newParticipant.activityIds = value as string[];
-        } else if (field === 'assessorId') {
-          newParticipant.assessorId = value as string;
-        }
         newAssignments.push({ 
           groupId, 
           participants: [newParticipant] 
@@ -247,22 +278,20 @@ const ParticipantAssessorManagementStep: React.FC = () => {
           // Add new participant to existing group
           const newParticipant: AssignmentParticipant = {
             participantId,
-            activityIds: [],
-            assessorId: '',
+            activities: [{ activityId, assessorIds }],
           };
-          if (field === 'activityIds') {
-            newParticipant.activityIds = value as string[];
-          } else if (field === 'assessorId') {
-            newParticipant.assessorId = value as string;
-          }
           newAssignments[groupIdx].participants.push(newParticipant);
         } else {
           // Update existing participant
           const updatedParticipant = { ...newAssignments[groupIdx].participants[participantIdx] };
-          if (field === 'activityIds') {
-            updatedParticipant.activityIds = value as string[];
-          } else if (field === 'assessorId') {
-            updatedParticipant.assessorId = value as string;
+          const activityIdx = updatedParticipant.activities.findIndex((a) => a.activityId === activityId);
+          
+          if (activityIdx === -1) {
+            // Add new activity assignment
+            updatedParticipant.activities.push({ activityId, assessorIds });
+          } else {
+            // Update existing activity assignment
+            updatedParticipant.activities[activityIdx] = { activityId, assessorIds };
           }
           newAssignments[groupIdx].participants[participantIdx] = updatedParticipant;
         }
@@ -323,8 +352,8 @@ const ParticipantAssessorManagementStep: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Participant and Assessor Management</h2>
-        <p className="text-gray-600">Assign activities and assessors to participants in each group.</p>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Participant and Assessor Management</h2>
+        <p className="text-gray-600 text-sm">Assign multiple assessors to each activity for each participant.</p>
       </div>
 
       <div className="space-y-4">
@@ -380,93 +409,190 @@ const ParticipantAssessorManagementStep: React.FC = () => {
                 </div>
                 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Participant
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Email
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Designation
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">
-                          Assigned Activities
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                          Assigned Assessor
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {group.participants.map((participant) => {
-                        // Create a default assignment with proper types
-                        const defaultAssignment: AssignmentParticipant = { 
-                          participantId: participant.id,
-                          activityIds: [], 
-                          assessorId: '' 
-                        };
-                        const participantAssignment = groupAssignment?.participants.find((p) => p.participantId === participant.id) || defaultAssignment;
-                        
-                        return (
-                          <tr key={participant.id} className="hover:bg-gray-50 transition-colors duration-150">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{participant.name}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-600">{participant.email}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-600">{participant.designation}</div>
-                            </td>
-                            <td className="px-6 py-4 align-top">
-                              <div className="w-full max-w-xs">
-                                <Select<OptionType, true>
-                                  isMulti
-                                  options={availableActivities}
-                                  value={availableActivities.filter((a) => {
-                                    // Explicitly type activityIds as string[]
-                                    const activityIds: string[] = participantAssignment.activityIds;
-                                    return activityIds.includes(a.value);
-                                  })}
-                                  onChange={(selected: MultiValue<OptionType>) => {
-                                    handleAssignmentChange(group.id, participant.id, 'activityIds', selected ? selected.map((s) => s.value) : []);
-                                  }}
-                                  styles={customStyles}
-                                  placeholder="Select activities..."
-                                  closeMenuOnSelect={false}
-                                  classNamePrefix="react-select"
-                                  isSearchable={true}
-                                  menuPortalTarget={document.body}
-                                  menuPosition="fixed"
-                                />
+                  <div className="space-y-6 p-4">
+                    {group.participants.map((participant) => {
+                      const defaultAssignment: AssignmentParticipant = { 
+                        participantId: participant.id,
+                        activities: []
+                      };
+                      const participantAssignment = groupAssignment?.participants.find((p) => p.participantId === participant.id) || defaultAssignment;
+                      
+                      return (
+                        <div key={participant.id} className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+                          {/* Participant Header */}
+                          <div className="mb-4 pb-4 border-b border-gray-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="text-base font-semibold text-gray-900">{participant.name}</h4>
+                                <div className="flex items-center gap-4 mt-1">
+                                  <span className="text-sm text-gray-600">{participant.email}</span>
+                                  <span className="text-sm text-gray-500">•</span>
+                                  <span className="text-sm text-gray-600">{participant.designation}</span>
+                                </div>
                               </div>
-                            </td>
-                            <td className="px-6 py-4 align-top">
-                              <div className="w-full max-w-xs">
-                                <Select<OptionType, false>
-                                  options={assessorOptions}
-                                  value={assessorOptions.find((a) => a.value === participantAssignment.assessorId) || null}
-                                  onChange={(selected: OptionType | null) => {
-                                    handleAssignmentChange(group.id, participant.id, 'assessorId', selected?.value || '');
-                                  }}
-                                  styles={singleSelectStyles}
-                                  placeholder="Select assessor..."
-                                  isClearable
-                                  classNamePrefix="react-select"
-                                  isSearchable={true}
-                                  menuPortalTarget={document.body}
-                                  menuPosition="fixed"
-                                />
+                            </div>
+                          </div>
+
+                          {/* Step 1: Select Activities for Participant */}
+                          <div className="mb-6 pb-6 border-b border-gray-200">
+                            <label className="block text-sm font-semibold text-gray-900 mb-3">
+                              Select Activities for this Participant
+                            </label>
+                            <div className="w-full max-w-2xl">
+                              <Select<OptionType, true>
+                                isMulti
+                                options={availableActivities}
+                                value={availableActivities.filter((a) => {
+                                  const assignedActivityIds = participantAssignment.activities.map(act => act.activityId);
+                                  return assignedActivityIds.includes(a.value);
+                                })}
+                                onChange={(selected: MultiValue<OptionType>) => {
+                                  const selectedActivityIds = selected ? selected.map((s) => s.value) : [];
+                                  const currentActivityIds = participantAssignment.activities.map(a => a.activityId);
+                                  
+                                  // Remove activities that are no longer selected
+                                  const activitiesToKeep = participantAssignment.activities.filter(a => 
+                                    selectedActivityIds.includes(a.activityId)
+                                  );
+                                  
+                                  // Add new activities that were just selected
+                                  const newActivityIds = selectedActivityIds.filter(id => 
+                                    !currentActivityIds.includes(id)
+                                  );
+                                  
+                                  const newActivities = [
+                                    ...activitiesToKeep,
+                                    ...newActivityIds.map(id => ({ activityId: id, assessorIds: [] }))
+                                  ];
+                                  
+                                  // Update all activities at once
+                                  setAssignments(prev => {
+                                    const groupIdx = prev.findIndex((g) => g.groupId === group.id);
+                                    const newAssignments = [...prev];
+                                    
+                                    if (groupIdx === -1) {
+                                      newAssignments.push({
+                                        groupId: group.id,
+                                        participants: [{
+                                          participantId: participant.id,
+                                          activities: newActivities
+                                        }]
+                                      });
+                                    } else {
+                                      const participantIdx = newAssignments[groupIdx].participants.findIndex(
+                                        (p) => p.participantId === participant.id
+                                      );
+                                      if (participantIdx === -1) {
+                                        newAssignments[groupIdx].participants.push({
+                                          participantId: participant.id,
+                                          activities: newActivities
+                                        });
+                                      } else {
+                                        newAssignments[groupIdx].participants[participantIdx] = {
+                                          participantId: participant.id,
+                                          activities: newActivities
+                                        };
+                                      }
+                                    }
+                                    return newAssignments;
+                                  });
+                                }}
+                                styles={customStyles}
+                                placeholder="Select activities for this participant..."
+                                closeMenuOnSelect={false}
+                                classNamePrefix="react-select"
+                                isSearchable={true}
+                                menuPortalTarget={document.body}
+                                menuPosition="fixed"
+                              />
+                              {participantAssignment.activities.length > 0 && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  {participantAssignment.activities.length} activit{participantAssignment.activities.length !== 1 ? 'ies' : 'y'} selected
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Step 2: Assign Assessors for Each Selected Activity */}
+                          {participantAssignment.activities.length > 0 && (
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-900 mb-3">
+                                Assign Assessors for Each Activity
+                              </label>
+                              <div className="space-y-3">
+                                {participantAssignment.activities.map((activityAssignment) => {
+                                  const activity = availableActivities.find(a => a.value === activityAssignment.activityId);
+                                  if (!activity) return null;
+                                  
+                                  const selectedAssessorIds = activityAssignment.assessorIds || [];
+                                  
+                                  return (
+                                    <div key={activityAssignment.activityId} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-gray-300 transition-colors">
+                                      <div className="flex items-start gap-4">
+                                        {/* Activity Label */}
+                                        <div className="flex-shrink-0 w-56">
+                                          <label className="block text-sm font-semibold text-gray-900 mb-1">
+                                            {activity.label}
+                                          </label>
+                                          <p className="text-xs text-gray-500">Assign assessors</p>
+                                        </div>
+                                        
+                                        {/* Assessors Multi-Select */}
+                                        <div className="flex-1 min-w-[350px]">
+                                          <Select<OptionType, true>
+                                            isMulti
+                                            options={assessorOptions}
+                                            value={assessorOptions.filter((a) => selectedAssessorIds.includes(a.value))}
+                                            onChange={(selected: MultiValue<OptionType>) => {
+                                              const assessorIds = selected ? selected.map((s) => s.value) : [];
+                                              handleActivityAssessorsChange(
+                                                group.id,
+                                                participant.id,
+                                                activityAssignment.activityId,
+                                                assessorIds
+                                              );
+                                            }}
+                                            styles={customStyles}
+                                            placeholder="Select multiple assessors..."
+                                            closeMenuOnSelect={false}
+                                            classNamePrefix="react-select"
+                                            isSearchable={true}
+                                            menuPortalTarget={document.body}
+                                            menuPosition="fixed"
+                                          />
+                                          {selectedAssessorIds.length > 0 && (
+                                            <div className="mt-2 flex items-center gap-2">
+                                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-900 text-white">
+                                                {selectedAssessorIds.length} assessor{selectedAssessorIds.length !== 1 ? 's' : ''}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                            </div>
+                          )}
+                          
+                          {participantAssignment.activities.length === 0 && availableActivities.length > 0 && (
+                            <div className="text-center py-6 bg-gray-50 rounded-lg border border-gray-200 border-dashed">
+                              <p className="text-sm text-gray-500">
+                                Select activities above to assign assessors
+                              </p>
+                            </div>
+                          )}
+                          
+                          {availableActivities.length === 0 && (
+                            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200">
+                              <p className="text-sm">No activities available. Please add activities in previous steps.</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>

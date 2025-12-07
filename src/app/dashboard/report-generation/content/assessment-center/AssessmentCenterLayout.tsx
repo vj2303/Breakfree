@@ -114,28 +114,27 @@ const AssessmentCenterLayout: React.FC<AssessmentCenterLayoutProps> = ({
 
       {/* Perfect Progress Stepper */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="max-w-7xl mx-auto px-2 py-2">
           <div className="flex items-start w-full overflow-x-auto pb-2 scrollbar-hide">
             {steps.map((step, index) => (
               <React.Fragment key={step.id}>
                 {/* Step Item */}
                 <div
-                  className={`flex flex-col items-center cursor-pointer transition-all flex-shrink-0 group ${
+                  className={`flex mt-2 flex-col items-center cursor-pointer transition-all flex-shrink-0 group ${
                     step.active ? 'opacity-100' : step.completed ? 'opacity-100' : 'opacity-50'
                   }`}
                   onClick={() => handleStepClick(index)}
-                  style={{ minWidth: '140px' }}
                 >
                   {/* Step Icon */}
-                  <div className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 mb-2 ${
+                  <div className={`relative w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 mb-2 ${
                     step.completed
                       ? 'bg-gray-900 text-white shadow-sm'
                       : step.active
-                        ? 'bg-gray-900 text-white shadow-md ring-2 ring-gray-900 ring-offset-2'
+                        ? 'bg-gray-900 text-white shadow-md ring-1 ring-gray-900 ring-offset-2'
                         : 'bg-gray-200 text-gray-500 group-hover:bg-gray-300'
                   }`}>
                     {step.completed ? (
-                      <Check className="w-5 h-5" strokeWidth={2.5} />
+                      <Check className="w-3 h-3" strokeWidth={2.5} />
                     ) : (
                       <span className="text-sm font-bold">{index + 1}</span>
                     )}

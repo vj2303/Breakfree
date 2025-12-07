@@ -241,14 +241,28 @@ const AssessmentFormProvider: React.FC<{ children: React.ReactNode; editId?: str
                 };
               });
               
-              // Map assignments to the expected format
+              // Map assignments to the new format (activities with assessorIds per activity)
               const mappedAssignments = (data.assignments || []).map((assignment: Record<string, unknown>) => {
                 const participants = Array.isArray(assignment.participants) 
-                  ? assignment.participants.map((participant: Record<string, unknown>) => ({
-                      participantId: participant.participantId,
-                      activityIds: participant.activityIds || [],
-                      assessorId: participant.assessorId,
-                    }))
+                  ? assignment.participants.map((participant: Record<string, unknown>) => {
+                      // Check if it's old format (has activityIds and assessorId)
+                      if (participant.activityIds && Array.isArray(participant.activityIds) && participant.assessorId) {
+                        // Convert old format to new format: each activity gets the assessor
+                        const activities = (participant.activityIds as string[]).map((activityId: string) => ({
+                          activityId,
+                          assessorIds: participant.assessorId ? [participant.assessorId as string] : []
+                        }));
+                        return {
+                          participantId: participant.participantId,
+                          activities
+                        };
+                      }
+                      // Already in new format
+                      return {
+                        participantId: participant.participantId,
+                        activities: participant.activities || []
+                      };
+                    })
                   : [];
                 
                 return {
