@@ -56,7 +56,7 @@ const CompetencyFramework = () => {
         subCompetencies: Array.isArray(full?.subCompetencyNames) ? (full as CompetencyLibraryItem).subCompetencyNames || [] : [],
       };
     });
-  }, [formData.selectedCompetenciesData, formData.competencyLibraryList]);
+  }, [formData]);
 
   // Get activities
   const activities: Activity[] = useMemo(() => {

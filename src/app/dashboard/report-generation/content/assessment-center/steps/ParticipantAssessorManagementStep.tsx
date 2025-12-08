@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAssessmentForm } from '../create/context';
 import { useAuth } from '../../../../../../context/AuthContext';
 import Select, { StylesConfig, GroupBase, MultiValue } from 'react-select';
-import { Users, UserCheck, Activity, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Plus, X } from 'lucide-react';
+import { Users, UserCheck, Activity, ChevronDown, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const GROUPS_API = 'http://localhost:3001/api/groups?page=1&limit=10&search=';
 const ASSESSORS_API = 'http://localhost:3001/api/assessors?page=1&limit=10&search=';
@@ -101,40 +101,6 @@ const customStyles: StylesConfig<OptionType, true, GroupBase<OptionType>> = {
   }),
 };
 
-const singleSelectStyles: StylesConfig<OptionType, false, GroupBase<OptionType>> = {
-  control: (provided) => ({
-    ...provided,
-    backgroundColor: 'white',
-    color: 'black',
-    borderColor: '#e2e8f0',
-    borderRadius: '8px',
-    minHeight: '38px',
-    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-    '&:hover': {
-      borderColor: '#cbd5e1',
-    },
-  }),
-  option: (provided, state) => ({
-    ...provided,
-    color: 'black',
-    backgroundColor: state.isSelected ? '#e2e8f0' : state.isFocused ? '#f8fafc' : 'white',
-    '&:hover': {
-      backgroundColor: '#f1f5f9',
-    },
-  }),
-  menu: (provided) => ({
-    ...provided,
-    borderRadius: '8px',
-    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-    color: 'black',
-    zIndex: 9999,
-  }),
-  input: (provided) => ({
-    ...provided,
-    color: 'black',
-  }),
-};
-
 const ParticipantAssessorManagementStep: React.FC = () => {
   const context = useAssessmentForm();
   const { token } = useAuth();
@@ -147,36 +113,36 @@ const ParticipantAssessorManagementStep: React.FC = () => {
   const [assessors, setAssessors] = useState<Assessor[]>([]);
   
   // Convert old format to new format if needed
-  const convertToNewFormat = (oldAssignments: any[]): GroupAssignment[] => {
+  const convertToNewFormat = (oldAssignments: Array<Record<string, unknown>>): GroupAssignment[] => {
     return oldAssignments.map((assignment) => {
-      const participants = assignment.participants.map((p: any) => {
+      const participants = (assignment.participants as Array<Record<string, unknown>>).map((p) => {
         // Check if it's old format (has activityIds and assessorId)
         if (p.activityIds && Array.isArray(p.activityIds) && p.assessorId) {
           // Convert old format to new format
-          const activities: ActivityAssignment[] = p.activityIds.map((activityId: string) => ({
+          const activities: ActivityAssignment[] = (p.activityIds as string[]).map((activityId: string) => ({
             activityId,
-            assessorIds: p.assessorId ? [p.assessorId] : []
+            assessorIds: p.assessorId ? [p.assessorId as string] : []
           }));
           return {
-            participantId: p.participantId,
+            participantId: p.participantId as string,
             activities
           };
         }
         // Already in new format or empty
         return {
-          participantId: p.participantId,
-          activities: p.activities || []
+          participantId: p.participantId as string,
+          activities: (p.activities as ActivityAssignment[]) || []
         };
       });
       return {
-        groupId: assignment.groupId,
+        groupId: assignment.groupId as string,
         participants
       };
     });
   };
   
   const [assignments, setAssignments] = useState<GroupAssignment[]>(() => {
-    const rawAssignments = (formData.assignments as unknown as GroupAssignment[]) || [];
+    const rawAssignments = (formData.assignments as unknown as Array<Record<string, unknown>>) || [];
     return convertToNewFormat(rawAssignments);
   });
   const [loading, setLoading] = useState(true);
@@ -759,7 +725,7 @@ const ParticipantAssessorManagementStep: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      );
+                        );
                       })}
                   </div>
                 </div>

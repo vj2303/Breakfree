@@ -25,9 +25,7 @@ interface AssessmentCenterData {
   displayName?: string;
 }
 
-interface ParticipantWithAssessmentCenters extends ParticipantData {
-  assessmentCenters?: AssessmentCenterData[];
-}
+// Removed unused interface
 
 interface GroupData {
   id: string;
@@ -100,7 +98,6 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
     const fetchAssessmentCentersForParticipants = async () => {
       if (!token || !selectedGroup) return;
 
-      const participantIds = selectedGroup.participants.map(p => p.id);
       const newMap = new Map<string, AssessmentCenterData[]>();
       const loadingSet = new Set<string>();
 
@@ -120,7 +117,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
               // Extract unique assessment centers
               const assessmentCentersMap = new Map<string, AssessmentCenterData>();
               
-              data.data.assignments.forEach((assignment: any) => {
+              data.data.assignments.forEach((assignment: Record<string, unknown>) => {
                 if (assignment.assessmentCenter) {
                   const ac = assignment.assessmentCenter;
                   if (!assessmentCentersMap.has(ac.id)) {
@@ -200,7 +197,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
       path.push([centerX, centerY]);
       
       if (path.length > 2) {
-        // @ts-ignore - jsPDF path method
+        // @ts-expect-error - jsPDF path method
         doc.path(path, 'F');
       }
       
@@ -296,12 +293,12 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
   };
 
   // Format report content for PDF with proper structure - Enhanced for detailed analysis
-  const formatReportContentForPDF = (reportContent: any, participantName: string, assessmentCenterName: string) => {
-    let competencies: any[] = [];
+  const formatReportContentForPDF = (reportContent: Record<string, unknown>) => {
+    let competencies: Array<Record<string, unknown>> = [];
     
     // Extract competencies from part2Analysis - handle new detailed structure
     if (reportContent.part2Analysis?.competencies && Array.isArray(reportContent.part2Analysis.competencies)) {
-      competencies = reportContent.part2Analysis.competencies.map((comp: any) => ({
+      competencies = reportContent.part2Analysis.competencies.map((comp: Record<string, unknown>) => ({
         name: comp.name,
         score: comp.score || 0,
         readiness: comp.readiness || comp.score || 0,
@@ -328,7 +325,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
               const opportunities: string[] = [];
               
               if (compData.Strengths && typeof compData.Strengths === 'object') {
-                Object.values(compData.Strengths).forEach((strength: any) => {
+                Object.values(compData.Strengths).forEach((strength: unknown) => {
                   if (typeof strength === 'string') {
                     strengths.push(strength);
                   }
@@ -336,7 +333,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
               }
               
               if (compData['Areas of Opportunity'] && typeof compData['Areas of Opportunity'] === 'object') {
-                Object.values(compData['Areas of Opportunity']).forEach((opp: any) => {
+                Object.values(compData['Areas of Opportunity']).forEach((opp: unknown) => {
                   if (typeof opp === 'string') {
                     opportunities.push(opp);
                 }
@@ -356,8 +353,8 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
             }
           });
         }
-      } catch (e) {
-        console.error('Error parsing analysis data:', e);
+      } catch (error) {
+        console.error('Error parsing analysis data:', error);
       }
     }
 
@@ -388,7 +385,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
             }
           }
         }
-      } catch (e) {
+      } catch {
         // Use direct properties if available
         if (reportContent.part3Comments?.strengths) {
           strengths = reportContent.part3Comments.strengths;
@@ -421,7 +418,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
         } else if (typeof recData === 'object') {
           recommendations = Object.values(recData) as string[];
         }
-      } catch (e) {
+      } catch {
         recommendations = reportContent.part5Recommendation.content.split('\n').filter((r: string) => r.trim());
       }
     }
@@ -455,7 +452,6 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
       return;
     }
 
-    const downloadKey = assessmentCenterId ? `${participant.id}-${assessmentCenterId}` : participant.id;
     setDownloadingParticipantId(participant.id);
     if (assessmentCenterId) {
       setDownloadingAssessmentCenterId(assessmentCenterId);
@@ -514,22 +510,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
         return false;
       };
 
-      // Helper to add text
-      const addText = (text: string, fontSize: number = 11, isBold: boolean = false, align: 'left' | 'center' | 'right' = 'left') => {
-        doc.setFontSize(fontSize);
-        doc.setFont('helvetica', isBold ? 'bold' : 'normal');
-        
-        const lines = doc.splitTextToSize(text, maxWidth);
-        checkNewPage(lines.length * lineHeight);
-        
-        lines.forEach((line: string) => {
-          doc.text(line, align === 'center' ? pageWidth / 2 : align === 'right' ? pageWidth - margin : margin, yPosition, {
-            align: align,
-            maxWidth: maxWidth
-          });
-          yPosition += lineHeight;
-        });
-      };
+      // Removed unused addText helper
 
       // Helper to draw header line
       const drawHeaderLine = () => {
@@ -626,7 +607,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
       yPosition += 15;
 
       if (sections.comments.strengths && sections.comments.strengths.length > 0) {
-        sections.comments.strengths.forEach((strength: string, strengthIdx: number) => {
+        sections.comments.strengths.forEach((strength: string) => {
           checkNewPage(20);
           
           // Bullet point with better styling
@@ -664,7 +645,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
       yPosition += 15;
 
       if (sections.comments.developmentAreas && sections.comments.developmentAreas.length > 0) {
-        sections.comments.developmentAreas.forEach((area: string, areaIdx: number) => {
+        sections.comments.developmentAreas.forEach((area: string) => {
           checkNewPage(20);
           
           // Bullet point with better styling
@@ -693,7 +674,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
 
       // PAGE 3: DETAILED ANALYSIS (Competencies with donut charts)
       if (sections.analysis.competencies && sections.analysis.competencies.length > 0) {
-        sections.analysis.competencies.forEach((competency: any, compIndex: number) => {
+        sections.analysis.competencies.forEach((competency: Record<string, unknown>, compIndex: number) => {
           if (compIndex > 0) {
             checkNewPage(100);
             if (yPosition > pageHeight - 100) {
@@ -768,7 +749,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
           yPosition += 15;
 
           if (competency.strengths && competency.strengths.length > 0) {
-            competency.strengths.forEach((strength: any, strengthIdx: number) => {
+            competency.strengths.forEach((strength: Record<string, unknown>) => {
               checkNewPage(30);
               
               // Strength bullet point with better styling
@@ -816,7 +797,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
           yPosition += 15;
 
           if (competency.opportunities && competency.opportunities.length > 0) {
-            competency.opportunities.forEach((opp: any, oppIdx: number) => {
+            competency.opportunities.forEach((opp: Record<string, unknown>) => {
               checkNewPage(30);
               
               // Opportunity bullet point with better styling
@@ -902,8 +883,8 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
           } else if (Array.isArray(sections.ratings.content)) {
             readinessComments = sections.ratings.content;
           }
-        } catch (e) {
-          console.error('Error parsing readiness comments:', e);
+        } catch (error) {
+          console.error('Error parsing readiness comments:', error);
         }
       }
 
@@ -923,7 +904,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
 
       // Display analysis for each competency
       if (readinessComments.length > 0 && sections.analysis.competencies && sections.analysis.competencies.length > 0) {
-        sections.analysis.competencies.forEach((comp: any, idx: number) => {
+        sections.analysis.competencies.forEach((comp: Record<string, unknown>, idx: number) => {
           if (readinessComments[idx]) {
             checkNewPage(40);
             
@@ -950,7 +931,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
         });
       } else if (sections.analysis.competencies && sections.analysis.competencies.length > 0) {
         // Fallback: generate analysis from scores if comments not available
-        sections.analysis.competencies.forEach((comp: any, idx: number) => {
+        sections.analysis.competencies.forEach((comp: Record<string, unknown>, idx: number) => {
           checkNewPage(40);
           
           doc.setFontSize(12);
@@ -977,7 +958,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
 
       // Bar Chart
       if (sections.analysis.competencies && sections.analysis.competencies.length > 0) {
-        const chartData: Array<{name: string, readiness: number, application: number}> = sections.analysis.competencies.map((comp: any) => ({
+        const chartData: Array<{name: string, readiness: number, application: number}> = sections.analysis.competencies.map((comp: Record<string, unknown>) => ({
           name: comp.name || 'Competency',
           readiness: comp.readiness || comp.score || 5,
           application: comp.application || comp.score || 5
@@ -1031,7 +1012,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
       // Use readinessComments already parsed above
 
       if (sections.analysis.competencies && sections.analysis.competencies.length > 0) {
-        sections.analysis.competencies.forEach((comp: any, idx: number) => {
+        sections.analysis.competencies.forEach((comp: Record<string, unknown>, idx: number) => {
           // Get analysis comment
           let comment = '';
           if (readinessComments[idx]) {

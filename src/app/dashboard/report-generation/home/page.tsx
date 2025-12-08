@@ -162,7 +162,7 @@ const HomePage = () => {
         // Mocking structure if backend doesn't return marks yet
         const groupsWithMockMarks: GroupWithAssessorMarks[] = result.data.groups.map((group: Group) => ({
           ...group,
-          assessorMarks: (group as any).assessorMarks || [] 
+          assessorMarks: (group as Group & { assessorMarks?: unknown[] }).assessorMarks || [] 
         }));
         setGroupsWithMarks(groupsWithMockMarks);
       } else {
@@ -255,12 +255,6 @@ const HomePage = () => {
 
   // --- HANDLERS ---
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= pagination.totalPages) {
-      fetchAssessorScores(newPage, pagination.itemsPerPage);
-    }
-  };
-
   const handleEditScore = (score: Score) => {
     setSelectedScore(score);
     // Initialize edit data from existing score
@@ -304,9 +298,7 @@ const HomePage = () => {
     }
   };
 
-  const handleViewAssessor = (stat: AssessorStats) => {
-    setSelectedAssessor(stat);
-  };
+  // Removed unused handleViewAssessor
 
   // --- PDF GENERATION ENGINE (Modern Corporate Theme) ---
 
@@ -320,13 +312,14 @@ const HomePage = () => {
   };
 
   // 1. Data Parser
-  const formatReportContentForPDF = (reportContent: any, participantName: string, assessmentCenterName: string, score?: Score) => {
-    let competencies: any[] = [];
+  const formatReportContentForPDF = (reportContent: Record<string, unknown>, participantName: string, assessmentCenterName: string, score?: Score) => {
+    let competencies: Array<Record<string, unknown>> = [];
+    const part2Analysis = reportContent.part2Analysis as Record<string, unknown> | undefined;
     
     // Attempt to extract analysis data safely
     try {
-      if (reportContent.part2Analysis?.content) {
-        const raw = reportContent.part2Analysis.content;
+      if (part2Analysis && part2Analysis.content) {
+        const raw = part2Analysis.content;
         const analysisData = typeof raw === 'string' ? JSON.parse(raw) : raw;
         
         if (Array.isArray(analysisData)) {
@@ -339,27 +332,27 @@ const HomePage = () => {
             }
           });
         }
-      } else if (reportContent.part2Analysis?.competencies) {
-        competencies = reportContent.part2Analysis.competencies;
+      } else if (part2Analysis && Array.isArray(part2Analysis.competencies)) {
+        competencies = part2Analysis.competencies as Array<Record<string, unknown>>;
       }
-    } catch (e) { console.error("Error parsing analysis content", e); }
+    } catch (error) { console.error("Error parsing analysis content", error); }
 
     // Merge actual scores if available
     if (score?.competencyScores && typeof score.competencyScores === 'object') {
-      competencies = competencies.map((comp: any) => {
+      competencies = competencies.map((comp: Record<string, unknown>) => {
         const compId = comp.id || comp.competencyId || comp.name;
-        // @ts-ignore
-        const compScores = score.competencyScores[compId];
+        const compScoresObj = score.competencyScores as Record<string, unknown>;
+        const compScores = compScoresObj[compId as string];
         
         if (compScores && typeof compScores === 'object') {
-          const subCompetencies = Object.keys(compScores);
+          const compScoresRecord = compScores as Record<string, unknown>;
+          const subCompetencies = Object.keys(compScoresRecord);
           let totalReadiness = 0, totalApplication = 0, count = 0;
           
           subCompetencies.forEach((subComp: string) => {
-            // @ts-ignore
-            const s = compScores[subComp];
+            const s = compScoresRecord[subComp];
             if (typeof s === 'object' && s !== null) {
-              const scoreObj = s as Record<string, any>;
+              const scoreObj = s as Record<string, unknown>;
               if ('readiness' in scoreObj && typeof scoreObj.readiness === 'number') {
                 totalReadiness += scoreObj.readiness;
               }
@@ -374,8 +367,9 @@ const HomePage = () => {
             }
           });
           
-          const avgR = count > 0 ? totalReadiness / count : (comp.score || 5);
-          const avgA = count > 0 ? totalApplication / count : (comp.score || 5);
+          const compScore = typeof comp.score === 'number' ? comp.score : 5;
+          const avgR = count > 0 ? totalReadiness / count : compScore;
+          const avgA = count > 0 ? totalApplication / count : compScore;
           
           return { ...comp, score: (avgR + avgA) / 2, readiness: avgR, application: avgA };
         }
@@ -387,33 +381,38 @@ const HomePage = () => {
     let strengths: string[] = [];
     let developmentAreas: string[] = [];
     try {
-        if(reportContent.part3Comments?.content) {
-            const c = typeof reportContent.part3Comments.content === 'string' ? JSON.parse(reportContent.part3Comments.content) : reportContent.part3Comments.content;
-            if(c.Strengths) strengths = Object.values(c.Strengths);
-            if(c['Areas of Opportunity']) developmentAreas = Object.values(c['Areas of Opportunity']);
-        } else {
-             strengths = reportContent.part3Comments?.strengths || [];
-             developmentAreas = reportContent.part3Comments?.developmentAreas || [];
+        const part3Comments = reportContent.part3Comments as Record<string, unknown> | undefined;
+        if(part3Comments && part3Comments.content) {
+            const c = typeof part3Comments.content === 'string' ? JSON.parse(part3Comments.content) : part3Comments.content;
+            const cObj = c as Record<string, unknown>;
+            if(cObj.Strengths) strengths = Object.values(cObj.Strengths) as string[];
+            if(cObj['Areas of Opportunity']) developmentAreas = Object.values(cObj['Areas of Opportunity']) as string[];
+        } else if (part3Comments) {
+             strengths = (Array.isArray(part3Comments.strengths) ? part3Comments.strengths : []) as string[];
+             developmentAreas = (Array.isArray(part3Comments.developmentAreas) ? part3Comments.developmentAreas : []) as string[];
         }
-    } catch(e) {}
+    } catch {}
 
     // Extract Recommendations
     let recommendations: string[] = [];
     try {
-         if(reportContent.part5Recommendation?.content) {
-            recommendations = typeof reportContent.part5Recommendation.content === 'string' 
-              ? reportContent.part5Recommendation.content.split('\n').filter((x:string) => x.trim()) 
-              : reportContent.part5Recommendation.recommendations || [];
-         } else {
-            recommendations = reportContent.part5Recommendation?.recommendations || [];
+         const part5Recommendation = reportContent.part5Recommendation as Record<string, unknown> | undefined;
+         if(part5Recommendation && part5Recommendation.content) {
+            recommendations = typeof part5Recommendation.content === 'string' 
+              ? part5Recommendation.content.split('\n').filter((x:string) => x.trim()) 
+              : (Array.isArray(part5Recommendation.recommendations) ? part5Recommendation.recommendations : []) as string[];
+         } else if (part5Recommendation) {
+            recommendations = (Array.isArray(part5Recommendation.recommendations) ? part5Recommendation.recommendations : []) as string[];
          }
-    } catch(e) {}
+    } catch {}
 
+    const part1Introduction = reportContent.part1Introduction as Record<string, unknown> | undefined;
+    const part4OverallRatings = reportContent.part4OverallRatings as Record<string, unknown> | undefined;
     return {
-      introduction: reportContent.part1Introduction?.content || '',
-      analysis: { content: reportContent.part2Analysis?.content || '', competencies },
+      introduction: (part1Introduction && typeof part1Introduction.content === 'string' ? part1Introduction.content : '') || '',
+      analysis: { content: (part2Analysis && typeof part2Analysis.content === 'string' ? part2Analysis.content : '') || '', competencies },
       comments: { strengths, developmentAreas },
-      ratings: { chartData: reportContent.part4OverallRatings?.chartData },
+      ratings: { chartData: part4OverallRatings?.chartData },
       recommendations: { recommendations }
     };
   };
@@ -453,7 +452,6 @@ const HomePage = () => {
         pathData.push([x + Math.cos(angle) * radius, y + Math.sin(angle) * radius]);
       }
       pathData.push([x + Math.cos(endAngle) * radius, y + Math.sin(endAngle) * radius]);
-      // @ts-ignore - 'F' for fill
       doc.path(pathData, 'F');
     }
 
@@ -523,7 +521,7 @@ const HomePage = () => {
     }
   };
 
-  const drawModernBarChart = (doc: jsPDF, x: number, y: number, width: number, height: number, data: any[]) => {
+  const drawModernBarChart = (doc: jsPDF, x: number, y: number, width: number, height: number, data: Array<Record<string, unknown>>) => {
     const maxVal = 10;
     const chartHeight = height - 30;
     const startY = y + chartHeight;
@@ -547,24 +545,27 @@ const HomePage = () => {
 
     data.forEach((item, idx) => {
         const centerX = x + (idx * groupWidth) + (groupWidth / 2);
-        const rH = (item.readiness / maxVal) * chartHeight;
-        const aH = (item.application / maxVal) * chartHeight;
+        const readiness = typeof item.readiness === 'number' ? item.readiness : 5;
+        const application = typeof item.application === 'number' ? item.application : 5;
+        const rH = (readiness / maxVal) * chartHeight;
+        const aH = (application / maxVal) * chartHeight;
 
         // Readiness (Black Solid)
         doc.setFillColor(...COLORS.BLACK);
         doc.rect(centerX - barWidth - (gap/2), startY - rH, barWidth, rH, 'F');
         doc.setTextColor(...COLORS.BLACK);
         doc.setFont('helvetica', 'bold');
-        doc.text(item.readiness.toString(), centerX - barWidth - (gap/2) + (barWidth/2), startY - rH - 2, { align: 'center'});
+        doc.text(readiness.toString(), centerX - barWidth - (gap/2) + (barWidth/2), startY - rH - 2, { align: 'center'});
 
         // Application (Pattern)
         drawPatternBar(doc, centerX + (gap/2), startY - aH, barWidth, aH);
-        doc.text(item.application.toString(), centerX + (gap/2) + (barWidth/2), startY - aH - 2, { align: 'center'});
+        doc.text(application.toString(), centerX + (gap/2) + (barWidth/2), startY - aH - 2, { align: 'center'});
 
         // X Label
         doc.setFontSize(8);
         doc.setTextColor(...COLORS.BLACK);
-        const label = doc.splitTextToSize(item.name, groupWidth - 5);
+        const itemName = typeof item.name === 'string' ? item.name : 'Competency';
+        const label = doc.splitTextToSize(itemName, groupWidth - 5);
         doc.text(label, centerX, startY + 10, { align: 'center' });
     });
 
@@ -611,7 +612,10 @@ const HomePage = () => {
         const res = await fetch('http://localhost:3001/api/report-structures/generate-from-assessment-center', {
               method: 'POST',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ assessmentCenterId: score.assessmentCenter.id, participantId: score.participant.id }),
+              body: JSON.stringify({
+            assessmentCenterId: score.assessmentCenter?.id || score.assessmentCenterId, 
+            participantId: score.participant?.id || score.participantId 
+          }),
         });
         
         let content;
@@ -730,7 +734,7 @@ const HomePage = () => {
         drawFooter(doc, pageNum);
 
         // COMPETENCY PAGES
-        content.analysis.competencies.forEach((comp: any) => {
+        content.analysis.competencies.forEach((comp: Record<string, unknown>) => {
             doc.addPage(); pageNum++; yPos = margin;
             
             // Header
@@ -738,13 +742,15 @@ const HomePage = () => {
             doc.rect(margin, yPos, pageWidth - margin*2, 12, 'F');
             doc.setTextColor(...COLORS.WHITE);
             doc.setFont('helvetica', 'bold');
-            doc.text(comp.name.toUpperCase(), margin + 5, yPos + 8);
+            const compName = typeof comp.name === 'string' ? comp.name : 'Competency';
+            doc.text(compName.toUpperCase(), margin + 5, yPos + 8);
             yPos += 30;
 
             // Chart Right
             const cx = pageWidth - margin - 40;
             const cy = yPos + 10;
-            drawRingChart(doc, cx, cy, comp.score || 0);
+            const compScore = typeof comp.score === 'number' ? comp.score : 0;
+            drawRingChart(doc, cx, cy, compScore);
             doc.setFontSize(9);
             doc.setTextColor(...COLORS.MID_GRAY);
             doc.text("SCORE", cx, cy + 30, { align: 'center'});
@@ -760,11 +766,19 @@ const HomePage = () => {
             doc.setTextColor(...COLORS.DARK_GRAY);
             
             // If descriptors exist
-            const descriptors = comp.strengths || [];
+            const descriptors = (Array.isArray(comp.strengths) ? comp.strengths : []) as Array<string | Record<string, unknown>>;
             if(descriptors.length > 0) {
-                descriptors.forEach((d:any) => {
-                    const title = typeof d === 'string' ? "Observation" : d.title;
-                    const desc = typeof d === 'string' ? d : d.description;
+                descriptors.forEach((d: string | Record<string, unknown>) => {
+                    let title: string;
+                    let desc: string;
+                    if (typeof d === 'string') {
+                        title = "Observation";
+                        desc = d;
+                    } else {
+                        const dObj = d as Record<string, unknown>;
+                        title = typeof dObj.title === 'string' ? dObj.title : "Observation";
+                        desc = typeof dObj.description === 'string' ? dObj.description : '';
+                    }
                     
                     checkPage(20);
                     // Styled Box
@@ -783,7 +797,8 @@ const HomePage = () => {
                     yPos += (dl.length * 5) + 15;
                 });
             } else {
-                const txt = doc.splitTextToSize(comp.analysisComment || "No specific detailed comments.", pageWidth - margin - 90);
+                const analysisComment = typeof comp.analysisComment === 'string' ? comp.analysisComment : "No specific detailed comments.";
+                const txt = doc.splitTextToSize(analysisComment, pageWidth - margin - 90);
                 doc.text(txt, margin, yPos);
             }
 
@@ -799,8 +814,10 @@ const HomePage = () => {
         yPos += 15;
 
         // Bar Chart
-        const chartData = content.analysis.competencies.map((c: any) => ({
-            name: c.name, readiness: c.readiness||5, application: c.application||5
+        const chartData = content.analysis.competencies.map((c: Record<string, unknown>) => ({
+            name: typeof c.name === 'string' ? c.name : 'Competency',
+            readiness: typeof c.readiness === 'number' ? c.readiness : 5,
+            application: typeof c.application === 'number' ? c.application : 5
         }));
         if(chartData.length > 0) {
             drawModernBarChart(doc, margin, yPos, pageWidth - margin*2, 100, chartData);
@@ -822,16 +839,20 @@ const HomePage = () => {
         doc.text("COMMENT", margin + 130, yPos + 5);
         yPos += 10;
 
-        content.analysis.competencies.forEach((c: any, i:number) => {
+        content.analysis.competencies.forEach((c: Record<string, unknown>, i:number) => {
             const rowH = 15;
             checkPage(rowH);
             if(i%2===1) { doc.setFillColor(250,250,250); doc.rect(margin, yPos - 2, pageWidth - margin*2, rowH, 'F'); }
             
-            doc.text(c.name.substring(0, 45), margin + 5, yPos + 3);
-            doc.text((c.readiness||0).toString(), margin + 100, yPos + 3);
-            doc.text((c.application||0).toString(), margin + 115, yPos + 3);
+            const cName = typeof c.name === 'string' ? c.name : 'Competency';
+            const cReadiness = typeof c.readiness === 'number' ? c.readiness : 0;
+            const cApplication = typeof c.application === 'number' ? c.application : 0;
+            const cComment = typeof c.analysisComment === 'string' ? c.analysisComment : "";
+            doc.text(cName.substring(0, 45), margin + 5, yPos + 3);
+            doc.text(cReadiness.toString(), margin + 100, yPos + 3);
+            doc.text(cApplication.toString(), margin + 115, yPos + 3);
             
-            const comm = (c.analysisComment || "").substring(0, 50) + "...";
+            const comm = cComment.substring(0, 50) + "...";
             doc.text(comm, margin + 130, yPos + 3);
             
             yPos += 8;
@@ -1004,7 +1025,7 @@ const HomePage = () => {
                <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>Assessment Status</label>
                <select 
                  value={editData.status} 
-                 onChange={(e) => setEditData({...editData, status: e.target.value as any})}
+                 onChange={(e) => setEditData({...editData, status: e.target.value as 'DRAFT' | 'SUBMITTED' | 'FINALIZED'})}
                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
                >
                  <option value="DRAFT">Draft</option>
