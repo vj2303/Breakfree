@@ -1,1 +1,1 @@
-base url: http://localhost:3001
+base url: https://api.breakfreeacademy.in
