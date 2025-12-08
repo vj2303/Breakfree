@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, ChevronRight, Info, X } from "lucide-react";
+import { Check, ChevronRight, Info } from "lucide-react";
 
 interface Step {
   id: string;
