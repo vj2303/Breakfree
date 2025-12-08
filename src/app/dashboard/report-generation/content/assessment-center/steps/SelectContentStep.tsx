@@ -201,14 +201,14 @@ const SelectContentStep: React.FC = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-black mb-6">Assessment Center Details</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-5">Assessment Center Details</h2>
       
       {/* Basic Assessment Center Information */}
-      <div className="mb-8 p-6 bg-gray-50 rounded-lg">
-        <h3 className="text-lg font-semibold text-black mb-4">Basic Information</h3>
+      <div className="mb-6 p-5 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200">
+        <h3 className="text-base font-semibold text-gray-900 mb-3">Basic Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold mb-1 text-black">Assessment Center Name</label>
+            <label className="block text-sm font-medium mb-1.5 text-gray-700">Assessment Center Name</label>
             <input
               type="text"
               value={formData.name || ''}
@@ -217,117 +217,130 @@ const SelectContentStep: React.FC = () => {
                 updateFormData('name', e.target.value);
               }}
               placeholder="Enter assessment center name"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md text-black"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
             />
           </div>
         </div>
       </div>
 
-      <h2 className="text-2xl font-bold text-black mb-8">Select Activity and Content</h2>
-      {error && <div className="mb-2 text-red-600">{error}</div>}
-      <div className="flex flex-col gap-8">
+      <h2 className="text-xl font-bold text-gray-900 mb-5">Select Activity and Content</h2>
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+      <div className="flex flex-col gap-4">
         {(formData.activities || []).map((activity, idx) => (
-          <div key={idx} className="grid grid-cols-4 gap-6 items-end mb-2">
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-black flex items-center gap-1">
-                Select Activity <span className="text-black text-xs">?</span>
-              </label>
-              <select
-                value={activity.activityType || ''}
-                onChange={e => {
-                  console.log(`[SelectContentStep] Activity type changed for idx ${idx}:`, e.target.value);
-                  const newActivities = [...(formData.activities || [])];
-                  if (newActivities[idx]) {
-                    newActivities[idx] = { ...newActivities[idx], activityType: e.target.value, activityContent: '' };
-                    updateFormData('activities', newActivities);
-                  }
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md text-black bg-white"
-              >
-                <option value="">Select Type</option>
-                {activityTypes.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-black flex items-center gap-1">
-                Select Activity Content <span className="text-black text-xs">?</span>
-              </label>
-              <select
-                value={activity.activityContent || ''}
-                onChange={e => {
-                  console.log(`[SelectContentStep] Activity content changed for idx ${idx}:`, e.target.value);
-                  const newActivities = [...(formData.activities || [])];
-                  if (newActivities[idx]) {
-                    newActivities[idx] = { ...newActivities[idx], activityContent: e.target.value };
-                    updateFormData('activities', newActivities);
-                  }
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md text-black bg-white"
-                disabled={!activity.activityType || loading}
-              >
-                <option value="">Select Content</option>
-                {(contentOptions[activity.activityType] || []).map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-black flex items-center gap-1">
-                Display Name <span className="text-black text-xs">?</span>
-              </label>
-              <input
-                type="text"
-                value={activity.displayName || ''}
-                onChange={e => {
-                  console.log(`[SelectContentStep] Display name changed for idx ${idx}:`, e.target.value);
-                  const newActivities = [...(formData.activities || [])];
-                  if (newActivities[idx]) {
-                    newActivities[idx] = { ...newActivities[idx], displayName: e.target.value };
-                    updateFormData('activities', newActivities);
-                  }
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md text-black"
-              />
-            </div>
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <label className="block text-sm font-semibold mb-1 text-black">Display Instructions</label>
-                <input
-                  type="text"
-                  value={activity.displayInstructions || ''}
+          <div key={idx} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-gray-700 flex items-center gap-1">
+                  Select Activity
+                  <span className="text-gray-400 text-xs cursor-help" title="Choose the type of activity">?</span>
+                </label>
+                <select
+                  value={activity.activityType || ''}
                   onChange={e => {
-                    console.log(`[SelectContentStep] Display instructions changed for idx ${idx}:`, e.target.value);
+                    console.log(`[SelectContentStep] Activity type changed for idx ${idx}:`, e.target.value);
                     const newActivities = [...(formData.activities || [])];
                     if (newActivities[idx]) {
-                      newActivities[idx] = { ...newActivities[idx], displayInstructions: e.target.value };
+                      newActivities[idx] = { ...newActivities[idx], activityType: e.target.value, activityContent: '' };
                       updateFormData('activities', newActivities);
                     }
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md text-black"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                >
+                  <option value="">Select Type</option>
+                  {activityTypes.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-gray-700 flex items-center gap-1">
+                  Select Activity Content
+                  <span className="text-gray-400 text-xs cursor-help" title="Choose the specific content">?</span>
+                </label>
+                <select
+                  value={activity.activityContent || ''}
+                  onChange={e => {
+                    console.log(`[SelectContentStep] Activity content changed for idx ${idx}:`, e.target.value);
+                    const newActivities = [...(formData.activities || [])];
+                    if (newActivities[idx]) {
+                      newActivities[idx] = { ...newActivities[idx], activityContent: e.target.value };
+                      updateFormData('activities', newActivities);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={!activity.activityType || loading}
+                >
+                  <option value="">Select Content</option>
+                  {(contentOptions[activity.activityType] || []).map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-gray-700 flex items-center gap-1">
+                  Display Name
+                  <span className="text-gray-400 text-xs cursor-help" title="Name shown to participants">?</span>
+                </label>
+                <input
+                  type="text"
+                  value={activity.displayName || ''}
+                  onChange={e => {
+                    console.log(`[SelectContentStep] Display name changed for idx ${idx}:`, e.target.value);
+                    const newActivities = [...(formData.activities || [])];
+                    if (newActivities[idx]) {
+                      newActivities[idx] = { ...newActivities[idx], displayName: e.target.value };
+                      updateFormData('activities', newActivities);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                  placeholder="Enter display name"
                 />
               </div>
-              {(formData.activities || []).length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => handleRemove(idx)}
-                  className="ml-2 text-red-500 flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50"
-                >
-                  Remove <Trash2 className="w-4 h-4" />
-                </button>
-              )}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium mb-1.5 text-gray-700">Display Instructions</label>
+                  <input
+                    type="text"
+                    value={activity.displayInstructions || ''}
+                    onChange={e => {
+                      console.log(`[SelectContentStep] Display instructions changed for idx ${idx}:`, e.target.value);
+                      const newActivities = [...(formData.activities || [])];
+                      if (newActivities[idx]) {
+                        newActivities[idx] = { ...newActivities[idx], displayInstructions: e.target.value };
+                        updateFormData('activities', newActivities);
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                    placeholder="Enter instructions"
+                  />
+                </div>
+                {(formData.activities || []).length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(idx)}
+                    className="ml-2 text-red-600 flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors border border-red-200"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="text-sm">Remove</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ))}
       </div>
-      <div className="flex justify-center mt-10">
+      <div className="flex justify-center mt-6">
         <button
           type="button"
           onClick={handleAdd}
-          className="flex items-center gap-2 px-8 py-3 rounded-full border border-gray-300 text-gray-500 font-semibold text-lg bg-white hover:bg-gray-100 shadow"
+          className="flex items-center gap-2 px-6 py-3 rounded-lg border-2 border-dashed border-gray-300 text-gray-600 font-medium bg-white hover:bg-gray-50 hover:border-gray-400 transition-all"
         >
-          <span className="text-2xl">+</span> Create New Activity
+          <span className="text-xl">+</span>
+          <span>Add New Activity</span>
         </button>
       </div>
     </div>

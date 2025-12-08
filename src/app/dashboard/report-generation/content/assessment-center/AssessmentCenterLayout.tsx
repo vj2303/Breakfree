@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronRight, Info, X } from "lucide-react";
 
 interface Step {
   id: string;
@@ -57,31 +57,35 @@ const AssessmentCenterLayout: React.FC<AssessmentCenterLayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-black flex items-center gap-2">
-              Assessment Center
-              <span className="text-gray-400">{isEditMode ? '✏️' : '🆕'}</span>
-            </h1>
-            <p className="text-sm text-black mt-1">
-              {isEditMode ? 'Editing existing assessment center' : 'Created on ' + new Date().toLocaleDateString()}
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-black">Know More about Assessment Center</span>
-              <div className="w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs">i</span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Modern Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10 backdrop-blur-sm bg-white/95">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  Assessment Center
+                  {isEditMode && (
+                    <span className="text-xs font-medium bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-200">
+                      Edit Mode
+                    </span>
+                  )}
+                </h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  {isEditMode ? 'Editing existing assessment center' : `Created on ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all border border-gray-200 hover:border-gray-300">
+                <Info className="w-4 h-4" />
+                <span>Learn More</span>
+              </button>
               {showCancelButton && (
                 <button
                   onClick={onCancel}
-                  className="px-4 py-2 text-sm font-medium text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all hover:border-gray-400"
                 >
                   Cancel
                 </button>
@@ -89,7 +93,7 @@ const AssessmentCenterLayout: React.FC<AssessmentCenterLayoutProps> = ({
               {currentStep > 0 && (
                 <button
                   onClick={() => onStepChange && onStepChange(currentStep - 1)}
-                  className="px-4 py-2 text-sm font-medium text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all hover:border-gray-400"
                 >
                   Previous
                 </button>
@@ -97,7 +101,7 @@ const AssessmentCenterLayout: React.FC<AssessmentCenterLayoutProps> = ({
               {showSaveButton && (
                 <button
                   onClick={onSave}
-                  className="px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-transparent rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 flex items-center gap-2"
+                  className="px-5 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all shadow-sm hover:shadow-md flex items-center gap-2 active:scale-95"
                 >
                   {saveButtonText}
                   {currentStep < steps.length - 1 && <ChevronRight className="w-4 h-4" />}
@@ -107,55 +111,68 @@ const AssessmentCenterLayout: React.FC<AssessmentCenterLayoutProps> = ({
           </div>
         </div>
       </div>
-      {/* Progress Steps */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between max-w-6xl">
-          {steps.map((step, index) => (
-            <React.Fragment key={step.id}>
-              <div
-                className={`flex  items-center gap-6 cursor-pointer ${
-                  step.active ? 'opacity-100' : step.completed ? 'opacity-80' : 'opacity-50'
-                }`}
-                onClick={() => handleStepClick(index)}
-              >
-                <div className={`w-6 h-5 rounded-full flex items-center justify-center ${
-                  step.completed
-                    ? 'bg-green-500 text-white'
-                    : step.active
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-500'
-                }`}>
-                  {step.completed ? (
-                    <Check className="w-4 h-4" />
-                  ) : (
-                    <span className="text-xs font-medium">{index + 1}</span>
-                  )}
-                </div>
-                <span className={`text-sm w-[70px] font-medium ${
-                  step.active ? 'text-black' : 'text-gray-600'
-                }`}>
-                  {step.title}
-                </span>
-              </div>
-              {index < steps.length - 1 && (
-                <div className="w-[100px] mx-4">
-                  <div className="h-px bg-gray-200 relative">
-                    <div
-                      className={`h-px transition-all duration-300 ${
-                        step.completed ? 'bg-green-500 w-full' : 'bg-gray-200 w-0'
-                      }`}
-                    />
+
+      {/* Perfect Progress Stepper */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-2 py-2">
+          <div className="flex items-start w-full overflow-x-auto pb-2 scrollbar-hide">
+            {steps.map((step, index) => (
+              <React.Fragment key={step.id}>
+                {/* Step Item */}
+                <div
+                  className={`flex mt-2 flex-col items-center cursor-pointer transition-all flex-shrink-0 group ${
+                    step.active ? 'opacity-100' : step.completed ? 'opacity-100' : 'opacity-50'
+                  }`}
+                  onClick={() => handleStepClick(index)}
+                >
+                  {/* Step Icon */}
+                  <div className={`relative w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 mb-2 ${
+                    step.completed
+                      ? 'bg-gray-900 text-white shadow-sm'
+                      : step.active
+                        ? 'bg-gray-900 text-white shadow-md ring-1 ring-gray-900 ring-offset-2'
+                        : 'bg-gray-200 text-gray-500 group-hover:bg-gray-300'
+                  }`}>
+                    {step.completed ? (
+                      <Check className="w-3 h-3" strokeWidth={2.5} />
+                    ) : (
+                      <span className="text-sm font-bold">{index + 1}</span>
+                    )}
                   </div>
+                  {/* Step Label */}
+                  <span className={`text-xs font-medium whitespace-nowrap text-center leading-tight px-1 ${
+                    step.active 
+                      ? 'text-gray-900 font-semibold' 
+                      : step.completed 
+                        ? 'text-gray-600' 
+                        : 'text-gray-400 group-hover:text-gray-500'
+                  }`}>
+                    {step.title}
+                  </span>
                 </div>
-              )}
-            </React.Fragment>
-          ))}
+                
+                {/* Connector Line */}
+                {index < steps.length - 1 && (
+                  <div className="flex-1 mx-2 min-w-[30px] flex-shrink-0 pt-5">
+                    <div className="h-0.5 bg-gray-200 relative overflow-hidden rounded-full">
+                      <div
+                        className={`h-full transition-all duration-500 ease-out rounded-full ${
+                          step.completed ? 'bg-gray-900 w-full' : 'bg-gray-200 w-0'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       </div>
-      {/* Main Content */}
-      <div className="flex-1 px-6 py-6">
-        <div className="max-w-full mx-auto">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all hover:shadow-md">
+          <div className="p-6">
             {children}
           </div>
         </div>

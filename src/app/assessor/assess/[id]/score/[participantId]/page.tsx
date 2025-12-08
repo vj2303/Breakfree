@@ -112,6 +112,7 @@ interface AssessorScore {
   status?: 'DRAFT' | 'SUBMITTED' | 'FINALIZED';
   competencyScores?: Record<string, Record<string, number>>;
   overallComments?: string;
+  activityComments?: Record<string, string>; // activityId -> comment
 }
 
 interface ActivityWithSubmissions {
@@ -159,6 +160,7 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
   const [evaluationData, setEvaluationData] = useState<EvaluationResponse | null>(null);
   // Removed unused averageScore state
   const [comments, setComments] = useState<Record<string, string>>({}); // assignmentId -> comments
+  const [activityComments, setActivityComments] = useState<Record<string, string>>({}); // activityId -> comments
   const [competencyScores, setCompetencyScores] = useState<Record<string, Record<string, Record<string, number>>>>({}); // assignmentId -> competencyId -> subCompetency -> score
   const [activityCompetencyScores, setActivityCompetencyScores] = useState<Record<string, Record<string, Record<string, number>>>>({}); // activityId -> competencyId -> subCompetency -> score
   const [isSubmittingScore, setIsSubmittingScore] = useState(false);
@@ -220,6 +222,8 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
       const initialStatus: Record<string, 'DRAFT' | 'SUBMITTED' | 'FINALIZED'> = {};
       
       // Initialize scores for each assignment
+      const initialActivityComments: Record<string, string> = {};
+      
       participantDetails.data.assignments.forEach(assignment => {
         const assignmentId = assignment.assignmentId;
         initialScores[assignmentId] = {};
@@ -241,6 +245,12 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
               ...prev,
               [assignmentId]: assessorScore.overallComments || ''
             }));
+          }
+          // Load existing activity comments
+          if (assessorScore.activityComments) {
+            Object.keys(assessorScore.activityComments).forEach(activityId => {
+              initialActivityComments[activityId] = assessorScore.activityComments![activityId];
+            });
           }
         }
         
@@ -276,6 +286,7 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
 
       setCompetencyScores(initialScores);
       setActivityCompetencyScores(initialActivityScores);
+      setActivityComments(initialActivityComments);
       setScoreStatus(initialStatus);
       
       // Set assignment based on assessmentCenterId from URL, or first assignment
@@ -347,6 +358,7 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
         assessmentCenterId: assignment.assessmentCenter.id,
         competencyScores: competencyScores[assignmentId] || {},
         activityCompetencyScores: activityCompetencyScores, // Include per-activity scores
+        activityComments: activityComments, // Include per-activity comments
         overallComments: comments[assignmentId] || '',
         status: status
       };
@@ -754,6 +766,17 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
                             ))}
                           </div>
                         )}
+                        {/* Activity Comment */}
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Comment for this activity</label>
+                          <textarea
+                            rows={2}
+                            value={activityComments[activity.activityId] || ''}
+                            onChange={(e) => setActivityComments(prev => ({ ...prev, [activity.activityId]: e.target.value }))}
+                            className="w-full border border-gray-300 rounded p-2 text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
+                            placeholder="Add your comments for this activity..."
+                          />
+                        </div>
                       </div>
                     ))}
                 </div>
@@ -996,6 +1019,17 @@ const AssessmentDetail = ({ params }: ParticipantScoringProps) => {
                           </div>
                         </div>
                       ))}
+                      {/* Activity Comment */}
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Comment for this activity</label>
+                        <textarea
+                          rows={3}
+                          value={activityComments[selectedActivity.activityId] || ''}
+                          onChange={(e) => setActivityComments(prev => ({ ...prev, [selectedActivity.activityId]: e.target.value }))}
+                          className="w-full border border-gray-300 rounded p-2 text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
+                          placeholder="Add your comments for this activity..."
+                        />
+                      </div>
                     </div>
                   )}
 

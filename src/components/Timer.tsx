@@ -41,7 +41,7 @@ const Timer: React.FC<TimerProps> = ({ totalMinutes, activityId, onTimeUp }) => 
             startTimeRef.current = now;
           }
         }
-      } catch (e) {
+      } catch {
         // Invalid saved state, start fresh
         const totalSeconds = totalMinutes * 60;
         setTimeRemaining(totalSeconds);
@@ -182,7 +182,7 @@ const Timer: React.FC<TimerProps> = ({ totalMinutes, activityId, onTimeUp }) => 
           {isExpired ? '00:00' : formatTime(timeRemaining)}
         </div>
         {isExpired && (
-          <p className="text-xs text-red-600 font-medium mt-0.5">Time's Up!</p>
+          <p className="text-xs text-red-600 font-medium mt-0.5">Time&apos;s Up!</p>
         )}
         {isCritical && !isExpired && (
           <p className="text-xs text-red-600 font-medium mt-0.5">Less than 1 minute left!</p>
