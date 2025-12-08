@@ -1,8 +1,8 @@
 // reportStructureApi.ts
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'http://localhost:3001/api' 
-  : 'http://localhost:3001/api';
+  ? 'https://api.breakfreeacademy.in/api' 
+  : 'https://api.breakfreeacademy.in/api';
 
 export interface ReportFormData {
   reportName: string;
