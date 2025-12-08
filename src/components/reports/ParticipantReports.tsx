@@ -119,12 +119,15 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
               
               data.data.assignments.forEach((assignment: Record<string, unknown>) => {
                 if (assignment.assessmentCenter) {
-                  const ac = assignment.assessmentCenter;
-                  if (!assessmentCentersMap.has(ac.id)) {
-                    assessmentCentersMap.set(ac.id, {
-                      id: ac.id,
-                      name: ac.name || ac.displayName || 'Unknown',
-                      displayName: ac.displayName
+                  const ac = assignment.assessmentCenter as Record<string, unknown>;
+                  const acId = typeof ac.id === 'string' ? ac.id : '';
+                  if (acId && !assessmentCentersMap.has(acId)) {
+                    const acName = typeof ac.name === 'string' ? ac.name : (typeof ac.displayName === 'string' ? ac.displayName : 'Unknown');
+                    const acDisplayName = typeof ac.displayName === 'string' ? ac.displayName : undefined;
+                    assessmentCentersMap.set(acId, {
+                      id: acId,
+                      name: acName,
+                      displayName: acDisplayName
                     });
                   }
                 }
@@ -197,7 +200,6 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
       path.push([centerX, centerY]);
       
       if (path.length > 2) {
-        // @ts-expect-error - jsPDF path method
         doc.path(path, 'F');
       }
       
@@ -297,22 +299,32 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
     let competencies: Array<Record<string, unknown>> = [];
     
     // Extract competencies from part2Analysis - handle new detailed structure
-    if (reportContent.part2Analysis?.competencies && Array.isArray(reportContent.part2Analysis.competencies)) {
-      competencies = reportContent.part2Analysis.competencies.map((comp: Record<string, unknown>) => ({
-        name: comp.name,
-        score: comp.score || 0,
-        readiness: comp.readiness || comp.score || 0,
-        application: comp.application || comp.score || 0,
-        overview: comp.overview || '',
-        strengths: comp.strengths || [],
-        opportunities: comp.opportunities || [],
-        analysis: comp.analysis
-      }));
-    } else if (reportContent.part2Analysis?.content) {
+    const part2Analysis = reportContent.part2Analysis as Record<string, unknown> | undefined;
+    if (part2Analysis && Array.isArray(part2Analysis.competencies)) {
+      competencies = (part2Analysis.competencies as Array<Record<string, unknown>>).map((comp) => {
+        const compName = typeof comp.name === 'string' ? comp.name : 'Competency';
+        const compScore = typeof comp.score === 'number' ? comp.score : 0;
+        const compReadiness = typeof comp.readiness === 'number' ? comp.readiness : compScore;
+        const compApplication = typeof comp.application === 'number' ? comp.application : compScore;
+        const compOverview = typeof comp.overview === 'string' ? comp.overview : '';
+        const compStrengths = Array.isArray(comp.strengths) ? comp.strengths : [];
+        const compOpportunities = Array.isArray(comp.opportunities) ? comp.opportunities : [];
+        return {
+          name: compName,
+          score: compScore,
+          readiness: compReadiness,
+          application: compApplication,
+          overview: compOverview,
+          strengths: compStrengths,
+          opportunities: compOpportunities,
+          analysis: comp.analysis
+        };
+      });
+    } else if (part2Analysis && part2Analysis.content) {
       try {
-        const analysisData = typeof reportContent.part2Analysis.content === 'string' 
-          ? JSON.parse(reportContent.part2Analysis.content) 
-          : reportContent.part2Analysis.content;
+        const analysisData = typeof part2Analysis.content === 'string' 
+          ? JSON.parse(part2Analysis.content) 
+          : part2Analysis.content;
         
         if (Array.isArray(analysisData)) {
           competencies = analysisData;
@@ -362,11 +374,12 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
     let strengths: string[] = [];
     let developmentAreas: string[] = [];
     
-    if (reportContent.part3Comments?.content) {
+    const part3Comments = reportContent.part3Comments as Record<string, unknown> | undefined;
+    if (part3Comments && part3Comments.content) {
       try {
-        const commentsData = typeof reportContent.part3Comments.content === 'string'
-          ? JSON.parse(reportContent.part3Comments.content)
-          : reportContent.part3Comments.content;
+        const commentsData = typeof part3Comments.content === 'string'
+          ? JSON.parse(part3Comments.content)
+          : part3Comments.content;
         
         if (commentsData && typeof commentsData === 'object') {
           if (commentsData.Strengths) {
@@ -387,60 +400,65 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
         }
       } catch {
         // Use direct properties if available
-        if (reportContent.part3Comments?.strengths) {
-          strengths = reportContent.part3Comments.strengths;
+        if (part3Comments && Array.isArray(part3Comments.strengths)) {
+          strengths = part3Comments.strengths as string[];
         }
-        if (reportContent.part3Comments?.developmentAreas) {
-          developmentAreas = reportContent.part3Comments.developmentAreas;
+        if (part3Comments && Array.isArray(part3Comments.developmentAreas)) {
+          developmentAreas = part3Comments.developmentAreas as string[];
         }
       }
     } else {
-      if (reportContent.part3Comments?.strengths) {
-        strengths = reportContent.part3Comments.strengths;
+      if (part3Comments && Array.isArray(part3Comments.strengths)) {
+        strengths = part3Comments.strengths as string[];
       }
-      if (reportContent.part3Comments?.developmentAreas) {
-        developmentAreas = reportContent.part3Comments.developmentAreas;
+      if (part3Comments && Array.isArray(part3Comments.developmentAreas)) {
+        developmentAreas = part3Comments.developmentAreas as string[];
       }
     }
 
     // Extract recommendations
     let recommendations: string[] = [];
-    if (reportContent.part5Recommendation?.recommendations) {
-      recommendations = reportContent.part5Recommendation.recommendations;
-    } else if (reportContent.part5Recommendation?.content) {
+    const part5Recommendation = reportContent.part5Recommendation as Record<string, unknown> | undefined;
+    if (part5Recommendation && Array.isArray(part5Recommendation.recommendations)) {
+      recommendations = part5Recommendation.recommendations as string[];
+    } else if (part5Recommendation && part5Recommendation.content) {
       try {
-        const recData = typeof reportContent.part5Recommendation.content === 'string'
-          ? JSON.parse(reportContent.part5Recommendation.content)
-          : reportContent.part5Recommendation.content;
+        const recData = typeof part5Recommendation.content === 'string'
+          ? JSON.parse(part5Recommendation.content)
+          : part5Recommendation.content;
         
         if (Array.isArray(recData)) {
-          recommendations = recData;
+          recommendations = recData as string[];
         } else if (typeof recData === 'object') {
           recommendations = Object.values(recData) as string[];
         }
       } catch {
-        recommendations = reportContent.part5Recommendation.content.split('\n').filter((r: string) => r.trim());
+        if (typeof part5Recommendation.content === 'string') {
+          recommendations = part5Recommendation.content.split('\n').filter((r: string) => r.trim());
+        }
       }
     }
 
+    const part1Introduction = reportContent.part1Introduction as Record<string, unknown> | undefined;
+    const part4OverallRatings = reportContent.part4OverallRatings as Record<string, unknown> | undefined;
     return {
-      introduction: reportContent.part1Introduction?.content || '',
+      introduction: (part1Introduction && typeof part1Introduction.content === 'string' ? part1Introduction.content : '') || '',
       analysis: {
-        content: reportContent.part2Analysis?.content || '',
+        content: (part2Analysis && typeof part2Analysis.content === 'string' ? part2Analysis.content : '') || '',
         competencies: competencies
       },
       comments: {
-        content: reportContent.part3Comments?.content || '',
+        content: (part3Comments && typeof part3Comments.content === 'string' ? part3Comments.content : '') || '',
         strengths: strengths,
         developmentAreas: developmentAreas
       },
       ratings: {
-        content: reportContent.part4OverallRatings?.content || '',
-        scoreTable: reportContent.part4OverallRatings?.scoreTable || null,
-        chartData: reportContent.part4OverallRatings?.chartData || null
+        content: (part4OverallRatings && typeof part4OverallRatings.content === 'string' ? part4OverallRatings.content : '') || '',
+        scoreTable: part4OverallRatings?.scoreTable || null,
+        chartData: part4OverallRatings?.chartData || null
       },
       recommendations: {
-        content: reportContent.part5Recommendation?.content || '',
+        content: (part5Recommendation && typeof part5Recommendation.content === 'string' ? part5Recommendation.content : '') || '',
         recommendations: recommendations
       }
     };
@@ -496,7 +514,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
       const participantName = data.data.participant?.name || participant.name;
       const assessmentCenterName = data.data.assessmentCenter?.name || data.data.assessmentCenter?.displayName || 'N/A';
       const reportContent = data.data.reportContent;
-      const sections = formatReportContentForPDF(reportContent, participantName, assessmentCenterName);
+      const sections = formatReportContentForPDF(reportContent);
 
       // Helper to check and add new page
       const checkNewPage = (requiredSpace: number = 20) => {
@@ -692,7 +710,7 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
           // Competency Title with improved styling
           doc.setFontSize(20);
           doc.setFont('helvetica', 'bold');
-          const compName = competency.name || `Competency ${compIndex + 1}`;
+          const compName = typeof competency.name === 'string' ? competency.name : `Competency ${compIndex + 1}`;
           doc.text(compName, margin, yPosition);
           yPosition += 12;
           
@@ -707,7 +725,8 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
             doc.setFontSize(11);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(60, 60, 60);
-            const overviewLines = doc.splitTextToSize(competency.overview, maxWidth);
+            const overviewText = typeof competency.overview === 'string' ? competency.overview : '';
+            const overviewLines = doc.splitTextToSize(overviewText, maxWidth);
             overviewLines.forEach((line: string) => {
               checkNewPage();
               doc.text(line, margin, yPosition);
@@ -719,10 +738,10 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
 
           // Score visualization section
           checkNewPage(60);
-          const score = competency.score || 5;
+          const score = typeof competency.score === 'number' ? competency.score : 5;
           const maxScore = 10;
-          const readiness = competency.readiness || score;
-          const application = competency.application || score;
+          const readiness = typeof competency.readiness === 'number' ? competency.readiness : score;
+          const application = typeof competency.application === 'number' ? competency.application : score;
           
           // Donut Chart for overall score
           drawDonutChart(doc, margin + 40, yPosition + 20, score, maxScore);
@@ -748,8 +767,9 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
           doc.text('Strengths', margin, yPosition);
           yPosition += 15;
 
-          if (competency.strengths && competency.strengths.length > 0) {
-            competency.strengths.forEach((strength: Record<string, unknown>) => {
+          const strengths = Array.isArray(competency.strengths) ? competency.strengths : [];
+          if (strengths.length > 0) {
+            strengths.forEach((strength: Record<string, unknown>) => {
               checkNewPage(30);
               
               // Strength bullet point with better styling
@@ -762,7 +782,13 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
               doc.circle(margin + 3, bulletY - 2, 2, 'F');
               
               // Strength text (detailed 3-5 sentences)
-              const strengthText = typeof strength === 'string' ? strength : (strength.title || strength.description || 'Strength');
+              let strengthText: string;
+              if (typeof strength === 'string') {
+                strengthText = strength;
+              } else {
+                const strengthObj = strength as Record<string, unknown>;
+                strengthText = (typeof strengthObj.title === 'string' ? strengthObj.title : (typeof strengthObj.description === 'string' ? strengthObj.description : 'Strength'));
+              }
               const strengthLines = doc.splitTextToSize(strengthText, maxWidth - 15);
               
               strengthLines.forEach((line: string, lineIdx: number) => {
@@ -796,8 +822,9 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
           doc.text('Areas of Opportunity', margin, yPosition);
           yPosition += 15;
 
-          if (competency.opportunities && competency.opportunities.length > 0) {
-            competency.opportunities.forEach((opp: Record<string, unknown>) => {
+          const opportunities = Array.isArray(competency.opportunities) ? competency.opportunities : [];
+          if (opportunities.length > 0) {
+            opportunities.forEach((opp: Record<string, unknown>) => {
               checkNewPage(30);
               
               // Opportunity bullet point with better styling
@@ -810,7 +837,13 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
               doc.circle(margin + 3, bulletY - 2, 2, 'F');
               
               // Opportunity text (detailed 3-5 sentences)
-              const oppText = typeof opp === 'string' ? opp : (opp.title || opp.description || 'Area of Opportunity');
+              let oppText: string;
+              if (typeof opp === 'string') {
+                oppText = opp;
+              } else {
+                const oppObj = opp as Record<string, unknown>;
+                oppText = (typeof oppObj.title === 'string' ? oppObj.title : (typeof oppObj.description === 'string' ? oppObj.description : 'Area of Opportunity'));
+              }
               const oppLines = doc.splitTextToSize(oppText, maxWidth - 15);
               
               oppLines.forEach((line: string, lineIdx: number) => {
@@ -912,7 +945,8 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 0, 0);
-            doc.text(comp.name || `Competency ${idx + 1}`, margin, yPosition);
+            const compName = typeof comp.name === 'string' ? comp.name : `Competency ${idx + 1}`;
+            doc.text(compName, margin, yPosition);
             yPosition += 10;
             
             // Detailed analysis paragraph
@@ -936,11 +970,13 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
           
           doc.setFontSize(12);
           doc.setFont('helvetica', 'bold');
-          doc.text(comp.name || `Competency ${idx + 1}`, margin, yPosition);
+          const compName = typeof comp.name === 'string' ? comp.name : `Competency ${idx + 1}`;
+          doc.text(compName, margin, yPosition);
           yPosition += 10;
           
-          const readiness = comp.readiness || comp.score || 5;
-          const application = comp.application || comp.score || 5;
+          const compScore = typeof comp.score === 'number' ? comp.score : 5;
+          const readiness = typeof comp.readiness === 'number' ? comp.readiness : compScore;
+          const application = typeof comp.application === 'number' ? comp.application : compScore;
           const analysisText = `For the competency in question, ${participantName} has both a readiness score of ${readiness.toFixed(0)} and an application score of ${application.toFixed(0)}. This ${readiness === application ? 'alignment' : readiness > application ? 'gap' : 'difference'} suggests ${readiness === application ? 'a balanced approach' : readiness > application ? 'that knowledge exceeds practical application' : 'that practical application exceeds knowledge'}.`;
           
           doc.setFontSize(10);
@@ -958,11 +994,17 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
 
       // Bar Chart
       if (sections.analysis.competencies && sections.analysis.competencies.length > 0) {
-        const chartData: Array<{name: string, readiness: number, application: number}> = sections.analysis.competencies.map((comp: Record<string, unknown>) => ({
-          name: comp.name || 'Competency',
-          readiness: comp.readiness || comp.score || 5,
-          application: comp.application || comp.score || 5
-        }));
+        const chartData: Array<{name: string, readiness: number, application: number}> = sections.analysis.competencies.map((comp: Record<string, unknown>) => {
+          const compName = typeof comp.name === 'string' ? comp.name : 'Competency';
+          const compScore = typeof comp.score === 'number' ? comp.score : 5;
+          const compReadiness = typeof comp.readiness === 'number' ? comp.readiness : compScore;
+          const compApplication = typeof comp.application === 'number' ? comp.application : compScore;
+          return {
+            name: compName,
+            readiness: compReadiness,
+            application: compApplication
+          };
+        });
 
         if (chartData.length > 0) {
           checkNewPage(120);
@@ -1014,14 +1056,17 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
       if (sections.analysis.competencies && sections.analysis.competencies.length > 0) {
         sections.analysis.competencies.forEach((comp: Record<string, unknown>, idx: number) => {
           // Get analysis comment
-          let comment = '';
-          if (readinessComments[idx]) {
-            comment = readinessComments[idx];
-          } else if (comp.overview) {
-            comment = comp.overview;
-          } else {
-            comment = comp.analysisComment || comp.comment || comp.analysis || 'No analysis comment available.';
-          }
+            let comment = '';
+            if (readinessComments[idx]) {
+              comment = readinessComments[idx];
+            } else if (typeof comp.overview === 'string') {
+              comment = comp.overview;
+            } else {
+              const compAnalysisComment = typeof comp.analysisComment === 'string' ? comp.analysisComment : '';
+              const compComment = typeof comp.comment === 'string' ? comp.comment : '';
+              const compAnalysis = typeof comp.analysis === 'string' ? comp.analysis : '';
+              comment = compAnalysisComment || compComment || compAnalysis || 'No analysis comment available.';
+            }
           
           // Calculate row height based on comment text
           doc.setFontSize(9);
@@ -1048,18 +1093,22 @@ const ParticipantReports: React.FC<ParticipantReportsProps> = ({ token }) => {
           doc.setFontSize(10);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(0, 0, 0);
-          const compNameLines = doc.splitTextToSize(comp.name || 'Competency', colWidths[0] - 10);
+          const compName = typeof comp.name === 'string' ? comp.name : 'Competency';
+          const compNameLines = doc.splitTextToSize(compName, colWidths[0] - 10);
           compNameLines.forEach((line: string, lineIdx: number) => {
             doc.text(line, colX[0] + 5, yPosition + 8 + (lineIdx * 5));
           });
           
           // Draw Ready score (centered, bold)
           doc.setFont('helvetica', 'bold');
-          const readyScore = (comp.readiness || comp.score || 0).toFixed(0);
+          const compScore = typeof comp.score === 'number' ? comp.score : 0;
+          const compReadiness = typeof comp.readiness === 'number' ? comp.readiness : compScore;
+          const compApplication = typeof comp.application === 'number' ? comp.application : compScore;
+          const readyScore = compReadiness.toFixed(0);
           doc.text(readyScore, colX[1] + colWidths[1] / 2, yPosition + 10, { align: 'center' });
           
           // Draw Apply score (centered, bold)
-          const applyScore = (comp.application || comp.score || 0).toFixed(0);
+          const applyScore = compApplication.toFixed(0);
           doc.text(applyScore, colX[2] + colWidths[2] / 2, yPosition + 10, { align: 'center' });
           
           // Draw Analysis Comment (wrapped text)

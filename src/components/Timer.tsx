@@ -23,21 +23,21 @@ const Timer: React.FC<TimerProps> = ({ totalMinutes, activityId, onTimeUp }) => 
     const savedState = localStorage.getItem(storageKey);
     if (savedState) {
       try {
-        const { remaining, pausedTime, startTime } = JSON.parse(savedState);
+        const { remaining: savedRemaining, pausedTime, startTime } = JSON.parse(savedState);
         const now = Date.now();
         
         if (startTime && !pausedTime) {
           // Timer was running, calculate remaining time
           const elapsed = Math.floor((now - startTime) / 1000);
-          const remaining = Math.max(0, remaining - elapsed);
+          const remaining = Math.max(0, savedRemaining - elapsed);
           setTimeRemaining(remaining);
           startTimeRef.current = now;
         } else {
           // Timer was paused or not started
-          setTimeRemaining(remaining);
+          setTimeRemaining(savedRemaining);
           pausedTimeRef.current = pausedTime;
           setIsPaused(pausedTime > 0);
-          if (remaining > 0) {
+          if (savedRemaining > 0) {
             startTimeRef.current = now;
           }
         }
