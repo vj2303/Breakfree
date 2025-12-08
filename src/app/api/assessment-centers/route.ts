@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = await fetch(
-      `http://localhost:3001/api/assessment-centers?page=${page}&limit=${limit}&search=${search}`,
+      `https://api.breakfreeacademy.in/api/assessment-centers?page=${page}&limit=${limit}&search=${search}`,
       {
         method: 'GET',
         headers: {
@@ -126,11 +126,11 @@ export async function POST(request: NextRequest) {
     // For now, we'll skip file upload handling
 
     console.log('🌐 [API] Calling backend API...');
-    console.log('🌐 [API] Backend URL: http://localhost:3001/api/assessment-centers');
+    console.log('🌐 [API] Backend URL: https://api.breakfreeacademy.in/api/assessment-centers');
     console.log('🌐 [API] Request payload size:', JSON.stringify(requestBody).length, 'characters');
 
     const response = await fetch(
-      'http://localhost:3001/api/assessment-centers',
+      'https://api.breakfreeacademy.in/api/assessment-centers',
       {
         method: 'POST',
         headers: {

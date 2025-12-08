@@ -2,8 +2,8 @@
 import { AIProfile, AIProfilesResponse } from '../app/dashboard/report-generation/content/ai-profile/types';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'http://localhost:3001/api' 
-  : 'http://localhost:3001/api';
+  ? 'https://api.breakfreeacademy.in/api' 
+  : 'https://api.breakfreeacademy.in/api';
 
 export interface CreateAIProfileData {
   title: string;

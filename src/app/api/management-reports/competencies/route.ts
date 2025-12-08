@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     if (search) queryParams.append('search', search);
     if (groupId) queryParams.append('groupId', groupId);
 
-    const backendUrl = `http://localhost:3001/api/management-reports/competencies?${queryParams.toString()}`;
+    const backendUrl = `https://api.breakfreeacademy.in/api/management-reports/competencies?${queryParams.toString()}`;
 
     // Forward request to backend
     const response = await fetch(backendUrl, {

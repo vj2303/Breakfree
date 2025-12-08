@@ -24,7 +24,7 @@ export async function GET(
     const assessmentCenterId = searchParams.get('assessmentCenterId');
     
     // Build URL with query params
-    let backendUrl = `http://localhost:3001/api/assessors/${assessorId}/groups/${groupId}`;
+    let backendUrl = `https://api.breakfreeacademy.in/api/assessors/${assessorId}/groups/${groupId}`;
     if (assessmentCenterId) {
       backendUrl += `?assessmentCenterId=${assessmentCenterId}`;
     }
