@@ -16,7 +16,7 @@ export async function POST(
 
     const { id: reportStructureId } = await params;
     const body = await request.json();
-    const { participantId } = body;
+    const { participantId, assessmentCenterId } = body;
 
     if (!participantId) {
       return NextResponse.json(
@@ -36,6 +36,7 @@ export async function POST(
         },
         body: JSON.stringify({
           participantId,
+          ...(assessmentCenterId && { assessmentCenterId }), // Include assessmentCenterId if provided
         }),
       }
     );

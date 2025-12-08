@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAssessmentForm } from '../create/context';
 import { useAuth } from '../../../../../../context/AuthContext';
 import Select, { StylesConfig, GroupBase, MultiValue } from 'react-select';
+import { Users, UserCheck, Activity, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Plus, X } from 'lucide-react';
 
 const GROUPS_API = 'http://localhost:3001/api/groups?page=1&limit=10&search=';
 const ASSESSORS_API = 'http://localhost:3001/api/assessors?page=1&limit=10&search=';
@@ -181,6 +182,7 @@ const ParticipantAssessorManagementStep: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedParticipants, setExpandedParticipants] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -247,6 +249,18 @@ const ParticipantAssessorManagementStep: React.FC = () => {
         newSet.delete(groupId);
       } else {
         newSet.add(groupId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleParticipantExpansion = (participantId: string) => {
+    setExpandedParticipants(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(participantId)) {
+        newSet.delete(participantId);
+      } else {
+        newSet.add(participantId);
       }
       return newSet;
     });
@@ -349,113 +363,245 @@ const ParticipantAssessorManagementStep: React.FC = () => {
     );
   }
 
+  // Calculate statistics
+  const getGroupStats = (groupId: string) => {
+    const groupAssignment = assignments.find((g) => g.groupId === groupId);
+    if (!groupAssignment) return { assigned: 0, totalActivities: 0, totalAssessors: 0 };
+    
+    const totalActivities = groupAssignment.participants.reduce((sum, p) => sum + p.activities.length, 0);
+    const totalAssessors = groupAssignment.participants.reduce((sum, p) => 
+      sum + p.activities.reduce((actSum, act) => actSum + (act.assessorIds?.length || 0), 0), 0
+    );
+    
+    return {
+      assigned: groupAssignment.participants.length,
+      totalActivities,
+      totalAssessors
+    };
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="mb-8">
+      {/* Header Section */}
+      <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-900 mb-2">Participant and Assessor Management</h2>
-        <p className="text-gray-600 text-sm">Assign multiple assessors to each activity for each participant.</p>
+        <p className="text-gray-600 text-sm">Assign activities and multiple assessors to each participant</p>
       </div>
 
+      {/* Statistics Bar */}
+      {groups.length > 0 && (
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Total Groups</p>
+                <p className="text-2xl font-bold text-gray-900">{groups.length}</p>
+              </div>
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Users className="w-5 h-5 text-gray-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Total Participants</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {groups.reduce((sum, g) => sum + g.participants.length, 0)}
+                </p>
+              </div>
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <UserCheck className="w-5 h-5 text-gray-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Available Assessors</p>
+                <p className="text-2xl font-bold text-gray-900">{assessors.length}</p>
+              </div>
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Activity className="w-5 h-5 text-gray-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Groups List */}
       <div className="space-y-4">
         {groups.map(group => {
           const isExpanded = expandedGroups.has(group.id);
+          const stats = getGroupStats(group.id);
           const groupAssignment = assignments.find((g) => g.groupId === group.id);
-          const assignedCount = groupAssignment?.participants.length || 0;
+          const hasAssignments = stats.assigned > 0;
           
           return (
-            <div key={group.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md">
-              {/* Group Header - Always Visible */}
+            <div 
+              key={group.id} 
+              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md"
+            >
+              {/* Group Header - Clickable */}
               <div 
-                className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 cursor-pointer hover:from-blue-100 hover:to-indigo-100 transition-colors duration-200"
+                className="px-5 py-4 bg-gray-50 border-b border-gray-200 cursor-pointer transition-colors duration-200 hover:bg-gray-100"
                 onClick={() => toggleGroupExpansion(group.id)}
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900">{group.name}</h3>
-                      <div className="flex items-center space-x-4 mt-1">
-                        <span className="text-sm text-gray-600">
-                          {group.participants.length} participant{group.participants.length !== 1 ? 's' : ''}
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="p-2 bg-gray-900 rounded-lg">
+                      <Users className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="text-base font-semibold text-gray-900">{group.name}</h3>
+                        {hasAssignments && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-900 text-white">
+                            <CheckCircle2 className="w-3 h-3" />
+                            {stats.assigned} assigned
                         </span>
-                        {assignedCount > 0 && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            {assignedCount} assigned
+                        )}
+                        {!hasAssignments && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                            <AlertCircle className="w-3 h-3" />
+                            Not configured
                           </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-gray-600">
+                        <span>{group.participants.length} participant{group.participants.length !== 1 ? 's' : ''}</span>
+                        {hasAssignments && (
+                          <>
+                            <span className="text-gray-400">•</span>
+                            <span>{stats.totalActivities} activit{stats.totalActivities !== 1 ? 'ies' : 'y'}</span>
+                            <span className="text-gray-400">•</span>
+                            <span>{stats.totalAssessors} assessor{stats.totalAssessors !== 1 ? 's' : ''}</span>
+                          </>
                         )}
                       </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
                     <button
-                      className={`flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm border border-gray-200 transition-transform duration-200 hover:bg-gray-50 ${
+                    className={`flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-gray-200 transition-all duration-200 hover:bg-gray-50 ${
                         isExpanded ? 'rotate-180' : ''
                       }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleGroupExpansion(group.id);
+                    }}
                     >
-                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                    <ChevronDown className="w-4 h-4 text-gray-600" />
                     </button>
-                  </div>
                 </div>
               </div>
 
               {/* Group Details - Expandable */}
-              <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-none opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-                  <div className="text-sm text-gray-700">
-                    <span className="font-medium">Admin:</span> {group.admin} ({group.adminEmail})
+              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                isExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'
+              }`}>
+                {/* Admin Info */}
+                <div className="px-5 py-2.5 bg-gray-50 border-b border-gray-100">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="font-medium text-gray-900">Admin:</span>
+                    <span>{group.admin}</span>
+                    <span className="text-gray-400">•</span>
+                    <span>{group.adminEmail}</span>
                   </div>
                 </div>
                 
-                <div className="overflow-x-auto">
-                  <div className="space-y-6 p-4">
-                    {group.participants.map((participant) => {
-                      const defaultAssignment: AssignmentParticipant = { 
-                        participantId: participant.id,
+                {/* Participants List */}
+                <div className="p-5">
+                  <div className="space-y-4">
+                      {group.participants.map((participant) => {
+                        const defaultAssignment: AssignmentParticipant = { 
+                          participantId: participant.id,
                         activities: []
-                      };
-                      const participantAssignment = groupAssignment?.participants.find((p) => p.participantId === participant.id) || defaultAssignment;
-                      
-                      return (
-                        <div key={participant.id} className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
-                          {/* Participant Header */}
-                          <div className="mb-4 pb-4 border-b border-gray-200">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h4 className="text-base font-semibold text-gray-900">{participant.name}</h4>
-                                <div className="flex items-center gap-4 mt-1">
-                                  <span className="text-sm text-gray-600">{participant.email}</span>
-                                  <span className="text-sm text-gray-500">•</span>
-                                  <span className="text-sm text-gray-600">{participant.designation}</span>
+                        };
+                        const participantAssignment = groupAssignment?.participants.find((p) => p.participantId === participant.id) || defaultAssignment;
+                      const hasActivities = participantAssignment.activities.length > 0;
+                      const allAssessorsAssigned = participantAssignment.activities.every(act => act.assessorIds?.length > 0);
+                      const isParticipantExpanded = expandedParticipants.has(participant.id);
+                        
+                        return (
+                        <div 
+                          key={participant.id} 
+                          className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                        >
+                          {/* Participant Header - Clickable */}
+                          <div 
+                            className="px-5 py-4 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                            onClick={() => toggleParticipantExpansion(participant.id)}
+                          >
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="p-2 bg-gray-900 rounded-lg">
+                                  <UserCheck className="w-4 h-4 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <h4 className="text-base font-semibold text-gray-900">{participant.name}</h4>
+                                    {hasActivities && allAssessorsAssigned && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-900 text-white">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        Complete
+                                      </span>
+                                    )}
+                                    {hasActivities && !allAssessorsAssigned && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                        <AlertCircle className="w-3 h-3" />
+                                        Incomplete
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <span>{participant.email}</span>
+                                    <span className="text-gray-400">•</span>
+                                    <span>{participant.designation}</span>
+                                  </div>
                                 </div>
                               </div>
+                              <button
+                                className={`flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-gray-200 transition-all duration-200 hover:bg-gray-50 flex-shrink-0 ${
+                                  isParticipantExpanded ? 'rotate-180' : ''
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleParticipantExpansion(participant.id);
+                                }}
+                              >
+                                <ChevronDown className="w-4 h-4 text-gray-600" />
+                              </button>
                             </div>
                           </div>
 
-                          {/* Step 1: Select Activities for Participant */}
-                          <div className="mb-6 pb-6 border-b border-gray-200">
-                            <label className="block text-sm font-semibold text-gray-900 mb-3">
-                              Select Activities for this Participant
-                            </label>
-                            <div className="w-full max-w-2xl">
-                              <Select<OptionType, true>
-                                isMulti
-                                options={availableActivities}
-                                value={availableActivities.filter((a) => {
+                          {/* Participant Content - Expandable */}
+                          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                            isParticipantExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'
+                          }`}>
+                            <div className="px-5 pb-5 pt-0 border-t border-gray-100">
+
+                              {/* Step 1: Select Activities */}
+                              <div className="mb-5 pt-4">
+                                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                  Select Activities for this Participant
+                                </label>
+                            <div className="w-full">
+                                <Select<OptionType, true>
+                                  isMulti
+                                  options={availableActivities}
+                                  value={availableActivities.filter((a) => {
                                   const assignedActivityIds = participantAssignment.activities.map(act => act.activityId);
                                   return assignedActivityIds.includes(a.value);
-                                })}
-                                onChange={(selected: MultiValue<OptionType>) => {
+                                  })}
+                                  onChange={(selected: MultiValue<OptionType>) => {
                                   const selectedActivityIds = selected ? selected.map((s) => s.value) : [];
                                   const currentActivityIds = participantAssignment.activities.map(a => a.activityId);
                                   
-                                  // Remove activities that are no longer selected
                                   const activitiesToKeep = participantAssignment.activities.filter(a => 
                                     selectedActivityIds.includes(a.activityId)
                                   );
                                   
-                                  // Add new activities that were just selected
                                   const newActivityIds = selectedActivityIds.filter(id => 
                                     !currentActivityIds.includes(id)
                                   );
@@ -465,7 +611,6 @@ const ParticipantAssessorManagementStep: React.FC = () => {
                                     ...newActivityIds.map(id => ({ activityId: id, assessorIds: [] }))
                                   ];
                                   
-                                  // Update all activities at once
                                   setAssignments(prev => {
                                     const groupIdx = prev.findIndex((g) => g.groupId === group.id);
                                     const newAssignments = [...prev];
@@ -496,52 +641,70 @@ const ParticipantAssessorManagementStep: React.FC = () => {
                                     }
                                     return newAssignments;
                                   });
-                                }}
-                                styles={customStyles}
-                                placeholder="Select activities for this participant..."
-                                closeMenuOnSelect={false}
-                                classNamePrefix="react-select"
-                                isSearchable={true}
-                                menuPortalTarget={document.body}
-                                menuPosition="fixed"
-                              />
-                              {participantAssignment.activities.length > 0 && (
-                                <p className="text-xs text-gray-500 mt-2">
-                                  {participantAssignment.activities.length} activit{participantAssignment.activities.length !== 1 ? 'ies' : 'y'} selected
-                                </p>
+                                  }}
+                                  styles={customStyles}
+                                placeholder="Choose activities for this participant..."
+                                  closeMenuOnSelect={false}
+                                  classNamePrefix="react-select"
+                                  isSearchable={true}
+                                  menuPortalTarget={document.body}
+                                  menuPosition="fixed"
+                                />
+                              {hasActivities && (
+                                <div className="mt-2">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-gray-900 text-white">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    {participantAssignment.activities.length} activit{participantAssignment.activities.length !== 1 ? 'ies' : 'y'} selected
+                                  </span>
+                                </div>
                               )}
                             </div>
                           </div>
 
-                          {/* Step 2: Assign Assessors for Each Selected Activity */}
-                          {participantAssignment.activities.length > 0 && (
-                            <div>
-                              <label className="block text-sm font-semibold text-gray-900 mb-3">
-                                Assign Assessors for Each Activity
-                              </label>
+                              {/* Step 2: Assign Assessors for Each Activity */}
+                              {hasActivities && (
+                                <div>
+                                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                                    Assign Assessors for Each Activity
+                                  </label>
                               <div className="space-y-3">
                                 {participantAssignment.activities.map((activityAssignment) => {
                                   const activity = availableActivities.find(a => a.value === activityAssignment.activityId);
                                   if (!activity) return null;
                                   
                                   const selectedAssessorIds = activityAssignment.assessorIds || [];
+                                  const hasAssessors = selectedAssessorIds.length > 0;
                                   
                                   return (
-                                    <div key={activityAssignment.activityId} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-gray-300 transition-colors">
-                                      <div className="flex items-start gap-4">
-                                        {/* Activity Label */}
-                                        <div className="flex-shrink-0 w-56">
-                                          <label className="block text-sm font-semibold text-gray-900 mb-1">
-                                            {activity.label}
-                                          </label>
-                                          <p className="text-xs text-gray-500">Assign assessors</p>
-                                        </div>
+                                    <div 
+                                      key={activityAssignment.activityId} 
+                                      className={`bg-gray-50 rounded-lg p-4 border transition-all duration-200 ${
+                                        hasAssessors 
+                                          ? 'border-gray-900 bg-white' 
+                                          : 'border-gray-200 hover:border-gray-300'
+                                      }`}
+                                    >
+                                      <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                                        {/* Activity Info */}
+                                        <div className="flex-shrink-0 lg:w-64">
+                                          <div className="flex items-start gap-3">
+                                            <div className={`p-2 rounded-lg ${hasAssessors ? 'bg-gray-900' : 'bg-gray-200'}`}>
+                                              <Activity className={`w-4 h-4 ${hasAssessors ? 'text-white' : 'text-gray-600'}`} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <label className="block text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
+                                                {activity.label}
+                                              </label>
+                                              <p className="text-xs text-gray-500">Select assessors</p>
+                                            </div>
+                                          </div>
+                              </div>
                                         
                                         {/* Assessors Multi-Select */}
-                                        <div className="flex-1 min-w-[350px]">
+                                        <div className="flex-1 min-w-0">
                                           <Select<OptionType, true>
                                             isMulti
-                                            options={assessorOptions}
+                                  options={assessorOptions}
                                             value={assessorOptions.filter((a) => selectedAssessorIds.includes(a.value))}
                                             onChange={(selected: MultiValue<OptionType>) => {
                                               const assessorIds = selected ? selected.map((s) => s.value) : [];
@@ -555,15 +718,16 @@ const ParticipantAssessorManagementStep: React.FC = () => {
                                             styles={customStyles}
                                             placeholder="Select multiple assessors..."
                                             closeMenuOnSelect={false}
-                                            classNamePrefix="react-select"
-                                            isSearchable={true}
-                                            menuPortalTarget={document.body}
-                                            menuPosition="fixed"
-                                          />
-                                          {selectedAssessorIds.length > 0 && (
-                                            <div className="mt-2 flex items-center gap-2">
-                                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-900 text-white">
-                                                {selectedAssessorIds.length} assessor{selectedAssessorIds.length !== 1 ? 's' : ''}
+                                  classNamePrefix="react-select"
+                                  isSearchable={true}
+                                  menuPortalTarget={document.body}
+                                  menuPosition="fixed"
+                                />
+                                          {hasAssessors && (
+                                            <div className="mt-2">
+                                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-gray-900 text-white">
+                                                <UserCheck className="w-3 h-3" />
+                                                {selectedAssessorIds.length} assessor{selectedAssessorIds.length !== 1 ? 's' : ''} assigned
                                               </span>
                                             </div>
                                           )}
@@ -576,22 +740,27 @@ const ParticipantAssessorManagementStep: React.FC = () => {
                             </div>
                           )}
                           
-                          {participantAssignment.activities.length === 0 && availableActivities.length > 0 && (
-                            <div className="text-center py-6 bg-gray-50 rounded-lg border border-gray-200 border-dashed">
-                              <p className="text-sm text-gray-500">
-                                Select activities above to assign assessors
-                              </p>
+                              {/* Empty States */}
+                              {!hasActivities && availableActivities.length > 0 && (
+                                <div className="text-center py-6 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                  <Activity className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                  <p className="text-sm font-medium text-gray-600 mb-1">No activities selected</p>
+                                  <p className="text-xs text-gray-500">Select activities above to assign assessors</p>
+                                </div>
+                              )}
+                              
+                              {availableActivities.length === 0 && (
+                                <div className="text-center py-6 bg-amber-50 rounded-lg border border-amber-200">
+                                  <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+                                  <p className="text-sm font-semibold text-amber-800 mb-1">No Activities Available</p>
+                                  <p className="text-xs text-amber-700">Please add activities in previous steps before assigning assessors.</p>
+                                </div>
+                              )}
                             </div>
-                          )}
-                          
-                          {availableActivities.length === 0 && (
-                            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200">
-                              <p className="text-sm">No activities available. Please add activities in previous steps.</p>
-                            </div>
-                          )}
+                          </div>
                         </div>
                       );
-                    })}
+                      })}
                   </div>
                 </div>
               </div>
@@ -600,15 +769,16 @@ const ParticipantAssessorManagementStep: React.FC = () => {
         })}
       </div>
 
+      {/* Empty State - No Groups */}
       {groups.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">
-            <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
+        <div className="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-3">
+            <Users className="w-6 h-6 text-gray-400" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Groups Available</h3>
-          <p className="text-gray-600">No groups found. Please create groups first before managing participant assignments.</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Groups Available</h3>
+          <p className="text-sm text-gray-600 max-w-md mx-auto">
+            No groups found. Please create groups first before managing participant assignments.
+          </p>
         </div>
       )}
     </div>
